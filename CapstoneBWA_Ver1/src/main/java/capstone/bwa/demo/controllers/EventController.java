@@ -51,8 +51,21 @@ public class EventController {
     }
 
     /**
+     * Search like by title (Vietnamese)
+     * @param txtSearch
+     * @return 404 if not found
+     * 200 if OK
+     */
+    @GetMapping("event/search")
+    public ResponseEntity searchListEvents(@RequestBody Map<String, String> txtSearch) {
+        return null;
+    }
+
+
+    /**
      * Returns list Events object sort last by status and quantity
      * Nếu status = ALL -> lấy hết toàn bộ event theo quantity (bỏ qua status HIDDEN, PENNING, REJECT)
+     *
      * @return 404 if not found in db
      * 200 if found
      * @apiNote example format:
@@ -77,6 +90,7 @@ public class EventController {
      * Returns new event object with
      * if mem -> status PENNING
      * if admin -> status COMING
+     *
      * @return 403 if not admin
      * 200 if create success
      */
@@ -93,6 +107,7 @@ public class EventController {
      * if admin update -> status COMING
      * Admin can update event of other admin
      * Mem can only update event of him/herself
+     *
      * @param id
      * @param userId
      * @param body
@@ -108,6 +123,7 @@ public class EventController {
 
     /**
      * Returns update event object with status
+     *
      * @param id
      * @param userId
      * @param status
@@ -124,6 +140,7 @@ public class EventController {
     /**
      * Returns list Events object by user id, quantity and status sort last
      * list event của user đó. Nếu status = ALL -> k xét status
+     *
      * @return 404 if not found in db
      * 200 if found
      * @apiNote example format:
@@ -136,7 +153,6 @@ public class EventController {
      * {
      * totalSoldTicket, totalFeedback, totalRate
      * }
-     *
      */
 
     @GetMapping("user/{id}/events/limit/{quantity}/status")
@@ -148,6 +164,7 @@ public class EventController {
     /**
      * Returns list Events object by status, quantity
      * list event của user đó. Nếu status = ALL -> k xét status
+     *
      * @return 404 if not found in db
      * 200 if found
      * @apiNote example format:
@@ -160,11 +177,11 @@ public class EventController {
      * {
      * totalSoldTicket, totalFeedback, totalRate
      * }
-     *
      */
     @GetMapping("user/events/limit/{quantity}/status")
     public ResponseEntity getListEventsByStatus(@PathVariable int quantity, @RequestBody Map<String, String> status) {
 
         return null;
     }
+
 }
