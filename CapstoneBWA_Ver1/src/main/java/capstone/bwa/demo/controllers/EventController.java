@@ -52,12 +52,12 @@ public class EventController {
 
     /**
      * Search like by title (Vietnamese)
-     * @param txtSearch
+     * @param body (txtSearch)
      * @return 404 if not found
      * 200 if OK
      */
     @GetMapping("event/search")
-    public ResponseEntity searchListEvents(@RequestBody Map<String, String> txtSearch) {
+    public ResponseEntity searchListEvents(@RequestBody Map<String, String> body) {
         return null;
     }
 
@@ -81,8 +81,7 @@ public class EventController {
      */
 
     @GetMapping("events/limit/{quantity}/status")
-    public ResponseEntity getListEvents(@PathVariable int quantity, @RequestBody Map<String, String> status) {
-
+    public ResponseEntity getListEvents(@PathVariable int quantity, @RequestBody Map<String, String> body) {
         return null;
     }
 
@@ -126,13 +125,13 @@ public class EventController {
      *
      * @param id
      * @param userId
-     * @param status
+     * @param body (status)
      * @return 403 if not admin
      * 200 if update success
      */
 
     @PutMapping("user/{userId}/event/{id}/status")
-    public ResponseEntity changeAnEventStatus(@PathVariable int id, @PathVariable int userId, @RequestBody Map<String, String> status) {
+    public ResponseEntity changeAnEventStatus(@PathVariable int id, @PathVariable int userId, @RequestBody Map<String, String> body) {
 
         return null;
     }
@@ -156,7 +155,7 @@ public class EventController {
      */
 
     @GetMapping("user/{id}/events/limit/{quantity}/status")
-    public ResponseEntity getListEventsByUserIdNStatus(@PathVariable int id, @PathVariable int quantity, @RequestBody Map<String, String> status) {
+    public ResponseEntity getListEventsByUserIdNStatus(@PathVariable int id, @PathVariable int quantity, @RequestBody Map<String, String> body) {
 
         return null;
     }
@@ -179,7 +178,7 @@ public class EventController {
      * }
      */
     @GetMapping("user/events/limit/{quantity}/status")
-    public ResponseEntity getListEventsByStatus(@PathVariable int quantity, @RequestBody Map<String, String> status) {
+    public ResponseEntity getListEventsByStatus(@PathVariable int quantity, @RequestBody Map<String, String> body) {
 
         return null;
     }

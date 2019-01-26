@@ -14,11 +14,11 @@ public class CategoryController {
 
     /**
      * Return categories by type
-     * @param type
+     * @param body (type)
      * @return 404 if not found
      */
     @GetMapping("categories/type")
-    public ResponseEntity getListCategoriesByType(@RequestBody Map<String, String> type){
+    public ResponseEntity getListCategoriesByType(@RequestBody Map<String, String> body){
         return null;
     }
 }

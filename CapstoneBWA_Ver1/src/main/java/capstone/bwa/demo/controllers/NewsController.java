@@ -48,14 +48,14 @@ public class NewsController {
      * if status = All -> get by quantity
      * @param id
      * @param quantity
-     * @param status
+     * @param body (status)
      * @return
      * 404 if not found in db
      * 403 if not admin
      * 200 if found
      */
     @GetMapping("admin/{id}/news/limit/{quantity}/status")
-    public ResponseEntity getListNewsByAdmin(@PathVariable int id, @PathVariable int quantity, @RequestBody Map<String, String> status) {
+    public ResponseEntity getListNewsByAdmin(@PathVariable int id, @PathVariable int quantity, @RequestBody Map<String, String> body) {
 
         return null;
     }
@@ -98,12 +98,12 @@ public class NewsController {
      * Returns update status news object
      * @param userId
      * @param id
-     * @param status
+     * @param body (status)
      * @return 403 if not admin
      * 200 if update status hidden or public
      */
     @PutMapping("admin/{userId}/news/{id}/status")
-    public ResponseEntity changeStatusNews(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> status){
+    public ResponseEntity changeStatusNews(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> body){
         return null;
     }
 
