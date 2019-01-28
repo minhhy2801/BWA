@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -7,14 +10,21 @@ import java.util.Objects;
 @Entity
 @Table(name = "Account", schema = "dbo", catalog = "BikeWorldDB")
 public class AccountEntity {
+    @JsonView(View.IAccountProfile.class)
     private int id;
+    @JsonView(View.IAccountProfile.class)
     private String name;
+    @JsonView(View.IAccountProfile.class)
     private String phone;
     private String password;
+    @JsonView(View.IAccountProfile.class)
     private String gender;
+    @JsonView(View.IAccountProfile.class)
     private String address;
+    @JsonView(View.IAccountProfile.class)
     private String avatarUrl;
     private Integer roleId;
+    @JsonView(View.IAccountProfile.class)
     private String rate;
     private String status;
     private RoleEntity roleByRoleId;
