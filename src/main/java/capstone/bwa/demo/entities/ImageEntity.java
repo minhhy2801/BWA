@@ -21,6 +21,7 @@ public class ImageEntity {
 
     @Id
     @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     public int getId() {
         return id;
     }
@@ -134,4 +135,21 @@ public class ImageEntity {
     public void setSupplyProductByOwnId(SupplyProductEntity supplyProductByOwnId) {
         this.supplyProductByOwnId = supplyProductByOwnId;
     }
+
+    @Override
+    public String toString() {
+        return "ImageEntity{" +
+                "id=" + id +
+                ", url='" + url + '\'' +
+                ", type='" + type + '\'' +
+                ", status='" + status + '\'' +
+                ", accessoryByOwnId=" + accessoryByOwnId +
+                ", accountByOwnId=" + accountByOwnId +
+                ", bikeByOwnId=" + bikeByOwnId +
+                ", eventByOwnId=" + eventByOwnId +
+                ", newsByOwnId=" + newsByOwnId +
+                ", supplyProductByOwnId=" + supplyProductByOwnId +
+                '}';
+    }
 }
+
