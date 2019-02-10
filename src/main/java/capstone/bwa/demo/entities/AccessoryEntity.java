@@ -1,5 +1,7 @@
 package capstone.bwa.demo.entities;
 
+import com.fasterxml.jackson.annotation.JsonView;
+import capstone.bwa.demo.View.ViewsAccessory;
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -7,14 +9,20 @@ import java.util.Objects;
 @Entity
 @Table(name = "Accessory", schema = "dbo", catalog = "BikeWorldDB")
 public class AccessoryEntity {
+    @JsonView(ViewsAccessory.Public.class)
     private int id;
+    @JsonView(ViewsAccessory.Public.class)
     private String name;
+    @JsonView(ViewsAccessory.Public.class)
     private String url;
     private String brand;
+    @JsonView(ViewsAccessory.Public.class)
     private String price;
+    @JsonView(ViewsAccessory.Public.class)
     private Integer categoryId;
+    @JsonView(ViewsAccessory.Public.class)
     private String description;
-    private String hashCode;
+    private String hashAccessoryCode;
     private String status;
     private CategoryEntity categoryByCategoryId;
     private Collection<ImageEntity> imagesById;
@@ -91,13 +99,13 @@ public class AccessoryEntity {
     }
 
     @Basic
-    @Column(name = "hashCode")
-    public String getHashCode() {
-        return hashCode;
+    @Column(name = "hashAccessoryCode")
+    public String getHashAccessoryCode() {
+        return hashAccessoryCode;
     }
 
-    public void setHashCode(String hashCode) {
-        this.hashCode = hashCode;
+    public void setHashAccessoryCode(String hashAccessoryCode) {
+        this.hashAccessoryCode = hashAccessoryCode;
     }
 
     @Basic
@@ -122,13 +130,13 @@ public class AccessoryEntity {
                 Objects.equals(price, that.price) &&
                 Objects.equals(categoryId, that.categoryId) &&
                 Objects.equals(description, that.description) &&
-                Objects.equals(hashCode, that.hashCode) &&
+                Objects.equals(hashAccessoryCode, that.hashAccessoryCode) &&
                 Objects.equals(status, that.status);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, url, brand, price, categoryId, description, hashCode, status);
+        return Objects.hash(id, name, url, brand, price, categoryId, description, hashAccessoryCode, status);
     }
 
     @ManyToOne

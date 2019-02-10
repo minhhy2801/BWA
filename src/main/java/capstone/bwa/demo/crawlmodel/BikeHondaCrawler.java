@@ -3,6 +3,7 @@ package capstone.bwa.demo.crawlmodel;
 import capstone.bwa.demo.entities.AccessoryEntity;
 import capstone.bwa.demo.entities.BikeEntity;
 import capstone.bwa.demo.entities.ImageEntity;
+import com.google.gson.Gson;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -30,9 +31,9 @@ public class BikeHondaCrawler {
     }
 
     public void crawlBike() {
-        try{
+        try {
             getBikeFromHonda();
-        }catch (Exception e){
+        } catch (Exception e) {
             bikeList.clear();
         }
     }
@@ -40,7 +41,6 @@ public class BikeHondaCrawler {
     public void crawlAccessory() {
         try {
             getAccessoryFromHonda();
-            getComponentFromHonda();
         } catch (Exception e) {
             accessoryList.clear();
         }
@@ -99,41 +99,27 @@ public class BikeHondaCrawler {
                         newAccessory.setName(data);
                         data = getDataByDiv(elements, ".price");
                         newAccessory.setPrice(data);
-                        infoData = getElementsFromElements(infoData, ".info-detail");
-                        data = getDataByTag(infoData, "li");
-                        newAccessory.setDescription(data);
+                        infoData = getElementsFromElements(infoData, ".info-detail li:gt(0)");
+                        Map<String, Object> infor = new HashMap<>();
+//                        data = getDataByTag(infoData, "li");
+                        for (Element e : infoData) {
+                            String key = getDataByDiv(e.select(".left"), ".left").replace(":","");
+//                            System.out.println("left " + key);
+                            String value = getDataByDiv(e.select(".right"), ".right").replace(":","");
+//                            System.out.println("right " + value);
+                            infor.put(key, value);
+                        }
+//                        System.out.println(infor);
+                        Gson gson = new Gson();
+//                        System.out.println("Infor: " + infor);
+                        String json = gson.toJson(infor);
+//                        System.out.println("Json: "+json);
+                        newAccessory.setDescription(json);
                         String hashCode = newAccessory.hashCode() + "";
-                        newAccessory.setHashCode(hashCode);
+                        newAccessory.setHashAccessoryCode(hashCode);
+//                        System.out.println(hashCode);
                         accessoryList.put(newAccessory, newImageEntity);
                     }
-                }
-            }
-        }
-    }
-
-    private void getComponentFromHonda() throws IOException {
-        List<String> linkAccessory = getAllProductLinks("https://hondaxemay.com.vn/phu-tung/phu-tung-chinh-hieu/", ".accessories-list a", "href");
-        for (String url : linkAccessory) {
-            if (url.contains("http")) {
-                Document doc = Jsoup.connect(url).get();
-                for (Element element : doc.select(".accessories-desktop")) {
-                    AccessoryEntity newAccessory = getAccessory(url, "Honda");
-                    ImageEntity newImageEntity = getProductImages("Accessory");
-                    Elements elements = element.select(".accessories-col-left p");
-                    String data = elements.text();
-                    newAccessory.setName(data);
-                    elements = element.select(".accessories-col-left img");
-                    data = getDataByAttr(elements, "src");
-                    newImageEntity.setUrl(data);
-                    elements = element.select(".accessories-col-right");
-                    int size = elements.size();
-                    data = getDataByTag(elements, "td:lt("+ size +")");;
-                    newAccessory.setDescription(data);
-                    data = getDataByTag(elements, "td:eq("+ (size+1) +")");
-                    newAccessory.setPrice(data);
-                    String hashCode = newAccessory.hashCode() + "";
-                    newAccessory.setHashCode(hashCode);
-                    accessoryList.put(newAccessory, newImageEntity);
                 }
             }
         }
@@ -151,7 +137,7 @@ public class BikeHondaCrawler {
         String data = "";
         for (Element element : elements.select(divClass)) {
             if (!data.contains(element.text())) {
-                data += element.text() + "||";
+                data += element.text();
             }
         }
         return data;
