@@ -10,6 +10,8 @@ import capstone.bwa.demo.repositories.BikeRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,15 +31,6 @@ public class CrawlController {
 
     @Autowired
     private AccessoryRepository accessoryRepository;
-
-    @JsonView(ViewsAccessory.Public.class)
-    @GetMapping("getAllAccessory")
-    public ResponseEntity getAllAccessory() {
-        AccessoryEntity accessoryEntity = accessoryRepository.findByHashAccessoryCode("-859426233");
-        Gson gson = new Gson();
-//        gson.fromJson(accessoryEntity.getDescription(),AccessoryEntity.class.);
-        return new ResponseEntity(accessoryEntity,HttpStatus.OK);
-    }
 
     @GetMapping("crawlBike")
     public ResponseEntity crawlBike() {

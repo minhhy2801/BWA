@@ -103,9 +103,14 @@ public class BikeHondaCrawler {
                         Map<String, Object> infor = new HashMap<>();
 //                        data = getDataByTag(infoData, "li");
                         for (Element e : infoData) {
-                            String key = getDataByDiv(e.select(".left"), ".left").replace(":","");
+                            String key = getDataByDiv(e.select(".left"), ".left").replace(":", "");
+                            if (key.equals("Tính năng")) {
+                                key = "features";
+                            } else {
+                                key = "installation";
+                            }
 //                            System.out.println("left " + key);
-                            String value = getDataByDiv(e.select(".right"), ".right").replace(":","");
+                            String value = getDataByDiv(e.select(".right"), ".right").replace(":", "");
 //                            System.out.println("right " + value);
                             infor.put(key, value);
                         }
