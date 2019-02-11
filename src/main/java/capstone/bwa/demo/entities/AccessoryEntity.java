@@ -14,7 +14,7 @@ public class AccessoryEntity {
     private String price;
     private Integer categoryId;
     private String description;
-    private String hashCode;
+    private String hashAccessoryCode;
     private String status;
     private CategoryEntity categoryByCategoryId;
     private Collection<ImageEntity> imagesById;
@@ -91,13 +91,13 @@ public class AccessoryEntity {
     }
 
     @Basic
-    @Column(name = "hashCode")
-    public String getHashCode() {
-        return hashCode;
+    @Column(name = "hashAccessoryCode")
+    public String getHashAccessoryCode() {
+        return hashAccessoryCode;
     }
 
-    public void setHashCode(String hashCode) {
-        this.hashCode = hashCode;
+    public void setHashAccessoryCode(String hashAccessoryCode) {
+        this.hashAccessoryCode = hashAccessoryCode;
     }
 
     @Basic
@@ -122,13 +122,13 @@ public class AccessoryEntity {
                 Objects.equals(price, that.price) &&
                 Objects.equals(categoryId, that.categoryId) &&
                 Objects.equals(description, that.description) &&
-                Objects.equals(hashCode, that.hashCode) &&
+                Objects.equals(hashAccessoryCode, that.hashAccessoryCode) &&
                 Objects.equals(status, that.status);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, url, brand, price, categoryId, description, hashCode, status);
+        return Objects.hash(id, name, url, brand, price, categoryId, description, hashAccessoryCode, status);
     }
 
     @ManyToOne

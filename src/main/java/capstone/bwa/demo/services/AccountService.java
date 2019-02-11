@@ -20,6 +20,7 @@ public class AccountService implements UserDetailsService {
     @Autowired
     private AccountRepository accountRepository;
 
+    // dao check login
     @Override
     public UserDetails loadUserByUsername(String phone) throws UsernameNotFoundException {
         AccountEntity accountEntity = accountRepository.findByPhone(phone);

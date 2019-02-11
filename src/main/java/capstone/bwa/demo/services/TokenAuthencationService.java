@@ -1,7 +1,15 @@
 package capstone.bwa.demo.services;
 
+import capstone.bwa.demo.exceptions.CustomException;
 import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.InvalidClaimException;
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
@@ -21,8 +29,9 @@ public class TokenAuthencationService {
         String token = JWT.create().withSubject(phone)
                 .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .withClaim("isAdmin", isAdmin)
+                .withIssuer("FPT")
                 .sign(Algorithm.HMAC512(SECRET.getBytes()));
-        System.out.println("ADD TOKEN");
+//        System.out.println("ADD TOKEN");
         responses.addHeader(HEADER_STRING, TOKEN_PREFIX + " " + token);
     }
 
@@ -34,11 +43,38 @@ public class TokenAuthencationService {
                     .build()
                     .verify(token.replace(TOKEN_PREFIX, ""))
                     .getSubject();
-
             if (user != null)
                 return new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
             return null;
         }
         return null;
     }
+
+    public static String resolveToken(HttpServletRequest req) {
+        String bearerToken = req.getHeader("Authorization");
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        return null;
+    }
+
+    public static boolean validateToken(String token) {
+        try {
+            JWTVerifier verifier = JWT.require(Algorithm.HMAC512(SECRET.getBytes()))
+                    .withIssuer("FPT")
+                    .build();
+            DecodedJWT jwt = verifier.verify(token);
+            return true;
+        } catch (JwtException  e) {
+            throw new CustomException("Expired or invalid JWT token", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (InvalidClaimException ice){
+            throw new CustomException("Invalid Claim JWT token or Expired Time", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (JWTDecodeException jde){
+            throw new CustomException("Invalid JWT token", HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return false;
+    }
 }
+

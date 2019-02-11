@@ -14,7 +14,6 @@ import javax.servlet.FilterChain;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Collection;
-import java.util.Collections;
 
 public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
 
@@ -24,6 +23,7 @@ public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
         setAuthenticationManager(manager);
     }
 
+    // 1
     @Override
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
         String phone = request.getParameter("phone");
@@ -35,9 +35,10 @@ public class JWTLoginFilter extends AbstractAuthenticationProcessingFilter {
 
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) {
-        Collection<? extends GrantedAuthority> authorityCollections = authResult.getAuthorities();
+        Collection<? extends GrantedAuthority> authorityCollections = authResult.getAuthorities();  //account service
         boolean isAdmin = authorityCollections.contains(new SimpleGrantedAuthority("ADMIN"));
 
+        // create token
         TokenAuthencationService.addAuthentication(response, authResult.getName(), isAdmin);
     }
 
