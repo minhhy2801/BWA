@@ -4,9 +4,11 @@ import capstone.bwa.demo.View.ViewsAccessory;
 import capstone.bwa.demo.crawlmodel.BikeHondaCrawler;
 import capstone.bwa.demo.entities.AccessoryEntity;
 import capstone.bwa.demo.entities.BikeEntity;
+import capstone.bwa.demo.entities.CategoryEntity;
 import capstone.bwa.demo.entities.ImageEntity;
 import capstone.bwa.demo.repositories.AccessoryRepository;
 import capstone.bwa.demo.repositories.BikeRepository;
+import capstone.bwa.demo.repositories.CategoryRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
@@ -31,6 +33,9 @@ public class CrawlController {
 
     @Autowired
     private AccessoryRepository accessoryRepository;
+
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     @GetMapping("crawlBike")
     public ResponseEntity crawlBike() {
@@ -64,27 +69,49 @@ public class CrawlController {
     public ResponseEntity crawlAccessory() {
         BikeHondaCrawler crawlBikeHonda = new BikeHondaCrawler();
         crawlBikeHonda.crawlAccessory();
-        Map<AccessoryEntity, ImageEntity> listNewAccessory = crawlBikeHonda.getAccessoryList();
-        if (listNewAccessory.size() == 0) {
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
-        List<AccessoryEntity> listExitAccessory = accessoryRepository.findAll();
-        boolean addNewProduct;
-        for (Map.Entry<AccessoryEntity, ImageEntity> entry : listNewAccessory.entrySet()) {
-            addNewProduct = true;
-            for (AccessoryEntity accessory : listExitAccessory) {
-                if (accessory.getHashAccessoryCode().equals(entry.getKey().getHashAccessoryCode())) {
-                    addNewProduct = false;
-                }
+        int categoryID;
+        Map<String, Map<AccessoryEntity, ImageEntity>> categoryMapping = crawlBikeHonda.getCategoryMapping();
+        for (Map.Entry<String, Map<AccessoryEntity, ImageEntity>> mapping : categoryMapping.entrySet()) {
+            categoryID = checkCatelogy(mapping.getKey());
+            Map<AccessoryEntity, ImageEntity> listNewAccessory = mapping.getValue();
+            if (listNewAccessory.size() == 0) {
+                return new ResponseEntity(HttpStatus.BAD_REQUEST);
             }
-            if (addNewProduct) {
-                accessoryRepository.saveAndFlush(entry.getKey());
-                AccessoryEntity accessoryOwn = accessoryRepository.findByHashAccessoryCode(entry.getKey().getHashAccessoryCode());
-                ImageEntity imageEntity = entry.getValue();
-                imageEntity.setAccessoryByOwnId(accessoryOwn);
-                imageRepository.saveAndFlush(imageEntity);
+            List<AccessoryEntity> listExitAccessory = accessoryRepository.findAll();
+            boolean addNewProduct;
+            for (Map.Entry<AccessoryEntity, ImageEntity> entry : listNewAccessory.entrySet()) {
+                addNewProduct = true;
+                for (AccessoryEntity accessory : listExitAccessory) {
+                    if (accessory.getHashAccessoryCode().equals(entry.getKey().getHashAccessoryCode())) {
+                        addNewProduct = false;
+                    }
+                }
+                if (addNewProduct) {
+                    AccessoryEntity newAccessory = entry.getKey();
+                    newAccessory.setCategoryId(categoryID);
+                    accessoryRepository.saveAndFlush(newAccessory);
+                    newAccessory = accessoryRepository.findByHashAccessoryCode(entry.getKey().getHashAccessoryCode());
+                    ImageEntity imageEntity = entry.getValue();
+                    imageEntity.setAccessoryByOwnId(newAccessory);
+                    imageRepository.saveAndFlush(imageEntity);
+                }
             }
         }
         return new ResponseEntity(accessoryRepository.findAll(), HttpStatus.OK);
+    }
+
+    private int checkCatelogy(String catelogyName) {
+        int categoryID;
+        CategoryEntity categoryEntity = categoryRepository.findByName(catelogyName);
+        if (categoryEntity == null) {
+            CategoryEntity newCategory = new CategoryEntity();
+            newCategory.setName(catelogyName);
+            newCategory.setType("NewCategogy");
+            newCategory.setStatus("New");
+            categoryRepository.saveAndFlush(newCategory);
+            categoryEntity = categoryRepository.findByName(catelogyName);
+        }
+        categoryID = categoryEntity.getId();
+        return categoryID;
     }
 }

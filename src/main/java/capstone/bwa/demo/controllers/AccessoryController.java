@@ -8,9 +8,7 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONTokener;
+import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,13 +29,17 @@ public class AccessoryController {
         JsonArray jsonArray = new JsonArray();
         Gson gson = new Gson();
         for (AccessoryEntity accessoryEntity : accessoryEntityList) {
-            String json = gson.toJson(accessoryEntity.getDescription());
             try {
-                String jsonFormattedString = new JSONTokener(json).nextValue().toString();
-                JSONObject object = new JSONObject();
-                jsonArray.add(jsonFormattedString);
-            }catch (JSONException e){
-                System.out.println(e);
+                String jsonDes = accessoryEntity.getDescription();
+                JsonParser parser = new JsonParser();
+                JsonObject object = parser.parse(jsonDes).getAsJsonObject();
+                JsonObject objectReturn = new JsonObject();
+                objectReturn.addProperty("name",accessoryEntity.getName());
+                objectReturn.add("description",object);
+                String jsonReturn = gson.toJson(objectReturn);
+                jsonArray.add(jsonReturn);
+            }catch (Exception e){
+                e.printStackTrace();
             }
         }
         return new ResponseEntity(jsonArray,HttpStatus.OK);
