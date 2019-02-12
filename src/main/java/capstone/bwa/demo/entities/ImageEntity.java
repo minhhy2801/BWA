@@ -3,6 +3,8 @@ package capstone.bwa.demo.entities;
 import capstone.bwa.demo.View.ViewsAccessory;
 import capstone.bwa.demo.entities.*;
 import com.fasterxml.jackson.annotation.JsonView;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 import javax.persistence.*;
 import java.util.Objects;
@@ -11,10 +13,11 @@ import java.util.Objects;
 @Table(name = "Image", schema = "dbo", catalog = "BikeWorldDB")
 public class ImageEntity {
     private int id;
-    @JsonView(ViewsAccessory.IAccessory.class)
+    @JsonView({ViewsAccessory.IAccessory.class,ViewsAccessory.IListAccessories.class})
     private String url;
     private String type;
     private String status;
+    private int ownId;
     private AccessoryEntity accessoryByOwnId;
     private AccountEntity accountByOwnId;
     private BikeEntity bikeByOwnId;
@@ -88,12 +91,19 @@ public class ImageEntity {
     public void setAccessoryByOwnId(AccessoryEntity accessoryByOwnId) {
         this.accessoryByOwnId = accessoryByOwnId;
     }
-//    public void setAccessoryByOwnId(int id) {
-//        this.accessoryByOwnId.setId(id);
-//    }
 
-    //
-    @ManyToOne
+    @Basic
+    @Column(name = "ownId")
+    public int getOwnId() {
+        return ownId;
+    }
+
+    public void setOwnId(int ownId) {
+        this.ownId = ownId;
+    }
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByOwnId() {
         return accountByOwnId;
@@ -103,8 +113,8 @@ public class ImageEntity {
         this.accountByOwnId = accountByOwnId;
     }
 
-    //
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public BikeEntity getBikeByOwnId() {
         return bikeByOwnId;
@@ -114,8 +124,8 @@ public class ImageEntity {
         this.bikeByOwnId = bikeByOwnId;
     }
 
-    //
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public EventEntity getEventByOwnId() {
         return eventByOwnId;
@@ -125,8 +135,8 @@ public class ImageEntity {
         this.eventByOwnId = eventByOwnId;
     }
 
-    //
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public NewsEntity getNewsByOwnId() {
         return newsByOwnId;
@@ -136,7 +146,8 @@ public class ImageEntity {
         this.newsByOwnId = newsByOwnId;
     }
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public SupplyProductEntity getSupplyProductByOwnId() {
         return supplyProductByOwnId;

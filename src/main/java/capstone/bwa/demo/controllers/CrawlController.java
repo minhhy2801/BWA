@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -45,18 +46,30 @@ public class CrawlController {
         List<BikeEntity> listExitBike = bikeRepository.findAll();
         boolean addNewProduct;
         for (Map.Entry<BikeEntity, ImageEntity> entry : listNewBike.entrySet()) {
+            BikeEntity newBike = entry.getKey();
+            ImageEntity imageEntity = entry.getValue();
             addNewProduct = true;
             for (BikeEntity bike : listExitBike) {
-                if (bike.getHashBikeCode().equals(entry.getKey().getHashBikeCode())) {
+                if (bike.getHashBikeCode().equals(newBike.getHashBikeCode())) {
                     addNewProduct = false;
                 }
             }
             if (addNewProduct) {
-                bikeRepository.saveAndFlush(entry.getKey());
-                BikeEntity bikeOwn = bikeRepository.findByHashBikeCode(entry.getKey().getHashBikeCode());
-                ImageEntity imageEntity = entry.getValue();
-                imageEntity.setBikeByOwnId(bikeOwn);
-                imageRepository.saveAndFlush(imageEntity);
+                Map<String, Map<String, String>> categoryMap = crawlBikeHonda.getCategogyAndProduct();
+                for (Map.Entry<String, Map<String, String>> mapEntry : categoryMap.entrySet()) {
+                    Map<String, String> linkAndName = mapEntry.getValue();
+                    if (mapEntry.getValue().keySet().contains(newBike.getUrl())) {
+                        int categoryId = checkCategory(mapEntry.getKey());
+                        newBike.setCategoryId(categoryId);
+                    }
+                    for (Map.Entry<String, String> linkName : linkAndName.entrySet()) {
+                        newBike.setName(linkName.getValue());
+                        bikeRepository.saveAndFlush(newBike);
+                        BikeEntity bikeOwn = bikeRepository.findByHashBikeCode(newBike.getHashBikeCode());
+                        imageEntity.setBikeByOwnId(bikeOwn);
+                        imageRepository.saveAndFlush(imageEntity);
+                    }
+                }
             }
         }
         return new ResponseEntity(bikeRepository.findAll(), HttpStatus.OK);
@@ -71,7 +84,7 @@ public class CrawlController {
         for (Map.Entry<String, Map<AccessoryEntity, ImageEntity>> mapping : categoryMapping.entrySet()) {
             categoryID = checkCategory(mapping.getKey());
             Map<AccessoryEntity, ImageEntity> listNewAccessory = mapping.getValue();
-            System.out.println("Size: "+listNewAccessory.size());
+            System.out.println("Size: " + listNewAccessory.size());
             if (listNewAccessory.size() == 0) {
                 return new ResponseEntity(HttpStatus.BAD_REQUEST);
             }
@@ -86,7 +99,7 @@ public class CrawlController {
                 } else {
                     for (AccessoryEntity accessory : listExitAccessory) {
                         if (accessory.getHashAccessoryCode().equals(newAccessory.getHashAccessoryCode())) {
-                            if (!accessory.getPrice().equals(newAccessory.getPrice())){
+                            if (!accessory.getPrice().equals(newAccessory.getPrice())) {
                                 accessory.setPrice(newAccessory.getPrice());
                                 accessoryRepository.saveAndFlush(accessory);
                             }
@@ -99,8 +112,8 @@ public class CrawlController {
                     accessoryRepository.saveAndFlush(newAccessory);
                     newAccessory = accessoryRepository.findByHashAccessoryCode(entry.getKey().getHashAccessoryCode());
                     imageEntity.setAccessoryByOwnId(newAccessory);
-                    System.out.println("Accessory: "+imageEntity.getAccessoryByOwnId().getId());
-                    System.out.println("Image: "+imageEntity);
+                    System.out.println("Accessory: " + imageEntity.getAccessoryByOwnId().getId());
+                    System.out.println("Image: " + imageEntity);
                     imageRepository.saveAndFlush(imageEntity);
                 }
             }

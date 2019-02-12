@@ -19,10 +19,14 @@ public class BikeHondaCrawler {
 
     Map<BikeEntity, ImageEntity> bikeList;
     Map<String, Map<AccessoryEntity, ImageEntity>> categoryMapping;
+    Map<String, Map<String,String>> categogyAndProduct;
+    Map<String,String> linkAndName;
 
     public BikeHondaCrawler() {
         bikeList = new HashMap<>();
         categoryMapping = new HashMap<>();
+        categogyAndProduct = new HashMap<>();
+        linkAndName = new HashMap<>();
     }
 
     public Map<BikeEntity, ImageEntity> getBikeList() {
@@ -31,6 +35,10 @@ public class BikeHondaCrawler {
 
     public Map<String, Map<AccessoryEntity, ImageEntity>> getCategoryMapping() {
         return categoryMapping;
+    }
+
+    public Map<String, Map<String, String>> getCategogyAndProduct() {
+        return categogyAndProduct;
     }
 
     public void crawlBike() {
@@ -50,34 +58,47 @@ public class BikeHondaCrawler {
     }
 
     private void getBikeFromHonda() throws IOException {
-        List<String> linkBike = getAllProductLinks("https://hondaxemay.com.vn/san-pham/", "a.btn", "href");
-        for (String url : linkBike) {
+        Document doc = Jsoup.connect("https://hondaxemay.com.vn/san-pham/").get();
+        Elements elements = doc.select(".menu-sanpham");
+        String key, link, name;
+        for (Element e : elements.select(".item-wrp")) {
+            key = e.select(".type").first().text();
+            for (Element element : e.select(".item")) {
+                link = element.select("a").attr("href");
+                name = element.select(".name").text();
+                if (!link.equals("https://hondaxemay.com.vn/hondamoto")){
+                    linkAndName.put(link, name);
+                }
+            }
+            categogyAndProduct.put(key, linkAndName);
+        }
+
+        for (String url : linkAndName.keySet()) {
             //--Check if url is true and remove url: https://hondaxemay.com.vn/hondamoto
-            if (url.contains("http") && !url.equals("https://hondaxemay.com.vn/hondamoto")) {
-                Document doc = Jsoup.connect(url).get();
+            if (url.contains("http")) {
+                doc = Jsoup.connect(url).get();
                 BikeEntity newBike = getBike(url, "Honda");
                 ImageEntity newImage = getProductImages("Bike");
-                Elements elements = getContentFromDoc(doc, ".wrap-spec");
-                newBike.setName(doc.title());
-                String data = getDataByTag(elements, "td");
-                newBike.setDescription(data);
+                elements = getContentFromDoc(doc, ".wrap-spec");
+                newBike.setDescription(getDataByTag(elements, "td").toString());
                 elements = getContentFromDoc(doc, ".wrap-color");
-                data = getDataByDiv(elements, ".color-title") + "\n";
+                String data = getDataByDiv(elements, ".color-title") + "\n";
                 elements = getElementsFromElements(elements, ".price");
                 data += getDataByDiv(elements, ".text");
                 newBike.setPrice(data);
                 data = newBike.hashCode() + "";
                 newBike.setHashBikeCode(data);
+                List<String> imageList = new ArrayList<>();
                 //"ProductDetail"
                 elements = getContentFromDoc(doc, ".option-img");
-                data = getDataByAttr(elements, "abs:data-img") + "\n";
+                imageList = getDataByAttr(elements, "abs:data-img");
                 //"ColorDetail"
                 elements = getContentFromDoc(doc, "div.no-360 img[src]");
-                data += getDataByAttr(elements, "src") + "\n";
+                imageList.addAll(getDataByAttr(elements, "src"));
                 //"Gallery"
                 elements = getContentFromDoc(doc, "div.gallery-item img[src]");
-                data += getDataByAttr(elements, "src");
-                newImage.setUrl(data);
+                imageList.addAll(getDataByAttr(elements, "src"));
+                newImage.setUrl(imageList.toString());
                 bikeList.put(newBike, newImage);
             }
         }
@@ -174,10 +195,10 @@ public class BikeHondaCrawler {
         }
     }
 
-    private String getDataByAttr(Elements elements, String attr) {
-        String data = "";
+    private List<String> getDataByAttr(Elements elements, String attr) {
+        List<String> data = new ArrayList<>();
         for (Element element : elements) {
-            data += element.attr(attr) + "||";
+            data.add(element.attr(attr));
         }
         return data;
     }
@@ -192,10 +213,10 @@ public class BikeHondaCrawler {
         return data;
     }
 
-    private String getDataByTag(Elements elements, String attr) {
-        String data = "";
+    private List<String> getDataByTag(Elements elements, String attr) {
+        List<String> data = new ArrayList<>();
         for (Element element : elements.select(attr)) {
-            data += element.text() + "\n";
+            data.add(element.text());
         }
         return data;
     }

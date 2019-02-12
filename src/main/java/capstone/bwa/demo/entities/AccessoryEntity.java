@@ -25,7 +25,7 @@ public class AccessoryEntity {
     private String status;
     @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
     private CategoryEntity categoryByCategoryId;
-//    @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
+    @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
     private Collection<ImageEntity> imagesById;
 
     @Id
