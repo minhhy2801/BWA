@@ -1,6 +1,6 @@
 package capstone.bwa.demo.entities;
 
-import capstone.bwa.demo.View.ViewsCategory;
+import capstone.bwa.demo.View.ViewsAccessory;
 import com.fasterxml.jackson.annotation.JsonView;
 
 import javax.persistence.*;
@@ -11,7 +11,7 @@ import java.util.Objects;
 @Table(name = "Category", schema = "dbo", catalog = "BikeWorldDB")
 public class CategoryEntity {
     private int id;
-    @JsonView(ViewsCategory.Public.class)
+    @JsonView({ViewsAccessory.IAccessory.class,ViewsAccessory.IListAccessories.class})
     private String name;
     private String type;
     private String status;
@@ -141,5 +141,22 @@ public class CategoryEntity {
 
     public void setSupplyProductsById(Collection<SupplyProductEntity> supplyProductsById) {
         this.supplyProductsById = supplyProductsById;
+    }
+
+    @Override
+    public String toString() {
+        return "CategoryEntity{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", type='" + type + '\'' +
+                ", status='" + status + '\'' +
+                ", accessoriesById=" + accessoriesById +
+                ", bikesById=" + bikesById +
+                ", eventsById=" + eventsById +
+                ", newsById=" + newsById +
+                ", referencesLinksById=" + referencesLinksById +
+                ", requestNotificationsById=" + requestNotificationsById +
+                ", supplyProductsById=" + supplyProductsById +
+                '}';
     }
 }

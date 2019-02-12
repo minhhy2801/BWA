@@ -1,6 +1,9 @@
 package capstone.bwa.demo.View;
 
 public class ViewsAccessory {
-    public static class Public {
-    }
+    public interface IAccessory{};
+    public interface IListAccessories{};
+    public interface IImage{};
+    public interface ICategory{};
+    public interface INews{};
 }

@@ -2,14 +2,8 @@ package capstone.bwa.demo.controllers;
 
 import capstone.bwa.demo.View.ViewsAccessory;
 import capstone.bwa.demo.crawlmodel.BikeHondaCrawler;
-import capstone.bwa.demo.entities.AccessoryEntity;
-import capstone.bwa.demo.entities.BikeEntity;
-import capstone.bwa.demo.entities.CategoryEntity;
-import capstone.bwa.demo.entities.ImageEntity;
-import capstone.bwa.demo.repositories.AccessoryRepository;
-import capstone.bwa.demo.repositories.BikeRepository;
-import capstone.bwa.demo.repositories.CategoryRepository;
-import capstone.bwa.demo.repositories.ImageRepository;
+import capstone.bwa.demo.entities.*;
+import capstone.bwa.demo.repositories.*;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -37,6 +31,9 @@ public class CrawlController {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private NewsRepository newsRepository;
+
     @GetMapping("crawlBike")
     public ResponseEntity crawlBike() {
         BikeHondaCrawler crawlBikeHonda = new BikeHondaCrawler();
@@ -50,13 +47,13 @@ public class CrawlController {
         for (Map.Entry<BikeEntity, ImageEntity> entry : listNewBike.entrySet()) {
             addNewProduct = true;
             for (BikeEntity bike : listExitBike) {
-                if (bike.getHashCode().equals(entry.getKey().getHashCode())) {
+                if (bike.getHashBikeCode().equals(entry.getKey().getHashBikeCode())) {
                     addNewProduct = false;
                 }
             }
             if (addNewProduct) {
                 bikeRepository.saveAndFlush(entry.getKey());
-                BikeEntity bikeOwn = bikeRepository.findByHashCode(entry.getKey().getHashCode());
+                BikeEntity bikeOwn = bikeRepository.findByHashBikeCode(entry.getKey().getHashBikeCode());
                 ImageEntity imageEntity = entry.getValue();
                 imageEntity.setBikeByOwnId(bikeOwn);
                 imageRepository.saveAndFlush(imageEntity);
@@ -72,27 +69,38 @@ public class CrawlController {
         int categoryID;
         Map<String, Map<AccessoryEntity, ImageEntity>> categoryMapping = crawlBikeHonda.getCategoryMapping();
         for (Map.Entry<String, Map<AccessoryEntity, ImageEntity>> mapping : categoryMapping.entrySet()) {
-            categoryID = checkCatelogy(mapping.getKey());
+            categoryID = checkCategory(mapping.getKey());
             Map<AccessoryEntity, ImageEntity> listNewAccessory = mapping.getValue();
+            System.out.println("Size: "+listNewAccessory.size());
             if (listNewAccessory.size() == 0) {
                 return new ResponseEntity(HttpStatus.BAD_REQUEST);
             }
             List<AccessoryEntity> listExitAccessory = accessoryRepository.findAll();
             boolean addNewProduct;
             for (Map.Entry<AccessoryEntity, ImageEntity> entry : listNewAccessory.entrySet()) {
+                AccessoryEntity newAccessory = entry.getKey();
+                ImageEntity imageEntity = entry.getValue();
                 addNewProduct = true;
-                for (AccessoryEntity accessory : listExitAccessory) {
-                    if (accessory.getHashAccessoryCode().equals(entry.getKey().getHashAccessoryCode())) {
-                        addNewProduct = false;
+                if (imageEntity.getUrl().equals("")) {
+//                    addNewProduct = false;
+                } else {
+                    for (AccessoryEntity accessory : listExitAccessory) {
+                        if (accessory.getHashAccessoryCode().equals(newAccessory.getHashAccessoryCode())) {
+                            if (!accessory.getPrice().equals(newAccessory.getPrice())){
+                                accessory.setPrice(newAccessory.getPrice());
+                                accessoryRepository.saveAndFlush(accessory);
+                            }
+                            addNewProduct = false;
+                        }
                     }
                 }
                 if (addNewProduct) {
-                    AccessoryEntity newAccessory = entry.getKey();
                     newAccessory.setCategoryId(categoryID);
                     accessoryRepository.saveAndFlush(newAccessory);
                     newAccessory = accessoryRepository.findByHashAccessoryCode(entry.getKey().getHashAccessoryCode());
-                    ImageEntity imageEntity = entry.getValue();
                     imageEntity.setAccessoryByOwnId(newAccessory);
+                    System.out.println("Accessory: "+imageEntity.getAccessoryByOwnId().getId());
+                    System.out.println("Image: "+imageEntity);
                     imageRepository.saveAndFlush(imageEntity);
                 }
             }
@@ -100,16 +108,26 @@ public class CrawlController {
         return new ResponseEntity(accessoryRepository.findAll(), HttpStatus.OK);
     }
 
-    private int checkCatelogy(String catelogyName) {
+//    @GetMapping("test")
+//    public ResponseEntity insertNews(){
+//        ImageEntity image = new ImageEntity();
+//        image.setUrl("http");
+//        NewsEntity news = newsRepository.findById(1);
+//        image.setNewsByOwnId(news);
+//        imageRepository.saveAndFlush(image);
+//        return new ResponseEntity(image, HttpStatus.OK);
+//    }
+
+    private int checkCategory(String categogyName) {
         int categoryID;
-        CategoryEntity categoryEntity = categoryRepository.findByName(catelogyName);
+        CategoryEntity categoryEntity = categoryRepository.findByName(categogyName);
         if (categoryEntity == null) {
             CategoryEntity newCategory = new CategoryEntity();
-            newCategory.setName(catelogyName);
+            newCategory.setName(categogyName);
             newCategory.setType("NewCategogy");
-            newCategory.setStatus("New");
+            newCategory.setStatus("NEW");
             categoryRepository.saveAndFlush(newCategory);
-            categoryEntity = categoryRepository.findByName(catelogyName);
+            categoryEntity = categoryRepository.findByName(categogyName);
         }
         categoryID = categoryEntity.getId();
         return categoryID;

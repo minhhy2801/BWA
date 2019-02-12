@@ -67,7 +67,7 @@ public class BikeHondaCrawler {
                 data += getDataByDiv(elements, ".text");
                 newBike.setPrice(data);
                 data = newBike.hashCode() + "";
-                newBike.setHashCode(data);
+                newBike.setHashBikeCode(data);
                 //"ProductDetail"
                 elements = getContentFromDoc(doc, ".option-img");
                 data = getDataByAttr(elements, "abs:data-img") + "\n";
@@ -87,7 +87,7 @@ public class BikeHondaCrawler {
         List<String> pageList = new ArrayList<>();
         Map<String, String> categoryList = new HashMap<>();
         String key, value, categoryName = "";
-        //Get list Category in crawl page.
+        //Get list Category in each crawl page.
         List<String> page = getAllProductLinks("https://hondaxemay.com.vn/phukien/phu-kien-xe-may", "a.link", "href");
         for (String url : page) {
             if (url.contains("http")) {
@@ -124,7 +124,7 @@ public class BikeHondaCrawler {
         for (String url : pageList) {
             if (url.contains("http")) {
                 List<String> accessoryUrls = getAllProductLinks(url, "a.btn", "href");
-                //Check and get categoryID
+                //Check and get categoryName
                 for (Map.Entry<String, String> categoryEntry : categoryList.entrySet()) {
                     if (url.contains(categoryEntry.getKey())) {
                         categoryName = categoryEntry.getValue();
@@ -136,7 +136,9 @@ public class BikeHondaCrawler {
                         Document doc = Jsoup.connect(accessoryUrl).get();
                         AccessoryEntity newAccessory = getAccessory(accessoryUrl, "Honda");
                         ImageEntity newImageEntity = getProductImages("Accessory");
+                        //Get elements that contain all information of accessory
                         Elements elements = getContentFromDoc(doc, ".product-detail");
+
                         Elements imageData = getElementsFromElements(elements, "#img-big img");
                         String data = imageData.attr("src");
                         newImageEntity.setUrl(data);
@@ -146,8 +148,8 @@ public class BikeHondaCrawler {
                         data = getDataByDiv(elements, ".price");
                         newAccessory.setPrice(data);
                         infoData = getElementsFromElements(infoData, ".info-detail li:gt(0)");
+                        //Raw data use to paste json
                         Map<String, Object> infor = new HashMap<>();
-//                        data = getDataByTag(infoData, "li");
                         for (Element e : infoData) {
                             key = getDataByDiv(e.select(".left"), ".left").replace(":", "");
                             if (key.equals("Tính năng")) {
@@ -155,24 +157,19 @@ public class BikeHondaCrawler {
                             } else {
                                 key = "installation";
                             }
-//                            System.out.println("left " + key);
                             value = getDataByDiv(e.select(".right"), ".right").replace(":", "");
-//                            System.out.println("right " + value);
                             infor.put(key, value);
                         }
-//                        System.out.println(infor);
+                        //Paste Json
                         Gson gson = new Gson();
-//                        System.out.println("Infor: " + infor);
                         String json = gson.toJson(infor);
-//                        System.out.println("Json: "+json);
                         newAccessory.setDescription(json);
                         String hashCode = newAccessory.hashCode() + "";
                         newAccessory.setHashAccessoryCode(hashCode);
-//                        System.out.println(hashCode);
                         accessoryList.put(newAccessory, newImageEntity);
                     }
                 }
-                categoryMapping.put(categoryName,accessoryList);
+                categoryMapping.put(categoryName, accessoryList);
             }
         }
     }
@@ -233,7 +230,7 @@ public class BikeHondaCrawler {
     private ImageEntity getProductImages(String type) {
         ImageEntity newImage = new ImageEntity();
         newImage.setType(type);
-        newImage.setStatus("new");
+        newImage.setStatus("NEW");
         return newImage;
     }
 
@@ -241,9 +238,7 @@ public class BikeHondaCrawler {
         BikeEntity newBike = new BikeEntity();
         newBike.setUrl(url);
         newBike.setBrand(brand);
-        newBike.setStatus("New");
-        // Set default category when crawl is new(1)
-        newBike.setCategoryId(1);
+        newBike.setStatus("NEW");
         return newBike;
     }
 
@@ -251,7 +246,7 @@ public class BikeHondaCrawler {
         AccessoryEntity newAccessory = new AccessoryEntity();
         newAccessory.setUrl(url);
         newAccessory.setBrand(brand);
-        newAccessory.setStatus("New");
+        newAccessory.setStatus("NEW");
         return newAccessory;
     }
 

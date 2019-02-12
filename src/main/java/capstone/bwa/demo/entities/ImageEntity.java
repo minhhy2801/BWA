@@ -1,6 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.View.ViewsAccessory;
 import capstone.bwa.demo.entities.*;
+import com.fasterxml.jackson.annotation.JsonView;
 
 import javax.persistence.*;
 import java.util.Objects;
@@ -9,6 +11,7 @@ import java.util.Objects;
 @Table(name = "Image", schema = "dbo", catalog = "BikeWorldDB")
 public class ImageEntity {
     private int id;
+    @JsonView(ViewsAccessory.IAccessory.class)
     private String url;
     private String type;
     private String status;
@@ -85,7 +88,11 @@ public class ImageEntity {
     public void setAccessoryByOwnId(AccessoryEntity accessoryByOwnId) {
         this.accessoryByOwnId = accessoryByOwnId;
     }
-//
+//    public void setAccessoryByOwnId(int id) {
+//        this.accessoryByOwnId.setId(id);
+//    }
+
+    //
     @ManyToOne
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByOwnId() {
@@ -95,9 +102,10 @@ public class ImageEntity {
     public void setAccountByOwnId(AccountEntity accountByOwnId) {
         this.accountByOwnId = accountByOwnId;
     }
-//
+
+    //
     @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public BikeEntity getBikeByOwnId() {
         return bikeByOwnId;
     }
@@ -105,9 +113,10 @@ public class ImageEntity {
     public void setBikeByOwnId(BikeEntity bikeByOwnId) {
         this.bikeByOwnId = bikeByOwnId;
     }
-//
+
+    //
     @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public EventEntity getEventByOwnId() {
         return eventByOwnId;
     }
@@ -115,9 +124,10 @@ public class ImageEntity {
     public void setEventByOwnId(EventEntity eventByOwnId) {
         this.eventByOwnId = eventByOwnId;
     }
-//
+
+    //
     @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public NewsEntity getNewsByOwnId() {
         return newsByOwnId;
     }
@@ -127,7 +137,7 @@ public class ImageEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public SupplyProductEntity getSupplyProductByOwnId() {
         return supplyProductByOwnId;
     }

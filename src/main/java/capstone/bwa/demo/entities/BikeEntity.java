@@ -14,8 +14,9 @@ public class BikeEntity {
     private String price;
     private Integer categoryId;
     private String description;
-    private String hashCode;
+    private String hashBikeCode;
     private String status;
+    private String version;
     private CategoryEntity categoryByCategoryId;
     private Collection<ImageEntity> imagesById;
 
@@ -91,13 +92,13 @@ public class BikeEntity {
     }
 
     @Basic
-    @Column(name = "hashCode")
-    public String getHashCode() {
-        return hashCode;
+    @Column(name = "hashBikeCode")
+    public String getHashBikeCode() {
+        return hashBikeCode;
     }
 
-    public void setHashCode(String hashCode) {
-        this.hashCode = hashCode;
+    public void setHashBikeCode(String hashBikeCode) {
+        this.hashBikeCode = hashBikeCode;
     }
 
     @Basic
@@ -108,6 +109,16 @@ public class BikeEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    @Basic
+    @Column(name = "version")
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     @Override
@@ -122,13 +133,13 @@ public class BikeEntity {
                 Objects.equals(price, that.price) &&
                 Objects.equals(categoryId, that.categoryId) &&
                 Objects.equals(description, that.description) &&
-                Objects.equals(hashCode, that.hashCode) &&
+                Objects.equals(hashBikeCode, that.hashBikeCode) &&
                 Objects.equals(status, that.status);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, url, brand, price, categoryId, description, hashCode, status);
+        return Objects.hash(name, brand, categoryId, description, status);
     }
 
     @ManyToOne
@@ -160,10 +171,9 @@ public class BikeEntity {
                 ", price='" + price + '\'' +
                 ", categoryId=" + categoryId +
                 ", description='" + description + '\'' +
-                ", hashCode='" + hashCode + '\'' +
+                ", hashBikeCode='" + hashBikeCode + '\'' +
                 ", status='" + status + '\'' +
-                ", categoryByCategoryId=" + categoryByCategoryId +
-                ", imagesById=" + imagesById +
+                ", version='" + version + '\'' +
                 '}';
     }
 }
