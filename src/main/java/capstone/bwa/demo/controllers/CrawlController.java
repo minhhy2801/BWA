@@ -95,7 +95,7 @@ public class CrawlController {
                 ImageEntity imageEntity = entry.getValue();
                 addNewProduct = true;
                 if (imageEntity.getUrl().equals("")) {
-//                    addNewProduct = false;
+                    addNewProduct = false;
                 } else {
                     for (AccessoryEntity accessory : listExitAccessory) {
                         if (accessory.getHashAccessoryCode().equals(newAccessory.getHashAccessoryCode())) {
@@ -111,9 +111,8 @@ public class CrawlController {
                     newAccessory.setCategoryId(categoryID);
                     accessoryRepository.saveAndFlush(newAccessory);
                     newAccessory = accessoryRepository.findByHashAccessoryCode(entry.getKey().getHashAccessoryCode());
+                    imageEntity.setOwnId(newAccessory.getId());
                     imageEntity.setAccessoryByOwnId(newAccessory);
-                    System.out.println("Accessory: " + imageEntity.getAccessoryByOwnId().getId());
-                    System.out.println("Image: " + imageEntity);
                     imageRepository.saveAndFlush(imageEntity);
                 }
             }

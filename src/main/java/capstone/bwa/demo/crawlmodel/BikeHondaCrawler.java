@@ -19,8 +19,8 @@ public class BikeHondaCrawler {
 
     Map<BikeEntity, ImageEntity> bikeList;
     Map<String, Map<AccessoryEntity, ImageEntity>> categoryMapping;
-    Map<String, Map<String,String>> categogyAndProduct;
-    Map<String,String> linkAndName;
+    Map<String, Map<String, String>> categogyAndProduct;
+    Map<String, String> linkAndName;
 
     public BikeHondaCrawler() {
         bikeList = new HashMap<>();
@@ -66,7 +66,7 @@ public class BikeHondaCrawler {
             for (Element element : e.select(".item")) {
                 link = element.select("a").attr("href");
                 name = element.select(".name").text();
-                if (!link.equals("https://hondaxemay.com.vn/hondamoto")){
+                if (!link.equals("https://hondaxemay.com.vn/hondamoto")) {
                     linkAndName.put(link, name);
                 }
             }
@@ -105,43 +105,11 @@ public class BikeHondaCrawler {
     }
 
     private void getAccessoryFromHonda() throws IOException {
-        List<String> pageList = new ArrayList<>();
-        Map<String, String> categoryList = new HashMap<>();
+        List<String> pageList = getLinkList();
+        Map<String, String> categoryList = getListCategorys();
         String key, value, categoryName = "";
+        Map<String, List<String>> categogyAndAccessoryLink = new HashMap<>();
         //Get list Category in each crawl page.
-        List<String> page = getAllProductLinks("https://hondaxemay.com.vn/phukien/phu-kien-xe-may", "a.link", "href");
-        for (String url : page) {
-            if (url.contains("http")) {
-                Document doc = Jsoup.connect(url).get();
-                Elements categoryBox = doc.select(".sel_filter_tax");
-                for (Element e : categoryBox.select("option")) {
-                    key = e.attr("value");
-                    if (!key.equals("0")) {
-                        value = e.text();
-                        categoryList.put(key, value);
-                    }
-                }
-            }
-        }
-        //Add link use to crawl
-        //Xe tay ga
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3720");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3722");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3721");
-        //Xe so
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3721");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3720");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3722");
-        //Xe con
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3722");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3721");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3720");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3719");
-        //Xe moto
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3721");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3722");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3720");
-        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3719");
         for (String url : pageList) {
             if (url.contains("http")) {
                 List<String> accessoryUrls = getAllProductLinks(url, "a.btn", "href");
@@ -150,6 +118,13 @@ public class BikeHondaCrawler {
                     if (url.contains(categoryEntry.getKey())) {
                         categoryName = categoryEntry.getValue();
                     }
+                }
+
+                if (categogyAndAccessoryLink.keySet().contains(categoryName)) {
+                    accessoryUrls.addAll(categogyAndAccessoryLink.get(categoryName));
+                    categogyAndAccessoryLink.replace(categoryName, accessoryUrls);
+                } else {
+                    categogyAndAccessoryLink.put(categoryName, accessoryUrls);
                 }
                 Map<AccessoryEntity, ImageEntity> accessoryList = new HashMap<>();
                 for (String accessoryUrl : accessoryUrls) {
@@ -189,10 +164,54 @@ public class BikeHondaCrawler {
                         newAccessory.setHashAccessoryCode(hashCode);
                         accessoryList.put(newAccessory, newImageEntity);
                     }
+                    categoryMapping.put(categoryName, accessoryList);
                 }
-                categoryMapping.put(categoryName, accessoryList);
             }
         }
+    }
+
+    private List<String> getLinkList() {
+        List<String> pageList = new ArrayList<>();
+        //Add link use to crawl
+        //Xe tay ga
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3720");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3722");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3721");
+        //Xe so
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3721");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3720");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3722");
+        //Xe con
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3722");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3721");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3720");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3719");
+        //Xe moto
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3721");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3722");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3720");
+        pageList.add("https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3719");
+        return pageList;
+    }
+
+    private Map<String, String> getListCategorys() throws IOException {
+        Map<String, String> categoryList = new HashMap<>();
+        String key, value;
+        List<String> page = getAllProductLinks("https://hondaxemay.com.vn/phukien/phu-kien-xe-may", "a.link", "href");
+        for (String url : page) {
+            if (url.contains("http")) {
+                Document doc = Jsoup.connect(url).get();
+                Elements categoryBox = doc.select(".sel_filter_tax");
+                for (Element e : categoryBox.select("option")) {
+                    key = e.attr("value");
+                    if (!key.equals("0")) {
+                        value = e.text();
+                        categoryList.put(key, value);
+                    }
+                }
+            }
+        }
+        return categoryList;
     }
 
     private List<String> getDataByAttr(Elements elements, String attr) {
