@@ -1,6 +1,10 @@
 package capstone.bwa.demo.entities;
 
 import capstone.bwa.demo.entities.*;
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
 
 import javax.persistence.*;
 import java.util.Objects;
@@ -8,7 +12,9 @@ import java.util.Objects;
 @Entity
 @Table(name = "Image", schema = "dbo", catalog = "BikeWorldDB")
 public class ImageEntity {
+    @JsonView(View.IEventDetail.class)
     private int id;
+    @JsonView(View.IEventDetail.class)
     private String url;
     private String type;
     private String status;
@@ -18,9 +24,12 @@ public class ImageEntity {
     private EventEntity eventByOwnId;
     private NewsEntity newsByOwnId;
     private SupplyProductEntity supplyProductByOwnId;
+    private int ownId;
+
 
     @Id
     @Column(name = "id")
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     public int getId() {
         return id;
     }
@@ -75,7 +84,9 @@ public class ImageEntity {
         return Objects.hash(id, url, type, status);
     }
 
-    @ManyToOne
+    // mặc định eager load nên nó load tất cả entity có liên quan
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccessoryEntity getAccessoryByOwnId() {
         return accessoryByOwnId;
@@ -84,8 +95,9 @@ public class ImageEntity {
     public void setAccessoryByOwnId(AccessoryEntity accessoryByOwnId) {
         this.accessoryByOwnId = accessoryByOwnId;
     }
-//
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByOwnId() {
         return accountByOwnId;
@@ -94,9 +106,10 @@ public class ImageEntity {
     public void setAccountByOwnId(AccountEntity accountByOwnId) {
         this.accountByOwnId = accountByOwnId;
     }
-//
-    @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public BikeEntity getBikeByOwnId() {
         return bikeByOwnId;
     }
@@ -104,9 +117,10 @@ public class ImageEntity {
     public void setBikeByOwnId(BikeEntity bikeByOwnId) {
         this.bikeByOwnId = bikeByOwnId;
     }
-//
-    @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public EventEntity getEventByOwnId() {
         return eventByOwnId;
     }
@@ -114,9 +128,11 @@ public class ImageEntity {
     public void setEventByOwnId(EventEntity eventByOwnId) {
         this.eventByOwnId = eventByOwnId;
     }
-//
-    @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+
+    //
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public NewsEntity getNewsByOwnId() {
         return newsByOwnId;
     }
@@ -125,13 +141,24 @@ public class ImageEntity {
         this.newsByOwnId = newsByOwnId;
     }
 
-    @ManyToOne
-    @JoinColumn(name = "ownId", referencedColumnName = "id",insertable = false, updatable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
+    @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public SupplyProductEntity getSupplyProductByOwnId() {
         return supplyProductByOwnId;
     }
 
     public void setSupplyProductByOwnId(SupplyProductEntity supplyProductByOwnId) {
         this.supplyProductByOwnId = supplyProductByOwnId;
+    }
+
+    @Basic
+    @Column(name = "ownId")
+    public int getOwnId() {
+        return ownId;
+    }
+
+    public void setOwnId(int ownId) {
+        this.ownId = ownId;
     }
 }

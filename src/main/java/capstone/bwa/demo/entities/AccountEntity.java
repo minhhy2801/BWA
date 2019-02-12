@@ -12,8 +12,10 @@ import java.util.Objects;
 public class AccountEntity {
     @JsonView(View.IAccountProfile.class)
     private int id;
-    @JsonView(View.IAccountProfile.class)
+    @JsonView({View.IAccountProfile.class,
+            View.IEventDetail.class})
     private String name;
+
     @JsonView(View.IAccountProfile.class)
     private String phone;
     private String password;

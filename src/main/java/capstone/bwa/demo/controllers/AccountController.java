@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +24,7 @@ public class AccountController {
     @Autowired
     private AccountRepository accountRepository;
 
-    @PostMapping("sign_up/verificationCode")
+    @PostMapping("send_verify_code")
     public ResponseEntity sendCode(@RequestBody Map<String, String> body) throws IOException {
         String phone = body.get("phone");
         //create random number verify code
@@ -46,6 +45,7 @@ public class AccountController {
         return new ResponseEntity(result, HttpStatus.ACCEPTED);
     }
 
+    
 
     @PostMapping("sign_up")
     public ResponseEntity signUpAccount(@RequestBody Map<String, String> body) {

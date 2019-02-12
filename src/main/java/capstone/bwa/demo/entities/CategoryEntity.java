@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -8,6 +11,7 @@ import java.util.Objects;
 @Table(name = "Category", schema = "dbo", catalog = "BikeWorldDB")
 public class CategoryEntity {
     private int id;
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String name;
     private String type;
     private String status;

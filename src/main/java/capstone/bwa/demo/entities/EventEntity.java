@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -7,32 +10,53 @@ import java.util.Objects;
 @Entity
 @Table(name = "Event", schema = "dbo", catalog = "BikeWorldDB")
 public class EventEntity {
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private int id;
     private Integer creatorId;
     private Integer approvedId;
     private Integer categoryId;
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String imgThumbnailUrl;
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String title;
+    @JsonView(View.IEventDetail.class)
     private String description;
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String location;
+    @JsonView(View.IEventDetail.class)
     private String priceTicket;
+    @JsonView(View.IEventDetail.class)
     private Integer minTicket;
+    @JsonView(View.IEventDetail.class)
     private Integer maxTicket;
     private String createdTime;
+    @JsonView(View.IEventDetail.class)
     private String approvedTime;
+    @JsonView(View.IEventDetail.class)
     private String startTime;
+    @JsonView(View.IEventDetail.class)
     private String endTime;
+    @JsonView(View.IEventDetail.class)
     private String publicTime;
+    @JsonView(View.IEventDetail.class)
     private String startRegisterTime;
+    @JsonView(View.IEventDetail.class)
     private String endRegisterTime;
+    @JsonView(View.IEventDetail.class)
     private Integer totalSoldTicket;
+    @JsonView(View.IEventDetail.class)
     private Integer totalFeedback;
+    @JsonView(View.IEventDetail.class)
     private String totalRate;
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String status;
+    @JsonView(View.IEventDetail.class)
     private AccountEntity accountByCreatorId;
     private AccountEntity accountByApprovedId;
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private CategoryEntity categoryByCategoryId;
     private Collection<EventRegisteredEntity> eventRegisteredsById;
+    @JsonView(View.IEventDetail.class)
     private Collection<ImageEntity> imagesById;
 
     @Id
@@ -291,7 +315,7 @@ public class EventEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "creatorId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "creatorId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByCreatorId() {
         return accountByCreatorId;
     }
@@ -301,7 +325,7 @@ public class EventEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "approvedId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "approvedId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByApprovedId() {
         return accountByApprovedId;
     }
@@ -311,7 +335,7 @@ public class EventEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "categoryId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "categoryId", referencedColumnName = "id", insertable = false, updatable = false)
     public CategoryEntity getCategoryByCategoryId() {
         return categoryByCategoryId;
     }
