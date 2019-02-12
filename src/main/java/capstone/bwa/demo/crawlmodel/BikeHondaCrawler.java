@@ -2,31 +2,30 @@ package capstone.bwa.demo.crawlmodel;
 
 import capstone.bwa.demo.entities.AccessoryEntity;
 import capstone.bwa.demo.entities.BikeEntity;
-import capstone.bwa.demo.entities.CategoryEntity;
 import capstone.bwa.demo.entities.ImageEntity;
-import capstone.bwa.demo.repositories.CategoryRepository;
 import com.google.gson.Gson;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.*;
 import java.util.*;
 
 public class BikeHondaCrawler {
 
-    Map<BikeEntity, ImageEntity> bikeList;
-    Map<String, Map<AccessoryEntity, ImageEntity>> categoryMapping;
-    Map<String, Map<String, String>> categogyAndProduct;
-    Map<String, String> linkAndName;
+    private Map<BikeEntity, ImageEntity> bikeList;
+    private Map<String, Map<AccessoryEntity, ImageEntity>> categoryMapping;
+    private Map<String, Map<String, String>> categoryAndProduct;
+    private Map<String, String> linkAndName;
+    private Map<String, Map<String, String>> mapBikeAndVersion;
 
     public BikeHondaCrawler() {
         bikeList = new HashMap<>();
         categoryMapping = new HashMap<>();
-        categogyAndProduct = new HashMap<>();
+        categoryAndProduct = new HashMap<>();
         linkAndName = new HashMap<>();
+        mapBikeAndVersion = new HashMap<>();
     }
 
     public Map<BikeEntity, ImageEntity> getBikeList() {
@@ -37,8 +36,12 @@ public class BikeHondaCrawler {
         return categoryMapping;
     }
 
-    public Map<String, Map<String, String>> getCategogyAndProduct() {
-        return categogyAndProduct;
+    public Map<String, Map<String, String>> getMapBikeAndVersion() {
+        return mapBikeAndVersion;
+    }
+
+    public Map<String, Map<String, String>> getCategoryAndProduct() {
+        return categoryAndProduct;
     }
 
     public void crawlBike() {
@@ -60,45 +63,85 @@ public class BikeHondaCrawler {
     private void getBikeFromHonda() throws IOException {
         Document doc = Jsoup.connect("https://hondaxemay.com.vn/san-pham/").get();
         Elements elements = doc.select(".menu-sanpham");
-        String key, link, name;
+        String catelogyName, link, name;
+        List<Document> listDocuments = new ArrayList<>();
         for (Element e : elements.select(".item-wrp")) {
-            key = e.select(".type").first().text();
+            catelogyName = e.select(".type").first().text();
             for (Element element : e.select(".item")) {
                 link = element.select("a").attr("href");
-                name = element.select(".name").text();
+                name = element.select("p").text();
                 if (!link.equals("https://hondaxemay.com.vn/hondamoto")) {
                     linkAndName.put(link, name);
                 }
             }
-            categogyAndProduct.put(key, linkAndName);
+            categoryAndProduct.put(catelogyName, linkAndName);
         }
 
         for (String url : linkAndName.keySet()) {
             //--Check if url is true and remove url: https://hondaxemay.com.vn/hondamoto
             if (url.contains("http")) {
                 doc = Jsoup.connect(url).get();
+                listDocuments.add(doc);
                 BikeEntity newBike = getBike(url, "Honda");
                 ImageEntity newImage = getProductImages("Bike");
+                //get Description
+                Map<String, Object> infor = new HashMap<>();
+                Map<String, String> inforDetail = new HashMap<>();
+                String key, value;
+                //Dac diem noi bat
+                elements = getContentFromDoc(doc, ".op-toggle");
+                for (Element e : elements) {
+                    key = e.select("a").attr("data-title");
+                    value = e.select("a").attr("data-description").replace("<p>", "").replace("</p>", "");
+                    inforDetail.put(key, value);
+                }
+                key = "outstanding features";
+                infor.put(key, inforDetail);
+                //Thong so ky thuat
                 elements = getContentFromDoc(doc, ".wrap-spec");
-                newBike.setDescription(getDataByTag(elements, "td").toString());
+                inforDetail = new HashMap<>();
+                for (Element e : elements.select("tr")) {
+                    key = e.selectFirst("td:eq(0)").text();
+                    value = e.selectFirst("td:eq(1)").text();
+                    if (!key.equals("Dung tích nhớt máy")) {
+                        inforDetail.put(key, value);
+                    }
+                }
+                key = "technical specifications";
+                infor.put(key, inforDetail);
+                Gson gson = new Gson();
+                String json = gson.toJson(infor);
+                newBike.setDescription(json);
+                //Get Version and Price
+                inforDetail = new HashMap<>();
                 elements = getContentFromDoc(doc, ".wrap-color");
-                String data = getDataByDiv(elements, ".color-title") + "\n";
-                elements = getElementsFromElements(elements, ".price");
-                data += getDataByDiv(elements, ".text");
-                newBike.setPrice(data);
-                data = newBike.hashCode() + "";
-                newBike.setHashBikeCode(data);
-                List<String> imageList = new ArrayList<>();
+                for (Element e : elements.select(".box")) {
+                    key = e.select(".color-title").text();
+                    value = e.select(".data_version").first().text();
+                    inforDetail.put(key, value);
+                    mapBikeAndVersion.put(url, inforDetail);
+                }
+
+                //get Image
+                List<String> imageList;
+                Map<String, List<String>> imageJson = new HashMap<>();
                 //"ProductDetail"
+                key = "ProductDetail";
                 elements = getContentFromDoc(doc, ".option-img");
                 imageList = getDataByAttr(elements, "abs:data-img");
+                imageJson.put(key, imageList);
                 //"ColorDetail"
+                imageJson.put(key, imageList);
                 elements = getContentFromDoc(doc, "div.no-360 img[src]");
                 imageList.addAll(getDataByAttr(elements, "src"));
+                imageJson.put(key, imageList);
                 //"Gallery"
+                key = "Gallery";
                 elements = getContentFromDoc(doc, "div.gallery-item img[src]");
                 imageList.addAll(getDataByAttr(elements, "src"));
-                newImage.setUrl(imageList.toString());
+                imageJson.put(key, imageList);
+                json = gson.toJson(imageJson);
+                newImage.setUrl(json);
                 bikeList.put(newBike, newImage);
             }
         }
@@ -226,34 +269,23 @@ public class BikeHondaCrawler {
         String data = "";
         for (Element element : elements.select(divClass)) {
             if (!data.contains(element.text())) {
-                data += element.text();
+                data = element.text();
             }
         }
         return data;
     }
 
-    private List<String> getDataByTag(Elements elements, String attr) {
-        List<String> data = new ArrayList<>();
-        for (Element element : elements.select(attr)) {
-            data.add(element.text());
-        }
-        return data;
-    }
-
     private Elements getContentFromDoc(Document doc, String selector) {
-        Elements elements = doc.select(selector);
-        return elements;
+        return doc.select(selector);
     }
 
     private Elements getElementsFromElements(Elements elements, String selector) {
-        Elements content = elements.select(selector);
-        return content;
+        return elements.select(selector);
     }
 
     private Elements getElements(String url, String selector) throws IOException {
         Document doc = Jsoup.connect(url).get();
-        Elements elements = doc.select(selector);
-        return elements;
+        return doc.select(selector);
     }
 
     private List<String> getAllProductLinks(String url, String selector, String attr) throws IOException {

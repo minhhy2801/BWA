@@ -139,7 +139,7 @@ public class BikeEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, brand, categoryId, description, status);
+        return Objects.hash(name, brand, categoryId, description, version, status);
     }
 
     @ManyToOne

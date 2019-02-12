@@ -1,20 +1,14 @@
 package capstone.bwa.demo.controllers;
 
-import capstone.bwa.demo.View.ViewsAccessory;
 import capstone.bwa.demo.crawlmodel.BikeHondaCrawler;
 import capstone.bwa.demo.entities.*;
 import capstone.bwa.demo.repositories.*;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +34,7 @@ public class CrawlController {
         BikeHondaCrawler crawlBikeHonda = new BikeHondaCrawler();
         crawlBikeHonda.crawlBike();
         Map<BikeEntity, ImageEntity> listNewBike = crawlBikeHonda.getBikeList();
+        Map<String, Map<String, String>> mapBikeAndVersion = crawlBikeHonda.getMapBikeAndVersion();
         if (listNewBike.size() == 0) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
@@ -55,21 +50,28 @@ public class CrawlController {
                 }
             }
             if (addNewProduct) {
-                Map<String, Map<String, String>> categoryMap = crawlBikeHonda.getCategogyAndProduct();
+                Map<String, String> versionAndPrice = mapBikeAndVersion.get(newBike.getUrl());
+                Map<String, Map<String, String>> categoryMap = crawlBikeHonda.getCategoryAndProduct();
                 for (Map.Entry<String, Map<String, String>> mapEntry : categoryMap.entrySet()) {
                     Map<String, String> linkAndName = mapEntry.getValue();
                     if (mapEntry.getValue().keySet().contains(newBike.getUrl())) {
                         int categoryId = checkCategory(mapEntry.getKey());
                         newBike.setCategoryId(categoryId);
                     }
-                    for (Map.Entry<String, String> linkName : linkAndName.entrySet()) {
-                        newBike.setName(linkName.getValue());
-                        bikeRepository.saveAndFlush(newBike);
-                        BikeEntity bikeOwn = bikeRepository.findByHashBikeCode(newBike.getHashBikeCode());
-                        imageEntity.setBikeByOwnId(bikeOwn);
-                        imageRepository.saveAndFlush(imageEntity);
-                    }
+                    String name = linkAndName.get(newBike.getUrl());
+                    newBike.setName(name);
                 }
+                for (Map.Entry<String, String> version : versionAndPrice.entrySet()) {
+                    newBike.setVersion(version.getKey());
+                    newBike.setPrice(version.getValue());
+                    String hashCode = newBike.hashCode() + "";
+                    newBike.setHashBikeCode(hashCode);
+                    bikeRepository.saveAndFlush(newBike);
+                }
+                BikeEntity bikeOwn = bikeRepository.findByHashBikeCode(newBike.getHashBikeCode());
+                imageEntity.setOwnId(bikeOwn.getId());
+                imageEntity.setBikeByOwnId(bikeOwn);
+                imageRepository.saveAndFlush(imageEntity);
             }
         }
         return new ResponseEntity(bikeRepository.findAll(), HttpStatus.OK);
@@ -84,7 +86,6 @@ public class CrawlController {
         for (Map.Entry<String, Map<AccessoryEntity, ImageEntity>> mapping : categoryMapping.entrySet()) {
             categoryID = checkCategory(mapping.getKey());
             Map<AccessoryEntity, ImageEntity> listNewAccessory = mapping.getValue();
-            System.out.println("Size: " + listNewAccessory.size());
             if (listNewAccessory.size() == 0) {
                 return new ResponseEntity(HttpStatus.BAD_REQUEST);
             }
