@@ -32,14 +32,14 @@ public class AccessoryController {
     ImageRepository imageRepository;
 
     @JsonView(ViewsAccessory.IListAccessories.class)
-    @GetMapping("getAllAccessory")
+    @GetMapping("accessories")
     public ResponseEntity getAllAccessory() {
         List<AccessoryEntity> accessoryEntityList = accessoryRepository.findAll();
         return new ResponseEntity(accessoryEntityList, HttpStatus.OK);
     }
 
     @JsonView(ViewsAccessory.IAccessory.class)
-    @GetMapping("{id}")
+    @GetMapping("accessory/{id}")
     public ResponseEntity getAccessory(@PathVariable int id) {
         AccessoryEntity accessoryEntity = accessoryRepository.findById(id);
         if (accessoryEntity != null) {

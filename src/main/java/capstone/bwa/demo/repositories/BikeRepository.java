@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface BikeRepository extends JpaRepository<BikeEntity,Integer> {
     BikeEntity findByHashBikeCode(String hashcode);
+    BikeEntity findByVersion(String url);
 }
