@@ -24,8 +24,8 @@ public class SupplyProductController {
      *
      * }
      */
-    @GetMapping("supply_posts/limit/{quantity}/status")
-    public ResponseEntity getListSupplyPosts(@PathVariable int quantity, @RequestBody Map<String, String> body) {
+    @GetMapping("supply_posts/page/{id}/limit/{quantity}")
+    public ResponseEntity getListSupplyPosts(@PathVariable int quantity, @PathVariable int id, @RequestBody Map<String, String> body) {
         return null;
     }
 

@@ -1,12 +1,16 @@
 package capstone.bwa.demo.controllers;
 
 
+import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.entities.EventEntity;
+import capstone.bwa.demo.entities.ImageEntity;
 import capstone.bwa.demo.exceptions.CustomException;
+import capstone.bwa.demo.repositories.AccountRepository;
 import capstone.bwa.demo.repositories.EventRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
+import okhttp3.internal.Internal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -36,9 +41,16 @@ public class EventController {
     private final String finished = "FINISHED";
     private final String reject = "REJECT";
     private final String hidden = "HIDDEN";
+    private final String getAll = "ALL";
+    private final String roleUser = "USER";
+    private final String roleAdmin = "ADMIN";
+    private final String accountStatus = "ACTIVE";
+
 
     @Autowired
     private EventRepository eventRepository;
+    @Autowired
+    private AccountRepository accountRepository;
     @Autowired
     private ImageRepository imageRepository;
 
@@ -70,15 +82,12 @@ public class EventController {
     @JsonView(View.IEventDetail.class)
     @GetMapping("event/{id}")
     public ResponseEntity getAnEvent(@PathVariable int id) {
-        EventEntity entity = eventRepository.getOne(id);
-        if (entity == null) {
-            return new ResponseEntity(HttpStatus.NOT_FOUND);
-        }
+        EventEntity entity = eventRepository.findById(id);
+        if (entity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (entity.getStatus().equals(pending) || entity.getStatus().equals(reject)
-                || entity.getStatus().equals(hidden)) {
+                || entity.getStatus().equals(hidden))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
-        }
 
         // compare public time & current time
         try {
@@ -127,15 +136,17 @@ public class EventController {
      */
     @JsonView(View.IEvents.class)
     @GetMapping("events/page/{id}/limit/{quantity}")
-    public ResponseEntity getListEvents(@PathVariable int id, @PathVariable int quantity, @RequestBody Map<String, String> body) {
+    public ResponseEntity getListEvents(@PathVariable int id, @PathVariable int quantity,
+                                        @RequestBody Map<String, String> body) {
         String status = body.get("status");
+        if (body.isEmpty()) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        if(status.equals(hidden) || status.equals(reject) || status.equals(pending))
+        if (status.equals(hidden) || status.equals(reject) || status.equals(pending))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
 
         // number of page with n elements
         Pageable pageWithElements = PageRequest.of(id, quantity);
-        List<EventEntity> list = eventRepository.findAllByStatus(status, pageWithElements);
+        List<EventEntity> list = eventRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
         if (list.size() < 1) {
             return new ResponseEntity(HttpStatus.NOT_FOUND);
         }
@@ -153,9 +164,68 @@ public class EventController {
      */
 
     @PostMapping("user/{id}/event")
-    public ResponseEntity createAnEvent(@PathVariable int id, @RequestBody Map<String, String> body) {
+    public ResponseEntity createAnEvent(@PathVariable int id, @RequestBody Map<String, String> body
+    ) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (body.isEmpty()) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        return null;
+        if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
+                accountEntity.getStatus().equals(accountStatus)) {
+            int cateId = Integer.parseInt(body.get("categoryId"));
+            String imgThumbnail = body.get("imgThumbnailUrl");
+            String title = body.get("title");
+            String description = body.get("description");
+            String location = body.get("location");
+            String priceTicket = body.get("priceTicket");
+            int minTicket = Integer.parseInt(body.get("minTicket"));
+            int maxTicket = Integer.parseInt(body.get("maxTicket"));
+            String createdTime = body.get("createdTime");
+            String startSignUpTime = body.get("startRegisterTime");
+            String endSignUpTime = body.get("endRegisterTime");
+            String startEventTime = body.get("startTime");
+            String endEventTime = body.get("endTime");
+            String publicTime = body.get("publicTime");
+            String img = body.get("images").trim();
+
+            //
+            EventEntity eventEntity = new EventEntity();
+            eventEntity.setCreatorId(id);
+            eventEntity.setCategoryId(cateId);
+            eventEntity.setTitle(title);
+            eventEntity.setImgThumbnailUrl(imgThumbnail);
+            eventEntity.setDescription(description);
+            eventEntity.setLocation(location);
+            eventEntity.setPriceTicket(priceTicket);
+            eventEntity.setMinTicket(minTicket);
+            eventEntity.setMaxTicket(maxTicket);
+
+            eventEntity.setCreatedTime(createdTime);
+            eventEntity.setStartRegisterTime(startSignUpTime);
+            eventEntity.setEndRegisterTime(endSignUpTime);
+            eventEntity.setStartTime(startEventTime);
+            eventEntity.setEndTime(endEventTime);
+            eventEntity.setPublicTime(publicTime);
+            eventEntity.setStatus(pending);
+            eventRepository.saveAndFlush(eventEntity);
+
+//            System.out.println(img);
+            String tmp = img.replace("[", "").replace("]", "").trim();
+//            System.out.println(img);
+            String[] arr = tmp.split(",");
+//            System.out.println(arr);
+            for (int i = 0; i < arr.length; i++) {
+                ImageEntity imageEntity = new ImageEntity();
+                imageEntity.setUrl(arr[i].trim());
+                imageEntity.setOwnId(eventEntity.getId());
+                imageEntity.setType("EVENT");
+                imageRepository.save(imageEntity);
+//                System.out.println("url " + imageEntity.getUrl());
+            }
+
+            return new ResponseEntity(eventEntity, HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -211,34 +281,25 @@ public class EventController {
      * totalSoldTicket, totalFeedback, totalRate
      * }
      */
+    @JsonView(View.IEvents.class)
+    @GetMapping("user/{id}/events/page/{pageId}/limit/{quantity}")
+    public ResponseEntity getListEventsByUserIdNStatus(@PathVariable int id, @PathVariable int quantity,
+                                                       @PathVariable int pageId, @RequestBody Map<String, String> body) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
 
-    @GetMapping("user/{id}/events/limit/{quantity}/status")
-    public ResponseEntity getListEventsByUserIdNStatus(@PathVariable int id, @PathVariable int quantity, @RequestBody Map<String, String> body) {
+        Pageable pageWithElements = PageRequest.of(pageId, quantity);
+        List<EventEntity> list = null;
+        String status = body.get("status");
+        if (status.equals(getAll)) {
+            list = eventRepository.findAllByCreatorIdOrderByIdDesc(id, pageWithElements);
+        } else {
+            list = eventRepository.findAllByCreatorIdAndStatusOrderByIdDesc(id, pageWithElements, status);
+        }
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        return null;
-    }
-
-    /**
-     * Returns list Events object by status, quantity
-     * list event của user đó. Nếu status = ALL -> k xét status
-     *
-     * @return 404 if not found in db
-     * 200 if found
-     * @apiNote example format:
-     * {
-     * creatorName, categoryName, thumbnailUrl, title, location, createTime, status, publicTime
-     * }
-     * if event status finished
-     * @apiNote example format:
-     * add more
-     * {
-     * totalSoldTicket, totalFeedback, totalRate
-     * }
-     */
-    @GetMapping("user/events/limit/{quantity}/status")
-    public ResponseEntity getListEventsByStatus(@PathVariable int quantity, @RequestBody Map<String, String> body) {
-
-        return null;
+        return new ResponseEntity(list, HttpStatus.OK);
     }
 
 }
