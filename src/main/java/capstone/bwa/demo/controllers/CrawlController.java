@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,6 +43,8 @@ public class CrawlController {
             addBike(5,listBike);
             listBike = crawler.getListXeSo();
             addBike(7,listBike);
+            listBike = crawler.getListXeMoTo();
+            addBike(8,listBike);
         }catch (IOException e){
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
@@ -94,23 +95,23 @@ public class CrawlController {
         return new ResponseEntity(accessoryRepository.findAll(), HttpStatus.OK);
     }
 
-    @GetMapping("test")
-    public ResponseEntity insertNews(){
-        BikeHondaCrawler crawler = new BikeHondaCrawler();
-        List<Map<String,String>> listBike = new ArrayList<>();
-        try {
-            crawler.getBikeFromHonda();
-            listBike = crawler.getListXeTayGa();
-            addBike(6,listBike);
-            listBike = crawler.getListXeCon();
-            addBike(5,listBike);
-            listBike = crawler.getListXeSo();
-            addBike(7,listBike);
-        }catch (IOException e){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
-        return new ResponseEntity(bikeRepository.findAll(),HttpStatus.OK);
-    }
+//    @GetMapping("test")
+//    public ResponseEntity insertNews(){
+//        BikeHondaCrawler crawler = new BikeHondaCrawler();
+//        List<Map<String,String>> listBike = new ArrayList<>();
+//        try {
+//            crawler.getBikeFromHonda();
+//            listBike = crawler.getListXeTayGa();
+//            addBike(6,listBike);
+//            listBike = crawler.getListXeCon();
+//            addBike(5,listBike);
+//            listBike = crawler.getListXeSo();
+//            addBike(7,listBike);
+//        }catch (IOException e){
+//            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+//        }
+//        return new ResponseEntity(bikeRepository.findAll(),HttpStatus.OK);
+//    }
 
     private int checkCategory(String categogyName) {
         int categoryID;
@@ -140,14 +141,36 @@ public class CrawlController {
             newBike.setPrice(bikeDetail.get("price"));
             String hashAccessoryCode = newBike.hashCode()+"";
             newBike.setHashBikeCode(hashAccessoryCode);
-            bikeRepository.saveAndFlush(newBike);
-            BikeEntity ownBike = bikeRepository.findByHashBikeCode(hashAccessoryCode);
-            ImageEntity newImage = new ImageEntity();
-            newImage.setUrl(bikeDetail.get("image"));
-            newImage.setOwnId(ownBike.getId());
-            newImage.setStatus("NEW");
-            newImage.setType("Bike");
-            imageRepository.saveAndFlush(newImage);
+            boolean addBike = checkDuplicateBike(newBike);
+            if (addBike){
+                bikeRepository.saveAndFlush(newBike);
+                BikeEntity ownBike = bikeRepository.findByHashBikeCode(hashAccessoryCode);
+                ImageEntity newImage = new ImageEntity();
+                newImage.setUrl(bikeDetail.get("image"));
+                newImage.setOwnId(ownBike.getId());
+                newImage.setStatus("NEW");
+                newImage.setType("Bike");
+                imageRepository.saveAndFlush(newImage);
+            }
         }
+    }
+
+    private boolean checkDuplicateBike(BikeEntity newBike){
+        List<BikeEntity> listExitBikes = bikeRepository.findAll();
+        for (BikeEntity bikeEntity:listExitBikes){
+            int exit = Integer.parseInt(bikeEntity.getHashBikeCode());
+            int bike = Integer.parseInt(newBike.getHashBikeCode());
+            if (exit == bike) {
+                if (!bikeEntity.getUrl().equals(newBike.getUrl()) || !bikeEntity.getDescription().
+                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())){
+                    bikeEntity.setPrice(newBike.getPrice());
+                    bikeEntity.setDescription(newBike.getDescription());
+                    bikeEntity.setUrl(newBike.getUrl());
+                    bikeRepository.saveAndFlush(bikeEntity);
+                }
+                return false;
+            }
+        }
+        return true;
     }
 }

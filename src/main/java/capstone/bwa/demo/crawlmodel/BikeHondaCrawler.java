@@ -14,23 +14,23 @@ import java.util.*;
 
 public class BikeHondaCrawler {
 
-    private Map<BikeEntity, ImageEntity> bikeList;
     private Map<String, Map<AccessoryEntity, ImageEntity>> categoryMappingAccessories;
-    private Map<String, List<BikeEntity>> categoryMappingBike;
-    private Map<String, Map<String, String>> mapBikeAndVersionPrice;
 
     private List<Map<String, String>> listXeTayGa;
     private List<Map<String, String>> listXeSo;
     private List<Map<String, String>> listXeCon;
+    private List<Map<String, String>> listXeMoTo;
 
     public BikeHondaCrawler() {
-        bikeList = new HashMap<>();
         categoryMappingAccessories = new HashMap<>();
-        mapBikeAndVersionPrice = new HashMap<>();
-        categoryMappingBike = new HashMap<>();
         listXeTayGa = new ArrayList<>();
         listXeCon = new ArrayList<>();
         listXeSo = new ArrayList<>();
+        listXeMoTo = new ArrayList<>();
+    }
+
+    public List<Map<String, String>> getListXeMoTo() {
+        return listXeMoTo;
     }
 
     public List<Map<String, String>> getListXeTayGa() {
@@ -54,27 +54,16 @@ public class BikeHondaCrawler {
         }
     }
 
-    public Map<BikeEntity, ImageEntity> getBikeList() {
-        return bikeList;
-    }
-
-    public Map<String, List<BikeEntity>> getCategoryMappingBike() {
-        return categoryMappingBike;
-    }
 
     public Map<String, Map<AccessoryEntity, ImageEntity>> getCategoryMappingAccessories() {
         return categoryMappingAccessories;
-    }
-
-    public Map<String, Map<String, String>> getMapBikeAndVersionPrice() {
-        return mapBikeAndVersionPrice;
     }
 
     public void crawlBike() {
         try {
             getBikeFromHonda();
         } catch (Exception e) {
-            bikeList.clear();
+
         }
     }
 
@@ -90,9 +79,17 @@ public class BikeHondaCrawler {
         List<String> linkXeTayGa = new ArrayList<>();
         List<String> linkXeSo = new ArrayList<>();
         List<String> linkXeConTay = new ArrayList<>();
+        List<String> linkXeMoTo = new ArrayList<>();
         String link;
+        Document docMoTo = Jsoup.connect("https://hondaxemay.com.vn/hondamoto/san-pham").get();
+        Elements elements = docMoTo.select(".product_list");
+        for (Element e:elements.select("a.btn")){
+            link = e.attr("href");
+            linkXeMoTo.add(link);
+        }
+//        System.out.println(linkXeMoTo.toString());
         Document doc = Jsoup.connect("https://hondaxemay.com.vn/san-pham/").get();
-        Elements elements = doc.select("div.tabs-content.clearfix");
+        elements = doc.select("div.tabs-content.clearfix");
         for (Element e : elements.select(".content-loai-xe-365")) {
             link = e.select(".desc").select("a").attr("href");
             linkXeSo.add(link);
@@ -108,6 +105,10 @@ public class BikeHondaCrawler {
         Map<String, Document> mapLinkConTay = new HashMap<>();
         Map<String, Document> mapLinkTayGa = new HashMap<>();
         Map<String, Document> mapLinkXeSo = new HashMap<>();
+        Map<String, Document> mapLinkXeMoTo = new HashMap<>();
+        for (String url: linkXeMoTo){
+            mapLinkXeMoTo.put(url,Jsoup.connect(url).get());
+        }
         for (String url : linkXeConTay) {
             mapLinkConTay.put(url, Jsoup.connect(url).get());
         }
@@ -126,6 +127,65 @@ public class BikeHondaCrawler {
         for (Map.Entry<String, Document> mapUrlDocument : mapLinkConTay.entrySet()) {
             listXeCon.addAll(crawlBike(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
         }
+        for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeMoTo.entrySet()) {
+            String url = mapUrlDocument.getKey();
+            Document document = mapUrlDocument.getValue();
+            String name = document.title();
+            String key, value;
+            Gson gson = new Gson();
+            //Dac diem noi bat
+            elements = getContentFromDoc(document, ".js_detail_glr");
+            Map<String, Object> outerBox = new HashMap<>();
+            Map<String, String> innerBox = new HashMap<>();
+            for (Element e : elements) {
+                key = e.select("h5").text();
+                value = e.select("p").text();
+                innerBox.put(key, value);
+            }
+            outerBox.put("outstanding features", innerBox);
+            //Thong so ky thuat
+            elements = getContentFromDoc(document, "table tr");
+            innerBox = new HashMap<>();
+            for (Element e : elements.select("td")) {
+                key = e.select("strong").text();
+                e.removeAttr("strong");
+                value = e.text();
+                if (name.equals("Rebel 300/500")){
+                    key = e.select("td:eq(0)").text();
+                    value = e.select("td:eq(1)").text();
+                }
+                innerBox.put(key, value);
+            }
+            outerBox.put("technical specifications", innerBox);
+            String description = gson.toJson(outerBox);
+            //get default image
+            elements = document.select(".bike_list img[src]");
+            String defaultImage = elements.select("img").first().attr("src");
+//            System.out.println(defaultImage);
+            //version and price
+            String version, price;
+            elements = getContentFromDoc(document, ".bike_list");
+            for (Element ec : elements.select(".bike_item")) {
+                //Create bike and add
+                Map<String, String> bikeDetail = new HashMap<>();
+                bikeDetail.put("name", name);
+                bikeDetail.put("url", url);
+                bikeDetail.put("description", description);
+                bikeDetail.put("brand", "Honda");
+                bikeDetail.put("status", "NEW");
+                version = ec.select("h6").text();
+                price = ec.attr("data-price").replace(".","");
+                if (version.equals("")){
+                    version = name;
+                }
+                bikeDetail.put("version", version);
+                bikeDetail.put("image",crawlImageMoTo(defaultImage,ec));
+                bikeDetail.put("price", price);
+                if (!price.equals("")){
+                    listXeMoTo.add(bikeDetail);
+                }
+            }
+        }
     }
 
     private List<Map<String, String>> crawlBike(Document document, String url) {
@@ -139,7 +199,8 @@ public class BikeHondaCrawler {
         Map<String, String> innerBox = new HashMap<>();
         for (Element e : elements) {
             key = e.select("a").attr("data-title");
-            value = e.select("a").attr("data-description").replace("<p>", "").replace("</p>", "");
+            value = e.select("a").attr("data-description").
+                    replace("<p>", "").replace("</p>", "");
             innerBox.put(key, value);
         }
         outerBox.put("outstanding features", innerBox);
@@ -177,6 +238,23 @@ public class BikeHondaCrawler {
             listBike.add(bikeDetail);
         }
         return listBike;
+    }
+
+    private String crawlImageMoTo(String defaultImage, Element element) {
+        Elements elements = element.select("img");
+        Map<String,String> innerBox = new HashMap<>();
+        String key,value;
+        for (Element e:elements){
+            key = element.select("h6").text();
+            value = e.attr("src");
+            if (value.equals("")){
+                value = defaultImage;
+            }
+            innerBox.put(key,value);
+        }
+        Gson gson = new Gson();
+        value = gson.toJson(innerBox);
+        return value;
     }
 
     private String crawlImage(String defaultImage, Element element) {
