@@ -10,6 +10,7 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<EventEntity, Integer> {
     EventEntity findById(int id);
 
+    List<EventEntity> findAllByStatusOrStatusOrderByIdDesc(String status1, String status2, Pageable pageable);
     List<EventEntity> findAllByStatusOrderByIdDesc(String status, Pageable pageable);
 
     List<EventEntity> findAllByCreatorIdAndStatusOrderByIdDesc(int creatorId, Pageable pageable, String status);

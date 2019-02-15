@@ -143,13 +143,15 @@ public class EventController {
 
         if (status.equals(hidden) || status.equals(reject) || status.equals(pending))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
-
+        List<EventEntity> list;
         // number of page with n elements
         Pageable pageWithElements = PageRequest.of(id, quantity);
-        List<EventEntity> list = eventRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
-        if (list.size() < 1) {
+        if (status.equals(getAll))
+            list = eventRepository.findAllByStatusOrStatusOrderByIdDesc(ongoing, finished, pageWithElements);
+        else list = eventRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
+
+        if (list.size() < 1)
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-        }
 
         return new ResponseEntity(list, HttpStatus.OK);
     }
@@ -163,67 +165,25 @@ public class EventController {
      * 200 if create success
      */
 
+    @JsonView(View.IEventDetail.class)
     @PostMapping("user/{id}/event")
-    public ResponseEntity createAnEvent(@PathVariable int id, @RequestBody Map<String, String> body
-    ) {
+    public ResponseEntity createAnEvent(@PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(id);
         if (body.isEmpty()) return new ResponseEntity(HttpStatus.NO_CONTENT);
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
                 accountEntity.getStatus().equals(accountStatus)) {
-            int cateId = Integer.parseInt(body.get("categoryId"));
-            String imgThumbnail = body.get("imgThumbnailUrl");
-            String title = body.get("title");
-            String description = body.get("description");
-            String location = body.get("location");
-            String priceTicket = body.get("priceTicket");
-            int minTicket = Integer.parseInt(body.get("minTicket"));
-            int maxTicket = Integer.parseInt(body.get("maxTicket"));
-            String createdTime = body.get("createdTime");
-            String startSignUpTime = body.get("startRegisterTime");
-            String endSignUpTime = body.get("endRegisterTime");
-            String startEventTime = body.get("startTime");
-            String endEventTime = body.get("endTime");
-            String publicTime = body.get("publicTime");
-            String img = body.get("images").trim();
+            Date date = new Date(System.currentTimeMillis());
 
-            //
-            EventEntity eventEntity = new EventEntity();
+            EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
             eventEntity.setCreatorId(id);
-            eventEntity.setCategoryId(cateId);
-            eventEntity.setTitle(title);
-            eventEntity.setImgThumbnailUrl(imgThumbnail);
-            eventEntity.setDescription(description);
-            eventEntity.setLocation(location);
-            eventEntity.setPriceTicket(priceTicket);
-            eventEntity.setMinTicket(minTicket);
-            eventEntity.setMaxTicket(maxTicket);
+            eventEntity.setCreatedTime(date.toString());
 
-            eventEntity.setCreatedTime(createdTime);
-            eventEntity.setStartRegisterTime(startSignUpTime);
-            eventEntity.setEndRegisterTime(endSignUpTime);
-            eventEntity.setStartTime(startEventTime);
-            eventEntity.setEndTime(endEventTime);
-            eventEntity.setPublicTime(publicTime);
-            eventEntity.setStatus(pending);
             eventRepository.saveAndFlush(eventEntity);
+            setEventListImages(body, eventEntity);
 
-//            System.out.println(img);
-            String tmp = img.replace("[", "").replace("]", "").trim();
-//            System.out.println(img);
-            String[] arr = tmp.split(",");
-//            System.out.println(arr);
-            for (int i = 0; i < arr.length; i++) {
-                ImageEntity imageEntity = new ImageEntity();
-                imageEntity.setUrl(arr[i].trim());
-                imageEntity.setOwnId(eventEntity.getId());
-                imageEntity.setType("EVENT");
-                imageRepository.save(imageEntity);
-//                System.out.println("url " + imageEntity.getUrl());
-            }
-
-            return new ResponseEntity(eventEntity, HttpStatus.OK);
+            return new ResponseEntity(HttpStatus.OK);
         }
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
@@ -241,11 +201,27 @@ public class EventController {
      * @return 403 if not admin
      * 200 if update success
      */
-
+    @JsonView(View.IEventDetail.class)
     @PutMapping("user/{userId}/event/{id}")
     public ResponseEntity updateAnEvent(@PathVariable int id, @PathVariable int userId, @RequestBody Map<String, String> body) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        EventEntity eventEntity = eventRepository.findById(id);
 
-        return null;
+        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        if (eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (!eventEntity.getCreatorId().equals(userId)) return new ResponseEntity(HttpStatus.FORBIDDEN);
+
+        if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
+                accountEntity.getStatus().equals(accountStatus)) {
+            eventEntity = paramEventEntityRequest(body, eventEntity);
+            eventRepository.saveAndFlush(eventEntity);
+            List<ImageEntity> list = imageRepository.findAllByEventByOwnId_IdAndType(id, "EVENT");
+            imageRepository.deleteAll(list);
+
+            setEventListImages(body, eventEntity);
+        }
+        return new ResponseEntity(eventEntity, HttpStatus.OK);
     }
 
     /**
@@ -253,7 +229,7 @@ public class EventController {
      *
      * @param id
      * @param adminId
-     * @param body   (status)
+     * @param body    (status)
      * @return 403 if not admin
      * 200 if update success
      */
@@ -262,13 +238,29 @@ public class EventController {
     public ResponseEntity changeAnEventStatus(@PathVariable int id, @PathVariable int adminId, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(adminId);
         EventEntity eventEntity = eventRepository.findById(id);
+
         if (accountEntity == null || eventEntity == null
                 || !accountEntity.getStatus().equals(accountStatus)
                 || !accountEntity.getRoleByRoleId().getName().equals(roleAdmin))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (body == null || body.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        Date date = new Date(System.currentTimeMillis());
         String status = body.get("status");
+//        SimpleDateFormat format = new SimpleDateFormat("hh:mm dd/MM/yyyy");
+//        Date testTime = null;
+//        try {
+//            testTime = format.parse("12:20 16/02/2019");
+//            if (date.compareTo(testTime) <= 0)
+//                System.out.println("time test chưa tới");
+//            else
+//                System.out.println("time test qua rồi");
+//        } catch (ParseException e) {
+//            throw new CustomException("Time Parse Error", HttpStatus.BAD_REQUEST);
+//        }
+
+        eventEntity.setApprovedId(adminId);
+        eventEntity.setApprovedTime(date.toString());
         eventEntity.setStatus(status);
         eventRepository.save(eventEntity);
 
@@ -304,7 +296,7 @@ public class EventController {
         if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
 
         Pageable pageWithElements = PageRequest.of(pageId, quantity);
-        List<EventEntity> list = null;
+        List<EventEntity> list;
         String status = body.get("status");
         if (status.equals(getAll)) {
             list = eventRepository.findAllByCreatorIdOrderByIdDesc(id, pageWithElements);
@@ -314,6 +306,57 @@ public class EventController {
         if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
         return new ResponseEntity(list, HttpStatus.OK);
+    }
+
+
+    //==========================
+    private void setEventListImages(Map<String, String> body, EventEntity eventEntity) {
+        String img = body.get("images").trim();
+        String tmp = img.replace("[", "").replace("]", "").trim();
+        String[] arr = tmp.split(",");
+
+        for (int i = 0; i < arr.length; i++) {
+            ImageEntity imageEntity = new ImageEntity();
+            imageEntity.setUrl(arr[i].trim());
+            imageEntity.setOwnId(eventEntity.getId());
+            imageEntity.setType("EVENT");
+            imageRepository.save(imageEntity);
+//                System.out.println("url " + imageEntity.getUrl());
+        }
+    }
+
+    private EventEntity paramEventEntityRequest(Map<String, String> body, EventEntity eventEntity) {
+        int cateId = Integer.parseInt(body.get("categoryId"));
+        String imgThumbnail = body.get("imgThumbnailUrl");
+        String title = body.get("title");
+        String description = body.get("description");
+        String location = body.get("location");
+        String priceTicket = body.get("priceTicket");
+        int minTicket = Integer.parseInt(body.get("minTicket"));
+        int maxTicket = Integer.parseInt(body.get("maxTicket"));
+//            String createdTime = body.get("createdTime");
+        String startSignUpTime = body.get("startRegisterTime");
+        String endSignUpTime = body.get("endRegisterTime");
+        String startEventTime = body.get("startTime");
+        String endEventTime = body.get("endTime");
+        String publicTime = body.get("publicTime");
+        //
+        eventEntity.setCategoryId(cateId);
+        eventEntity.setTitle(title);
+        eventEntity.setImgThumbnailUrl(imgThumbnail);
+        eventEntity.setDescription(description);
+        eventEntity.setLocation(location);
+        eventEntity.setPriceTicket(priceTicket);
+        eventEntity.setMinTicket(minTicket);
+        eventEntity.setMaxTicket(maxTicket);
+
+        eventEntity.setStartRegisterTime(startSignUpTime);
+        eventEntity.setEndRegisterTime(endSignUpTime);
+        eventEntity.setStartTime(startEventTime);
+        eventEntity.setEndTime(endEventTime);
+        eventEntity.setPublicTime(publicTime);
+        eventEntity.setStatus(pending);
+        return eventEntity;
     }
 
 }
