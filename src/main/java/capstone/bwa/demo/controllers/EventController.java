@@ -252,16 +252,27 @@ public class EventController {
      * Returns update event object with status
      *
      * @param id
-     * @param userId
+     * @param adminId
      * @param body   (status)
      * @return 403 if not admin
      * 200 if update success
      */
 
-    @PutMapping("user/{userId}/event/{id}/status")
-    public ResponseEntity changeAnEventStatus(@PathVariable int id, @PathVariable int userId, @RequestBody Map<String, String> body) {
+    @PutMapping("admin/{adminId}/event/{id}/status")
+    public ResponseEntity changeAnEventStatus(@PathVariable int id, @PathVariable int adminId, @RequestBody Map<String, String> body) {
+        AccountEntity accountEntity = accountRepository.findById(adminId);
+        EventEntity eventEntity = eventRepository.findById(id);
+        if (accountEntity == null || eventEntity == null
+                || !accountEntity.getStatus().equals(accountStatus)
+                || !accountEntity.getRoleByRoleId().getName().equals(roleAdmin))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        return null;
+        if (body == null || body.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        String status = body.get("status");
+        eventEntity.setStatus(status);
+        eventRepository.save(eventEntity);
+
+        return new ResponseEntity(HttpStatus.OK);
     }
 
     /**
@@ -286,7 +297,10 @@ public class EventController {
     public ResponseEntity getListEventsByUserIdNStatus(@PathVariable int id, @PathVariable int quantity,
                                                        @PathVariable int pageId, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(id);
-        if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (accountEntity == null || !accountEntity.getRoleByRoleId().getName().equals(roleUser)
+                || !accountEntity.getStatus().equals(accountStatus))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
         if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
 
         Pageable pageWithElements = PageRequest.of(pageId, quantity);

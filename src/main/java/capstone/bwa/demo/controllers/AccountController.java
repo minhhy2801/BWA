@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,7 +30,12 @@ public class AccountController {
         String phone = body.get("phone");
         //create random number verify code
         String code = new Random().nextInt(9999 - 1000) + 1000 + "";
+        BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
+        String hashVerifyCode = bCrypt.encode(code);
 
+
+        System.out.println(code);
+        System.out.println(hashVerifyCode);
         //check Phone in db
         if (accountRepository.findByPhone(phone) != null)
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -40,12 +46,11 @@ public class AccountController {
 
         Map<String, Object> result = new HashMap<>();
         JSONObject jsonObj = new JSONObject(sms);
-        result.put("verify", code);
+        result.put("verify", hashVerifyCode);
         result.put("result", jsonObj.toMap());
         return new ResponseEntity(result, HttpStatus.ACCEPTED);
     }
 
-    
 
     @PostMapping("sign_up")
     public ResponseEntity signUpAccount(@RequestBody Map<String, String> body) {
