@@ -36,7 +36,7 @@ public class CrawlController {
         BikeHondaCrawler crawler = new BikeHondaCrawler();
         List<Map<String,String>> listBike = new ArrayList<>();
         try {
-            crawler.getBikeFromHonda();
+            crawler.crawlBike();
             listBike = crawler.getListXeTayGa();
             addBike(6,listBike);
             listBike = crawler.getListXeCon();
@@ -161,13 +161,13 @@ public class CrawlController {
             int exit = Integer.parseInt(bikeEntity.getHashBikeCode());
             int bike = Integer.parseInt(newBike.getHashBikeCode());
             if (exit == bike) {
-                if (!bikeEntity.getUrl().equals(newBike.getUrl()) || !bikeEntity.getDescription().
-                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())){
-                    bikeEntity.setPrice(newBike.getPrice());
-                    bikeEntity.setDescription(newBike.getDescription());
-                    bikeEntity.setUrl(newBike.getUrl());
-                    bikeRepository.saveAndFlush(bikeEntity);
-                }
+//                if (!bikeEntity.getUrl().equals(newBike.getUrl()) || !bikeEntity.getDescription().
+//                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())){
+//                    bikeEntity.setPrice(newBike.getPrice());
+//                    bikeEntity.setDescription(newBike.getDescription());
+//                    bikeEntity.setUrl(newBike.getUrl());
+//                    bikeRepository.saveAndFlush(bikeEntity);
+//                }
                 return false;
             }
         }
