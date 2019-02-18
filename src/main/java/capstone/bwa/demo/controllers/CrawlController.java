@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,84 +35,64 @@ public class CrawlController {
     @GetMapping("admin/crawl_bikes")
     public ResponseEntity crawlBike() {
         BikeHondaCrawler crawler = new BikeHondaCrawler();
-        List<Map<String,String>> listBike = new ArrayList<>();
+        List<Map<String, String>> listBike = new ArrayList<>();
         try {
             crawler.crawlBike();
             listBike = crawler.getListXeTayGa();
-            addBike(6,listBike);
+            addBike(6, listBike);
             listBike = crawler.getListXeCon();
-            addBike(5,listBike);
+            addBike(5, listBike);
             listBike = crawler.getListXeSo();
-            addBike(7,listBike);
+            addBike(7, listBike);
             listBike = crawler.getListXeMoTo();
-            addBike(8,listBike);
-        }catch (IOException e){
+            addBike(8, listBike);
+        } catch (IOException e) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity(bikeRepository.findAll(),HttpStatus.OK);
+        return new ResponseEntity(bikeRepository.findAll(), HttpStatus.OK);
     }
 
     @GetMapping("admin/crawl_accessories")
     public ResponseEntity crawlAccessory() {
-        BikeHondaCrawler crawlBikeHonda = new BikeHondaCrawler();
-        crawlBikeHonda.crawlAccessory();
-        int categoryID;
-        Map<String, Map<AccessoryEntity, ImageEntity>> categoryMapping = crawlBikeHonda.getCategoryMappingAccessories();
-        for (Map.Entry<String, Map<AccessoryEntity, ImageEntity>> mapping : categoryMapping.entrySet()) {
-            categoryID = checkCategory(mapping.getKey());
-            Map<AccessoryEntity, ImageEntity> listNewAccessory = mapping.getValue();
-            if (listNewAccessory.size() == 0) {
-                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        BikeHondaCrawler crawler = new BikeHondaCrawler();
+        Map<String,List<Map<String,String>>> listCategoryAccessory = new HashMap<>();
+        try {
+            crawler.crawlAccessory();
+            listCategoryAccessory = crawler.getCategogyAndAccessory();
+            for (Map.Entry<String,List<Map<String,String>>> entry: listCategoryAccessory.entrySet()){
+                String categogyName = entry.getKey();
+                int categoryId = checkCategory(categogyName);
+                List<Map<String,String>> listAccessory = entry.getValue();
+                addAccessory(categoryId,listAccessory);
             }
-            List<AccessoryEntity> listExitAccessory = accessoryRepository.findAll();
-            boolean addNewProduct;
-            for (Map.Entry<AccessoryEntity, ImageEntity> entry : listNewAccessory.entrySet()) {
-                AccessoryEntity newAccessory = entry.getKey();
-                ImageEntity imageEntity = entry.getValue();
-                addNewProduct = true;
-                if (imageEntity.getUrl().equals("")) {
-                    addNewProduct = false;
-                } else {
-                    for (AccessoryEntity accessory : listExitAccessory) {
-                        if (accessory.getHashAccessoryCode().equals(newAccessory.getHashAccessoryCode())) {
-                            if (!accessory.getPrice().equals(newAccessory.getPrice())) {
-                                accessory.setPrice(newAccessory.getPrice());
-                                accessoryRepository.saveAndFlush(accessory);
-                            }
-                            addNewProduct = false;
-                        }
-                    }
-                }
-                if (addNewProduct) {
-                    newAccessory.setCategoryId(categoryID);
-                    accessoryRepository.saveAndFlush(newAccessory);
-                    newAccessory = accessoryRepository.findByHashAccessoryCode(entry.getKey().getHashAccessoryCode());
-                    imageEntity.setOwnId(newAccessory.getId());
-                    imageEntity.setAccessoryByOwnId(newAccessory);
-                    imageRepository.saveAndFlush(imageEntity);
-                }
-            }
+        } catch (IOException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
         return new ResponseEntity(accessoryRepository.findAll(), HttpStatus.OK);
     }
 
-//    @GetMapping("test")
-//    public ResponseEntity insertNews(){
-//        BikeHondaCrawler crawler = new BikeHondaCrawler();
-//        List<Map<String,String>> listBike = new ArrayList<>();
-//        try {
-//            crawler.getBikeFromHonda();
-//            listBike = crawler.getListXeTayGa();
-//            addBike(6,listBike);
-//            listBike = crawler.getListXeCon();
-//            addBike(5,listBike);
-//            listBike = crawler.getListXeSo();
-//            addBike(7,listBike);
-//        }catch (IOException e){
-//            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-//        }
-//        return new ResponseEntity(bikeRepository.findAll(),HttpStatus.OK);
-//    }
+    private void addAccessory(int catelogyId, List<Map<String, String>> listBike) {
+        for (Map<String, String> accessoryDetail : listBike) {
+            AccessoryEntity newAccessory = new AccessoryEntity();
+            newAccessory.setName(accessoryDetail.get("name"));
+            newAccessory.setUrl(accessoryDetail.get("url"));
+            newAccessory.setCategoryId(catelogyId);
+            newAccessory.setBrand(accessoryDetail.get("brand"));
+            newAccessory.setStatus(accessoryDetail.get("status"));
+            newAccessory.setDescription(accessoryDetail.get("description"));
+            newAccessory.setPrice(accessoryDetail.get("price"));
+            String hashAccessoryCode = newAccessory.hashCode() + "";
+            newAccessory.setHashAccessoryCode(hashAccessoryCode);
+            accessoryRepository.saveAndFlush(newAccessory);
+            AccessoryEntity ownAccessory = accessoryRepository.findByHashAccessoryCode(hashAccessoryCode);
+            ImageEntity newImage = new ImageEntity();
+            newImage.setUrl(accessoryDetail.get("image"));
+            newImage.setOwnId(ownAccessory.getId());
+            newImage.setStatus("NEW");
+            newImage.setType("Accessory");
+            imageRepository.saveAndFlush(newImage);
+        }
+    }
 
     private int checkCategory(String categogyName) {
         int categoryID;
@@ -128,8 +109,8 @@ public class CrawlController {
         return categoryID;
     }
 
-    private void addBike(int catelogyId, List<Map<String,String>> listBike){
-        for (Map<String,String> bikeDetail:listBike){
+    private void addBike(int catelogyId, List<Map<String, String>> listBike) {
+        for (Map<String, String> bikeDetail : listBike) {
             BikeEntity newBike = new BikeEntity();
             newBike.setName(bikeDetail.get("name"));
             newBike.setUrl(bikeDetail.get("url"));
@@ -139,10 +120,10 @@ public class CrawlController {
             newBike.setDescription(bikeDetail.get("description"));
             newBike.setVersion(bikeDetail.get("version"));
             newBike.setPrice(bikeDetail.get("price"));
-            String hashAccessoryCode = newBike.hashCode()+"";
+            String hashAccessoryCode = newBike.hashCode() + "";
             newBike.setHashBikeCode(hashAccessoryCode);
             boolean addBike = checkDuplicateBike(newBike);
-            if (addBike){
+            if (addBike) {
                 bikeRepository.saveAndFlush(newBike);
                 BikeEntity ownBike = bikeRepository.findByHashBikeCode(hashAccessoryCode);
                 ImageEntity newImage = new ImageEntity();
@@ -155,19 +136,19 @@ public class CrawlController {
         }
     }
 
-    private boolean checkDuplicateBike(BikeEntity newBike){
+    private boolean checkDuplicateBike(BikeEntity newBike) {
         List<BikeEntity> listExitBikes = bikeRepository.findAll();
-        for (BikeEntity bikeEntity:listExitBikes){
+        for (BikeEntity bikeEntity : listExitBikes) {
             int exit = Integer.parseInt(bikeEntity.getHashBikeCode());
             int bike = Integer.parseInt(newBike.getHashBikeCode());
             if (exit == bike) {
-//                if (!bikeEntity.getUrl().equals(newBike.getUrl()) || !bikeEntity.getDescription().
-//                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())){
-//                    bikeEntity.setPrice(newBike.getPrice());
-//                    bikeEntity.setDescription(newBike.getDescription());
-//                    bikeEntity.setUrl(newBike.getUrl());
-//                    bikeRepository.saveAndFlush(bikeEntity);
-//                }
+                if (!bikeEntity.getUrl().equals(newBike.getUrl()) || !bikeEntity.getDescription().
+                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())){
+                    bikeEntity.setPrice(newBike.getPrice());
+                    bikeEntity.setDescription(newBike.getDescription());
+                    bikeEntity.setUrl(newBike.getUrl());
+                    bikeRepository.saveAndFlush(bikeEntity);
+                }
                 return false;
             }
         }

@@ -1,9 +1,7 @@
 package capstone.bwa.demo.crawlmodel;
 
-import capstone.bwa.demo.entities.AccessoryEntity;
-import capstone.bwa.demo.entities.BikeEntity;
-import capstone.bwa.demo.entities.ImageEntity;
 import com.google.gson.Gson;
+import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToFile;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,19 +12,23 @@ import java.util.*;
 
 public class BikeHondaCrawler {
 
-    private Map<String, Map<AccessoryEntity, ImageEntity>> categoryMappingAccessories;
-
     private List<Map<String, String>> listXeTayGa;
     private List<Map<String, String>> listXeSo;
     private List<Map<String, String>> listXeCon;
     private List<Map<String, String>> listXeMoTo;
+    private Map<String, List<Map<String, String>>> categogyAndAccessory;
 
     public BikeHondaCrawler() {
-        categoryMappingAccessories = new HashMap<>();
         listXeTayGa = new ArrayList<>();
         listXeCon = new ArrayList<>();
         listXeSo = new ArrayList<>();
         listXeMoTo = new ArrayList<>();
+//        listAccessory = new ArrayList<>();
+        categogyAndAccessory = new HashMap<>();
+    }
+
+    public Map<String, List<Map<String, String>>> getCategogyAndAccessory() {
+        return categogyAndAccessory;
     }
 
     public List<Map<String, String>> getListXeMoTo() {
@@ -48,35 +50,58 @@ public class BikeHondaCrawler {
     public static void main(String[] args) {
         BikeHondaCrawler crawler = new BikeHondaCrawler();
         try {
-            crawler.getBikeFromHonda();
-            //crawler.getBikeFromSuzuki();
+            //crawler.getBikeFromHonda();
+            crawler.getBikeFromSuzuki();
+            //crawler.getAccessoryFromHonda();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-
-    public Map<String, Map<AccessoryEntity, ImageEntity>> getCategoryMappingAccessories() {
-        return categoryMappingAccessories;
-    }
-
     public void crawlBike() throws IOException {
         getBikeFromHonda();
-//        getBikeFromSuzuki();
+        getBikeFromSuzuki();
 //        getBikeFromYamaha();
     }
 
-    public void crawlAccessory() {
-        try {
-            getAccessoryFromHonda();
-        } catch (IOException e) {
-
-        }
+    public void crawlAccessory() throws IOException {
+        getAccessoryFromHonda();
     }
 
     private void getBikeFromYamaha() throws IOException {
-        Document a = Jsoup.connect("https://yamaha-motor.com.vn/xe").validateTLSCertificates(false).get();
+		List<String> linkXeTayGa = new ArrayList<>();
+        List<String> linkXeSo = new ArrayList<>();
+        List<String> linkXeConTay = new ArrayList<>();
+        List<String> linkXeMoTo = new ArrayList<>();
+        //Get list link
+        Document document = Jsoup.connect("https://yamaha-motor.com.vn/xe/loai-xe/xe-so").validateTLSCertificates(false).get();
+		Elements elements = document.select(".cate_pro.filtr-item");
+		for (Element e: elements){
+			String titlle = e.select("h2").text();
+			if (titlle.equals("Exciter")){
+				linkXeConTay = getListLink("a.btnView","href");
+			}else{
+				linkXeSo = getListLink("a.btnView","href");
+			}
+		}
+		document = Jsoup.connect("https://yamaha-motor.com.vn/xe/loai-xe/xe-nhap-khau").validateTLSCertificates(false).get();
+		Elements elements = document.select(".cate_pro.filtr-item");
+		linkXeConTay.addAll(getListLink("a.btnView","href"));
+			
+        document = Jsoup.connect("https://yamaha-motor.com.vn/xe/loai-xe/xe-ga").validateTLSCertificates(false).get();
+		Elements elements = document.select(".cate_pro.filtr-item");
+		linkXeTayGa = getListLink("a.btnView","href");
+        
 
+        Map<String, Document> mapLinkConTay = new HashMap<>();
+        Map<String, Document> mapLinkTayGa = new HashMap<>();
+        Map<String, Document> mapLinkXeSo = new HashMap<>();
+        Map<String, Document> mapLinkXeMoTo = new HashMap<>();
+        //Get Map Url and Document
+        mapLinkXeMoTo = getListUrlsAndDocuments(linkXeMoTo);
+        mapLinkTayGa = getListUrlsAndDocuments(linkXeTayGa);
+        mapLinkXeSo = getListUrlsAndDocuments(linkXeSo);
+        mapLinkConTay = getListUrlsAndDocuments(linkXeConTay);
     }
 
     private void getBikeFromSuzuki() throws IOException {
@@ -85,9 +110,11 @@ public class BikeHondaCrawler {
         List<String> linkXeConTay = new ArrayList<>();
         List<String> linkXeMoTo = new ArrayList<>();
         //Get list link
-        Document document = Jsoup.connect("https://www.suzuki.com.vn/index.php/xe-may").get();
-        Elements elements = document.select(".item177").select(".maximenuck2 li");
-        linkXeMoTo = getListLink(elements, "a", "abs:href");
+        Document document = Jsoup.connect("https://www.suzuki.com.vn/index.php/xe-motor").get();
+        Elements elements = document.select(".sppb-col-sm-6");
+        linkXeMoTo = getListLink(elements, "a", "href");
+        linkXeMoTo.contains("https://suzuki.com.vn/index.php/xe-motor/vstrom1000");
+        document = Jsoup.connect("https://www.suzuki.com.vn/index.php/xe-may").get();
         elements = document.select(".item209").select(".maximenuck2 li");
         linkXeConTay = getListLink(elements, "a", "abs:href");
         elements = document.select(".item210").select(".maximenuck2 li");
@@ -106,12 +133,14 @@ public class BikeHondaCrawler {
         mapLinkConTay = getListUrlsAndDocuments(linkXeConTay);
 
         for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeMoTo.entrySet()) {
+            String url = mapUrlDocument.getKey();
+            String price = "";
             document = mapUrlDocument.getValue();
             String name = document.title();
             String key, value;
             Gson gson = new Gson();
             //Dac diem noi bat
-            String festhues = "";
+            String features = "";
             String specifications = "";
             List<String> listAccessories = new ArrayList<>();
             String accessory = "";
@@ -120,31 +149,68 @@ public class BikeHondaCrawler {
             for (Element e : elements) {
                 key = e.select("h3").text();
                 if (!key.equals("")) {
-                    if (key.equals("THÔNG SỐ KĨ THUẬT")) {
-//                        specifications += key + ":" + value + "\n";
-                    } else if (key.equals("PHỤ KIỆN & LINH KIỆN")) {
-
-                    } else {
+                    //Thong so ki thuat
+                    if (!key.equals("THÔNG SỐ KĨ THUẬT") & !key.equals("PHỤ KIỆN & LINH KIỆN")) {
                         value = e.select("span").text();
-                        festhues += key + ":" + value + "\n";
+                        features += "\n" + key + ":" + value;
+                    }
+//                        for (Element detail : e.select(".uk-grid-width-1-1 p")) {
+//                            key = detail.select("strong").text();
+//                            value = detail.text();
+//                            features += "\n" + key + ":" + value;
+//                        }
+                }
+            }
+            outerBox.put("outstanding_features", features.replaceFirst("\n", ""));
+
+            String fakeKey = "";
+            for (Element e : document.select(".uk-margin table")) {
+                String titlle = e.select("thead").text();
+                for (Element sub : e.select("tbody tr")) {
+                    switch (titlle) {
+                        case "KÍCH THƯỚC VÀ TRỌNG LƯỢNG":
+                            key = sub.select("td:eq(0)").text();
+                            value = sub.select("td:eq(2)").text()
+                                    + sub.select("td:eq(1)").text();
+                            specifications += "\n" + key + ":" + value;
+                            break;
+                        case "ĐỘNG CƠ":
+                            key = sub.select("td:eq(0)").text();
+                            value = sub.select("td:eq(1)").text();
+                            specifications += "\n" + key + ":" + value;
+                            break;
+                        case "HỆ THỐNG TRUYỀN ĐỘNG":
+                            key = sub.select("td:eq(0)").text();
+                            value = sub.select("td:eq(1)").text();
+                            specifications += "\n" + key + ":" + value;
+                            break;
+                        case "KHUNG SƯỜN":
+                            key = sub.select("td:eq(0)").text();
+                            value = sub.select("td:eq(1)").text();
+//                                key = fakeKey + sub.select("td:eq(0)").text();
+//                                value = sub.select("td:eq(1)").text();
+                            specifications += "\n" + key + ":" + value;
+                            break;
                     }
                 }
             }
-            outerBox.put("outstanding features", festhues);
-            System.out.println(outerBox.toString());
-            //Thong so ki thuat
+            outerBox.put("technical_specifications", specifications.replaceFirst("\n", ""));
+            String description = gson.toJson(outerBox);
+            System.out.println(description);
 
-//            listXeTayGa.addAll(crawlBike(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
+            elements = document.select(".smart-slider-border2 img");
+            String image;
+            Map<String, String> mapImage = new HashMap<>();
+            int i = 0;
+            for (Element e : elements) {
+                i++;
+                value = e.attr("src");
+                mapImage.put(i + "", value);
+            }
+            image = gson.toJson(mapImage);
+            Map<String, String> bikeDetail = bikeInfo(url, name, "Suzuki", description, name, price, image);
+            listXeMoTo.add(bikeDetail);
         }
-//        for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeSo.entrySet()) {
-//            listXeSo.addAll(crawlBike(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
-//        }
-//        for (Map.Entry<String, Document> mapUrlDocument : mapLinkConTay.entrySet()) {
-//            listXeCon.addAll(crawlBike(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
-//        }
-//        for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeMoTo.entrySet()) {
-//            listXeMoTo.addAll(crawlBike(mapUrlDocument.getValue(),mapUrlDocument.getKey()));
-//        }
     }
 
     private void getBikeFromHonda() throws IOException {
@@ -187,77 +253,8 @@ public class BikeHondaCrawler {
             listXeCon.addAll(crawlBike(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
         }
         for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeMoTo.entrySet()) {
-            String url = mapUrlDocument.getKey();
-            Document document = mapUrlDocument.getValue();
-            String name = document.title();
-            String key, value;
-            Gson gson = new Gson();
-            //Dac diem noi bat
-            String features = "";
-            elements = document.select(".js_detail_glr");
-            Map<String, String> outerBox = new HashMap<>();
-            for (Element e : elements) {
-                key = e.select("h5").text().replace(":", "");
-                value = e.select("p").text();
-                features += key + ":" + value + "\n";
-            }
-            outerBox.put("outstanding features", features);
-            //Thong so ky thuat
-            elements = document.select("table tr");
-            String specifications = "";
-            for (Element e : elements.select("td")) {
-                key = e.select("strong").text();
-                e.removeAttr("strong");
-                value = e.text();
-                if (name.equals("Rebel 300/500")) {
-                    key = e.select("td:eq(0)").text().replace(":", "");
-                    value = e.select("td:eq(1)").text();
-                }
-                specifications += key + ":" + value + "\n";
-            }
-            outerBox.put("technical specifications", specifications);
-            String description = gson.toJson(outerBox);
-            //get default image
-            elements = document.select(".bike_list img[src]");
-            String defaultImage = elements.select("img").first().attr("src");
-//            System.out.println(defaultImage);
-            //version and price
-            String version, price;
-            elements = document.select(".bike_list");
-            for (Element ec : elements.select(".bike_item")) {
-                //Create bike and add
-                Map<String, String> bikeDetail = new HashMap<>();
-                bikeDetail.put("name", name);
-                bikeDetail.put("url", url);
-                bikeDetail.put("description", description);
-                bikeDetail.put("brand", "Honda");
-                bikeDetail.put("status", "NEW");
-                version = ec.select("h6").text();
-                price = ec.attr("data-price").replaceAll("[^0-9]", "").replace(".", "");
-                if (version.equals("")) {
-                    version = name;
-                }
-                bikeDetail.put("version", version);
-                bikeDetail.put("image", ec.select("img").attr("src"));
-                bikeDetail.put("price", price);
-                if (!price.equals("")) {
-                    listXeMoTo.add(bikeDetail);
-                }
-            }
+            listXeMoTo.addAll(crawlMotoBike(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
         }
-    }
-
-    private Map<String, String> getOutstandingFeatures(Elements elements, String selectorKey, String selectorValue,
-                                                       String attrKey, String attrValue) {
-        Map<String, String> innerBox = new HashMap<>();
-        String key, value;
-        for (Element e : elements) {
-            key = e.select(selectorKey).attr(attrKey);
-            value = e.select(selectorValue).attr(attrValue).
-                    replace("<p>", "").replace("</p>", "");
-            innerBox.put(key, value);
-        }
-        return innerBox;
     }
 
     private List<String> getListLink(Elements elements, String selector, String attr) {
@@ -270,23 +267,36 @@ public class BikeHondaCrawler {
         return listLink;
     }
 
+    private Map<String, String> bikeInfo(String url, String name, String brand, String description, String version,
+                                         String price, String image) {
+        Map<String, String> bikeDetail = new HashMap<>();
+        bikeDetail.put("name", name);
+        bikeDetail.put("url", url);
+        bikeDetail.put("description", description);
+        bikeDetail.put("brand", brand);
+        bikeDetail.put("status", "NEW");
+        bikeDetail.put("version", version);
+        bikeDetail.put("image", image);
+        bikeDetail.put("price", price);
+        return bikeDetail;
+    }
+
     private List<Map<String, String>> crawlBike(Document document, String url) {
         List<Map<String, String>> listBike = new ArrayList<>();
         String name = document.title().replace(" – Honda xe máy", "");
         String key, value;
         Gson gson = new Gson();
         //Dac diem noi bat
-        Elements elements = document.select(".op-toggle");
+        Elements elements = document.select(".option");
         Map<String, String> outerBox = new HashMap<>();
         String features = "";
         for (Element e : elements) {
-            key = e.select("a").attr("data-title");
+            key = e.select("a").attr("data-title").replaceAll(":", "");
             value = e.select("a").attr("data-description").
-                    replace("<p>", "").replace("</p>", "")
-                    .replaceAll(":", "");
-            features += key + ":" + value + "\n";
+                    replace("<p>", "").replace("</p>", "");
+            features += "\n" + key + ":" + value;
         }
-        outerBox.put("outstanding_features", features);
+        outerBox.put("outstanding_features", features.replaceFirst("\n", ""));
         //Thong so ky thuat
         String specifications = "";
         elements = document.select(".wrap-spec");
@@ -294,45 +304,97 @@ public class BikeHondaCrawler {
             key = e.select("td:eq(0)").get(0).text();
             value = e.select("td:eq(1)").get(0).text();
             if (!key.equals("")) {
-                specifications += key + ":" + value + "\n";
+                specifications += "\n" + key + ":" + value;
             }
         }
-        outerBox.put("technical_specifications", specifications);
+        outerBox.put("technical_specifications", specifications.replaceFirst("\n", ""));
         String description = gson.toJson(outerBox);
         //get default image
         elements = document.select("div.gallery-item img[src]");
         String defaultImage = elements.select("img").first().attr("src");
         //version and price
-        String version, price;
+        String version, price, image;
         elements = document.select(".wrap-color");
         for (Element ec : elements.select(".box")) {
-            //Create bike and add
             Map<String, String> bikeDetail = new HashMap<>();
-            bikeDetail.put("name", name);
-            bikeDetail.put("url", url);
-            bikeDetail.put("description", description);
-            bikeDetail.put("brand", "Honda");
-            bikeDetail.put("status", "NEW");
-            version = ec.select(".color-title").text().replace("*Hình ảnh minh họa có thể khác so với xe thực tế", "");
+            //Create bike and add
+            version = ec.select(".color-title").text()
+                    .replace("*Hình ảnh minh họa có thể khác so với xe thực tế", "");
             if (version.equals("Màu sắc sản phẩm")) {
                 elements = ec.select(".data_version").select(".table-version").select("tr");
-                int sl = 0;
                 for (Element tableDetail : elements) {
-                    sl++;
                     version = tableDetail.select("td:eq(0)").text();
-                    price = tableDetail.select("td:eq(1)").text();
-                    bikeDetail.put("version", version);
-                    bikeDetail.put("image", crawlImage(defaultImage, ec));
-                    bikeDetail.put("price", price.replaceAll("[^0-9]", "").replace(".", ""));
-                    System.out.println(sl);
+                    price = tableDetail.select("td:eq(1)").text().replaceAll("[^0-9]", "")
+                            .replace(".", "");
+                    image = crawlImage(defaultImage, ec);
+                    bikeDetail = bikeInfo(url, name, "Honda", description, version, price, image);
+                    listBike.add(bikeDetail);
                 }
             } else {
-                price = ec.select(".data_version").first().text();
-                bikeDetail.put("version", version);
-                bikeDetail.put("image", crawlImage(defaultImage, ec));
-                bikeDetail.put("price", price.replaceAll("[^0-9]", "").replace(".", ""));
+                price = ec.select(".data_version").first().text().replaceAll("[^0-9]", "").replace(".", "");
+                image = crawlImage(defaultImage, ec);
+                bikeDetail = bikeInfo(url, name, "Honda", description, version, price, image);
+                listBike.add(bikeDetail);
             }
-            listBike.add(bikeDetail);
+        }
+        return listBike;
+    }
+
+    private List<Map<String, String>> crawlMotoBike(Document document, String url) {
+        List<Map<String, String>> listBike = new ArrayList<>();
+        String name = document.title();
+        String key, value;
+        Gson gson = new Gson();
+        //Dac diem noi bat
+        String features = "";
+        Elements elements = document.select(".js_detail_glr");
+        Map<String, String> outerBox = new HashMap<>();
+        for (Element e : elements) {
+            key = e.select("h5").text().replace(":", "");
+            value = e.select("p").text();
+            features += "\n" + key + ":" + value;
+        }
+        outerBox.put("outstanding features", features.replaceFirst("\n", ""));
+        //Thong so ky thuat
+        elements = document.select("table tr");
+        String specifications = "";
+        for (Element e : elements.select("td")) {
+            key = e.select("strong").text();
+            e.removeAttr("strong");
+            value = e.text();
+            if (name.equals("Rebel 300/500")) {
+                key = e.select("td:eq(0)").text().replace(":", "");
+                value = e.select("td:eq(1)").text();
+            }
+            if (specifications.equals("")) {
+                specifications = key + ":" + value;
+            }
+        }
+        outerBox.put("technical specifications", specifications);
+        String description = gson.toJson(outerBox);
+        //get default image
+        elements = document.select(".bike_list img[src]");
+        String defaultImage = elements.select("img").first().attr("src");
+        //version and price
+        String version, price, image;
+        elements = document.select(".bike_list");
+        for (Element ec : elements.select(".bike_item")) {
+            //Create bike and add
+            Map<String, String> bikeDetail = new HashMap<>();
+            version = ec.select("h6").text();
+            price = ec.attr("data-price").replaceAll("[^0-9]", "")
+                    .replace(".", "");
+            if (version.equals("")) {
+                version = name;
+            }
+            image = ec.select("img").attr("src");
+            if (image.equals("")) {
+                image = defaultImage;
+            }
+            bikeDetail = bikeInfo(url, name, "Honda", description, version, price, image);
+            if (!price.equals("")) {
+                listBike.add(bikeDetail);
+            }
         }
         return listBike;
     }
@@ -358,11 +420,11 @@ public class BikeHondaCrawler {
         List<String> pageList = getListPageHonda();
         Map<String, String> categoryList = getListCategorys();
         String key, value, categoryName = "";
-        Map<String, List<String>> categogyAndAccessoryLink = new HashMap<>();
-//        Map<String, List<String>> categogyAndAccessory = new HashMap<>();
+        Map<String, Map<String, Document>> mapCategory = new HashMap<>();
         //Get list Category in each crawl page.
         for (String url : pageList) {
             if (url.contains("http")) {
+//                System.out.println(url);
                 List<String> accessoryUrls = getAllProductLinks(url, "a.btn", "href");
                 //Check and get categoryName
                 for (Map.Entry<String, String> categoryEntry : categoryList.entrySet()) {
@@ -370,57 +432,66 @@ public class BikeHondaCrawler {
                         categoryName = categoryEntry.getValue();
                     }
                 }
-
+                Map<String, List<String>> categogyAndAccessoryLink = new HashMap<>();
                 if (categogyAndAccessoryLink.keySet().contains(categoryName)) {
                     accessoryUrls.addAll(categogyAndAccessoryLink.get(categoryName));
                     categogyAndAccessoryLink.replace(categoryName, accessoryUrls);
                 } else {
                     categogyAndAccessoryLink.put(categoryName, accessoryUrls);
                 }
-                Map<AccessoryEntity, ImageEntity> accessoryList = new HashMap<>();
+                Map<String, Document> mapUrlAndDocument = new HashMap<>();
                 for (String accessoryUrl : accessoryUrls) {
                     if (accessoryUrl.contains("http")) {
                         Document doc = Jsoup.connect(accessoryUrl).get();
-                        AccessoryEntity newAccessory = getAccessory(accessoryUrl, "Honda");
-                        ImageEntity newImageEntity = getProductImages("Accessory");
-                        //Get elements that contain all information of accessory
-                        Elements elements = getContentFromDoc(doc, ".product-detail");
-
-                        Elements imageData = getElementsFromElements(elements, "#img-big img");
-                        String data = imageData.attr("src");
-                        newImageEntity.setUrl(data);
-                        Elements infoData = getElementsFromElements(elements, ".info");
-                        data = getDataByDiv(infoData, ".title");
-                        newAccessory.setName(data);
-                        data = getDataByDiv(elements, ".price").replaceAll("[^0-9]", "").replaceAll(".", "");
-                        newAccessory.setPrice(data);
-                        infoData = getElementsFromElements(infoData, ".info-detail li:gt(0)");
-                        //Raw data use to paste json
-                        Map<String, Object> infor = new HashMap<>();
-                        for (Element e : infoData) {
-                            key = getDataByDiv(e.select(".left"), ".left").replace(":", "");
-                            if (key.equals("Tính năng")) {
-                                key = "features";
-                            } else {
-                                key = "installation";
-                            }
-                            value = getDataByDiv(e.select(".right"), ".right").replace(":", "");
-                            infor.put(key, value);
-                        }
-                        //Paste Json
-                        Gson gson = new Gson();
-                        String json = gson.toJson(infor);
-                        newAccessory.setDescription(json);
-                        String hashCode = newAccessory.hashCode() + "";
-                        newAccessory.setHashAccessoryCode(hashCode);
-                        accessoryList.put(newAccessory, newImageEntity);
+                        mapUrlAndDocument.put(accessoryUrl, doc);
                     }
-                    categoryMappingAccessories.put(categoryName, accessoryList);
+                }
+                if (mapCategory.keySet().contains(categoryName)) {
+                    mapUrlAndDocument.putAll(mapCategory.get(categoryName));
+                }
+                mapCategory.put(categoryName, mapUrlAndDocument);
+            }
+        }
+        for (Map.Entry<String, Map<String, Document>> entry : mapCategory.entrySet()) {
+            categoryName = entry.getKey();
+            Map<String, Document> linkAndDoc = entry.getValue();
+            List<Map<String, String>> listAccessory = new ArrayList<>();
+            for (Map.Entry<String, Document> mapUrlDocument : linkAndDoc.entrySet()) {
+                String accessoryUrl = mapUrlDocument.getKey();
+                Document doc = mapUrlDocument.getValue();
+                Elements elements = getContentFromDoc(doc, ".product-detail");
+                Elements imageData = getElementsFromElements(elements, "#img-big img");
+                String imageUrl = imageData.attr("src");
+                if (!imageUrl.equals("")) {
+                    Elements infoData = getElementsFromElements(elements, ".info");
+                    String name = getDataByDiv(infoData, ".title");
+                    String price = getDataByDiv(infoData, ".price").replaceAll("[^0-9]", "")
+                            .replace(".", "");
+                    infoData = getElementsFromElements(infoData, ".info-detail li:gt(0)");
+                    String description = "";
+                    for (Element e : infoData) {
+                        key = getDataByDiv(e.select(".left"), ".left").replace(":", "");
+                        value = getDataByDiv(e.select(".right"), ".right").replace(":", "");
+                        description += "\n" + key.replace(":", "") + ":" + value;
+                    }
+                    Map<String, String> accessoryDetail = new HashMap<>();
+                    accessoryDetail.put("name", name);
+                    accessoryDetail.put("url", accessoryUrl);
+                    accessoryDetail.put("description", description.replaceFirst("\n", ""));
+                    accessoryDetail.put("brand", "Honda");
+                    accessoryDetail.put("status", "NEW");
+                    accessoryDetail.put("image", imageUrl);
+                    accessoryDetail.put("price", price);
+                    listAccessory.add(accessoryDetail);
                 }
             }
+//                System.out.println("Name:" + categoryName);
+//                System.out.println(listAccessory.toString());
+            categogyAndAccessory.put(categoryName, listAccessory);
         }
     }
 
+    //Store list link Accessory Honda
     private List<String> getListPageHonda() {
         List<String> pageList = new ArrayList<>();
         //Add link use to crawl
@@ -448,6 +519,9 @@ public class BikeHondaCrawler {
     private Map<String, Document> getListUrlsAndDocuments(List<String> listLink) throws IOException {
         Map<String, Document> mapDocument = new HashMap<>();
         for (String url : listLink) {
+            if (url.equals("https://suzuki.com.vn/index.php/xe-motor/vstrom1000")) {
+                url = "https://suzuki.com.vn/index.php/xe-motor/v-strom-1000";
+            }
             mapDocument.put(url, Jsoup.connect(url).get());
         }
         return mapDocument;
@@ -507,20 +581,4 @@ public class BikeHondaCrawler {
         return linkList;
     }
 
-    private ImageEntity getProductImages(String type) {
-        ImageEntity newImage = new ImageEntity();
-        newImage.setType(type);
-        newImage.setStatus("NEW");
-        return newImage;
-    }
-
-    private AccessoryEntity getAccessory(String url, String brand) {
-        AccessoryEntity newAccessory = new AccessoryEntity();
-        newAccessory.setUrl(url);
-        newAccessory.setBrand(brand);
-        newAccessory.setStatus("NEW");
-        return newAccessory;
-    }
-
 }
-
