@@ -50,8 +50,9 @@ public class BikeHondaCrawler {
     public static void main(String[] args) {
         BikeHondaCrawler crawler = new BikeHondaCrawler();
         try {
+            crawler.getBikeFromYamaha();
             //crawler.getBikeFromHonda();
-            crawler.getBikeFromSuzuki();
+            //crawler.getBikeFromSuzuki();
             //crawler.getAccessoryFromHonda();
         } catch (IOException e) {
             e.printStackTrace();
@@ -69,39 +70,52 @@ public class BikeHondaCrawler {
     }
 
     private void getBikeFromYamaha() throws IOException {
-		List<String> linkXeTayGa = new ArrayList<>();
+        List<String> linkXeTayGa = new ArrayList<>();
         List<String> linkXeSo = new ArrayList<>();
         List<String> linkXeConTay = new ArrayList<>();
-        List<String> linkXeMoTo = new ArrayList<>();
+
         //Get list link
         Document document = Jsoup.connect("https://yamaha-motor.com.vn/xe/loai-xe/xe-so").validateTLSCertificates(false).get();
-		Elements elements = document.select(".cate_pro.filtr-item");
-		for (Element e: elements){
-			String titlle = e.select("h2").text();
-			if (titlle.equals("Exciter")){
-				linkXeConTay = getListLink("a.btnView","href");
-			}else{
-				linkXeSo = getListLink("a.btnView","href");
-			}
-		}
-		document = Jsoup.connect("https://yamaha-motor.com.vn/xe/loai-xe/xe-nhap-khau").validateTLSCertificates(false).get();
-		Elements elements = document.select(".cate_pro.filtr-item");
-		linkXeConTay.addAll(getListLink("a.btnView","href"));
-			
+        Elements elements = document.select(".cate_pro.filtr-item");
+        String link;
+        for (Element e : elements) {
+            String titlle = e.select("h2").text();
+            if (titlle.equals("Exciter")) {
+                for (Element sub : e.select("a.btnView")) {
+                    link = sub.attr("href");
+                    if (link.contains("http")){
+                        linkXeConTay.add(link);
+                    }
+                }
+            } else {
+                for (Element sub : e.select("a.btnView")) {
+                    link = sub.attr("href");
+                    if (link.contains("http")){
+                        linkXeSo.add(link);
+                    }
+                }
+            }
+        }
+        document = Jsoup.connect("https://yamaha-motor.com.vn/xe/loai-xe/xe-nhap-khau").validateTLSCertificates(false).get();
+        elements = document.select(".cate_pro.filtr-item");
+        linkXeConTay.addAll(getListLink(elements, "a.btnView", "href"));
+
         document = Jsoup.connect("https://yamaha-motor.com.vn/xe/loai-xe/xe-ga").validateTLSCertificates(false).get();
-		Elements elements = document.select(".cate_pro.filtr-item");
-		linkXeTayGa = getListLink("a.btnView","href");
-        
+        elements = document.select(".cate_pro.filtr-item");
+        linkXeTayGa = getListLink(elements, "a.btnView", "href");
+
+        System.out.println(linkXeConTay);
+        System.out.println(linkXeSo);
+        System.out.println(linkXeTayGa);
 
         Map<String, Document> mapLinkConTay = new HashMap<>();
         Map<String, Document> mapLinkTayGa = new HashMap<>();
         Map<String, Document> mapLinkXeSo = new HashMap<>();
-        Map<String, Document> mapLinkXeMoTo = new HashMap<>();
+
         //Get Map Url and Document
-        mapLinkXeMoTo = getListUrlsAndDocuments(linkXeMoTo);
-        mapLinkTayGa = getListUrlsAndDocuments(linkXeTayGa);
-        mapLinkXeSo = getListUrlsAndDocuments(linkXeSo);
-        mapLinkConTay = getListUrlsAndDocuments(linkXeConTay);
+//        mapLinkTayGa = getListUrlsAndDocuments(linkXeTayGa);
+//        mapLinkXeSo = getListUrlsAndDocuments(linkXeSo);
+//        mapLinkConTay = getListUrlsAndDocuments(linkXeConTay);
     }
 
     private void getBikeFromSuzuki() throws IOException {
@@ -262,7 +276,9 @@ public class BikeHondaCrawler {
         List<String> listLink = new ArrayList<>();
         for (Element e : elements.select(selector)) {
             link = e.attr(attr);
-            listLink.add(link);
+            if (link.contains("http")){
+                listLink.add(link);
+            }
         }
         return listLink;
     }
