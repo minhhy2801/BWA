@@ -54,7 +54,8 @@ public class BikeHondaCrawler {
             //crawler.getBikeFromSuzuki();
             //crawler.getAccessoryFromHonda();
             //crawler.getBikeFromTriumph();
-            crawler.getBikeFromKymco();
+            //crawler.getBikeFromKymco();
+            crawler.getBikeFromSym();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -66,10 +67,86 @@ public class BikeHondaCrawler {
         getBikeFromYamaha();
         getBikeFromKymco();
         getBikeFromTriumph();
+        getBikeFromSym();
     }
 
     public void crawlAccessory() throws IOException {
         getAccessoryFromHonda();
+    }
+
+    private void getBikeFromSym() throws IOException {
+        List<String> linkXeTayGa = new ArrayList<>();
+        List<String> linkXeSo = new ArrayList<>();
+
+        Document doc = Jsoup.connect("http://www.sym.com.vn/san-pham.html").get();
+        Elements elements = doc.select(".fleft [data-tabs=\"xe-nhap-khau\"] .box-item-product");
+        linkXeTayGa = getListLink(elements, "a", "href");
+        //get link Xe So
+        elements = doc.select(".fleft [data-tabs=\"xe-so\"] .box-item-product");
+        linkXeSo = getListLink(elements, "a", "href");
+        //get link Xe Tay Ga
+        elements = doc.select(".fleft [data-tabs=\"xe-tay-ga\"] .box-item-product");
+        linkXeTayGa.addAll(getListLink(elements, "a", "href"));
+
+        Map<String, Document> mapLinkTayGa = new HashMap<>();
+        Map<String, Document> mapLinkXeSo = new HashMap<>();
+
+        mapLinkTayGa = getListUrlsAndDocuments(linkXeTayGa);
+        mapLinkXeSo = getListUrlsAndDocuments(linkXeSo);
+
+        for (Map.Entry<String, Document> mapUrlDocument : mapLinkTayGa.entrySet()) {
+            listXeTayGa.addAll(crawlBikeSym(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
+        }
+        for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeSo.entrySet()) {
+            listXeSo.addAll(crawlBikeSym(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
+        }
+    }
+
+    private List<Map<String, String>> crawlBikeSym(Document document, String url) {
+        List<Map<String, String>> listBike = new ArrayList<>();
+        String name = document.title().replace("| SYM Vietnam", "");
+        String key, value;
+        Gson gson = new Gson();
+        //Dac diem noi bat
+        Elements elements = document.select(".box-jssor-product");
+        Map<String, String> outerBox = new HashMap<>();
+        String features = "";
+        for (Element e : elements) {
+            key = e.select(".detail-title").text().replace(":", "");
+            value = e.select(".detail-content").text();
+            features += "|" + key + ":" + value;
+        }
+        outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
+        //Thong so ky thuat
+        String specifications = "";
+        elements = document.select(".box-detail-products:contains(THÔNG SỐ) li");
+        for (Element e : elements.select("tr")) {
+            key = e.select(".col-left").text();
+            value = e.select("col-right").text();
+            if (!key.equals("")) {
+                specifications += "|" + key + ":" + value;
+            }
+        }
+        outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
+        String description = gson.toJson(outerBox);
+        //version and price
+        String version, price, image;
+        elements = document.select(".wrap-color");
+        version = name;
+        price = document.select(".num-price").text().replace(".", "");
+        Map<String, String> bikeDetail = new HashMap<>();
+        elements = document.select(".fancybox-thumb");
+        Map<String, String> listImage = new HashMap<>();
+        for (Element e: elements){
+            key = elements.select("a").attr("title");
+            value = elements.select("a").attr("href");
+            listImage.put(key,value);
+        }
+        image = gson.toJson(listImage);
+        bikeDetail = bikeInfo(url, name, "Honda", description, version, price, image);
+        System.out.println(bikeDetail.toString());
+        listBike.add(bikeDetail);
+        return listBike;
     }
 
     private void getBikeFromKymco() throws IOException {
@@ -400,84 +477,93 @@ public class BikeHondaCrawler {
         mapLinkXeSo = getListUrlsAndDocuments(linkXeSo);
         mapLinkConTay = getListUrlsAndDocuments(linkXeConTay);
 
+        for (Map.Entry<String, Document> mapUrlDocument : mapLinkTayGa.entrySet()) {
+            listXeTayGa.addAll(crawlBikeSuzuki(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
+        }
+        for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeSo.entrySet()) {
+            listXeSo.addAll(crawlBikeSuzuki(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
+        }
+        for (Map.Entry<String, Document> mapUrlDocument : mapLinkConTay.entrySet()) {
+            listXeCon.addAll(crawlBikeSuzuki(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
+        }
         for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeMoTo.entrySet()) {
-            String url = mapUrlDocument.getKey();
-            String price = "";
-            document = mapUrlDocument.getValue();
-            String name = document.title();
-            String key, value;
-            Gson gson = new Gson();
-            //Dac diem noi bat
-            String features = "";
-            String specifications = "";
-            List<String> listAccessories = new ArrayList<>();
-            String accessory = "";
-            elements = document.select(".uk-panel.nopadding");//.uk-overlay-active
-            Map<String, String> outerBox = new HashMap<>();
-            for (Element e : elements) {
-                key = e.select("h3").text();
-                if (!key.equals("")) {
-                    //Thong so ki thuat
-                    if (!key.equals("THÔNG SỐ KĨ THUẬT") & !key.equals("PHỤ KIỆN & LINH KIỆN")) {
-                        value = e.select("span").text();
-                        features += "|" + key + ":" + value;
-                    }
-//                        for (Element detail : e.select(".uk-grid-width-1-1 p")) {
-//                            key = detail.select("strong").text();
-//                            value = detail.text();
-//                            features += "|" + key + ":" + value;
-//                        }
+            listXeMoTo.addAll(crawlBikeSuzuki(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
+        }
+    }
+
+    private List<Map<String, String>> crawlBikeSuzuki(Document document, String url) {
+        List<Map<String, String>> listBike = new ArrayList<>();
+        String price = "";
+        String name = document.title();
+        String key, value;
+        Gson gson = new Gson();
+        //Dac diem noi bat
+        String features = "";
+        String specifications = "";
+        List<String> listAccessories = new ArrayList<>();
+        String accessory = "";
+        Elements elements = document.select(".uk-panel.nopadding");//.uk-overlay-active
+        Map<String, String> outerBox = new HashMap<>();
+        for (Element e : elements) {
+            key = e.select("h3").text();
+            if (!key.equals("")) {
+                //Thong so ki thuat
+                if (!key.equals("THÔNG SỐ KĨ THUẬT") & !key.equals("PHỤ KIỆN & LINH KIỆN")) {
+                    value = e.select("span").text();
+                    features += "|" + key + ":" + value;
                 }
             }
-            outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
+        }
+        outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
 
-            String fakeKey = "";
-            for (Element e : document.select(".uk-margin table")) {
-                String titlle = e.select("thead").text();
-                for (Element sub : e.select("tbody tr")) {
-                    switch (titlle) {
-                        case "KÍCH THƯỚC VÀ TRỌNG LƯỢNG":
-                            key = sub.select("td:eq(0)").text();
-                            value = sub.select("td:eq(2)").text()
-                                    + sub.select("td:eq(1)").text();
-                            specifications += "|" + key + ":" + value;
-                            break;
-                        case "ĐỘNG CƠ":
-                            key = sub.select("td:eq(0)").text();
-                            value = sub.select("td:eq(1)").text();
-                            specifications += "|" + key + ":" + value;
-                            break;
-                        case "HỆ THỐNG TRUYỀN ĐỘNG":
-                            key = sub.select("td:eq(0)").text();
-                            value = sub.select("td:eq(1)").text();
-                            specifications += "|" + key + ":" + value;
-                            break;
-                        case "KHUNG SƯỜN":
-                            key = sub.select("td:eq(0)").text();
-                            value = sub.select("td:eq(1)").text();
+        String fakeKey = "";
+        for (Element e : document.select(".uk-margin table")) {
+            String titlle = e.select("thead").text();
+            for (Element sub : e.select("tbody tr")) {
+                switch (titlle) {
+                    case "KÍCH THƯỚC VÀ TRỌNG LƯỢNG":
+                        key = sub.select("td:eq(0)").text();
+                        value = sub.select("td:eq(2)").text()
+                                + sub.select("td:eq(1)").text();
+                        specifications += "|" + key + ":" + value;
+                        break;
+                    case "ĐỘNG CƠ":
+                        key = sub.select("td:eq(0)").text();
+                        value = sub.select("td:eq(1)").text();
+                        specifications += "|" + key + ":" + value;
+                        break;
+                    case "HỆ THỐNG TRUYỀN ĐỘNG":
+                        key = sub.select("td:eq(0)").text();
+                        value = sub.select("td:eq(1)").text();
+                        specifications += "|" + key + ":" + value;
+                        break;
+                    case "KHUNG SƯỜN":
+                        key = sub.select("td:eq(0)").text();
+                        value = sub.select("td:eq(1)").text();
 //                                key = fakeKey + sub.select("td:eq(0)").text();
 //                                value = sub.select("td:eq(1)").text();
-                            specifications += "|" + key + ":" + value;
-                            break;
-                    }
+                        specifications += "|" + key + ":" + value;
+                        break;
                 }
             }
-            outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
-            String description = gson.toJson(outerBox);
-
-            elements = document.select(".smart-slider-border2 img");
-            String image;
-            Map<String, String> mapImage = new HashMap<>();
-            int i = 0;
-            for (Element e : elements) {
-                i++;
-                value = e.attr("src");
-                mapImage.put(i + "", value);
-            }
-            image = gson.toJson(mapImage);
-            Map<String, String> bikeDetail = bikeInfo(url, name, "Suzuki", description, name, price, image);
-            listXeMoTo.add(bikeDetail);
         }
+        outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
+        String description = gson.toJson(outerBox);
+        System.out.println(description);
+        elements = document.select(".smart-slider-border2 img");
+        String image;
+        Map<String, String> mapImage = new HashMap<>();
+        int i = 0;
+        for (Element e : elements) {
+            i++;
+            value = e.attr("src");
+            mapImage.put(i + "", value);
+        }
+        image = gson.toJson(mapImage);
+        System.out.println(image);
+        Map<String, String> bikeDetail = bikeInfo(url, name, "Suzuki", description, name, price, image);
+        listBike.add(bikeDetail);
+        return listBike;
     }
 
     private void getBikeFromHonda() throws IOException {
