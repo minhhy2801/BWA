@@ -119,10 +119,17 @@ public class BikeHondaCrawler {
         outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
         //Thong so ky thuat
         String specifications = "";
-        elements = document.select(".box-detail-products:contains(THÔNG SỐ) li");
-        for (Element e : elements.select("tr")) {
+        elements = document.select(".box-detail-products:contains(THÔNG SỐ)");
+        if (!elements.select("tr").isEmpty()){
+            for (Element sub : elements.select("tr")) {
+                key = sub.select("td:eq(0)").text();
+                value = sub.select("td:eq(1)").text();
+                specifications += "|" + key + ":" + value;
+            }
+        }
+        for (Element e : elements.select("li")) {
             key = e.select(".col-left").text();
-            value = e.select("col-right").text();
+            value = e.select(".col-right").text();
             if (!key.equals("")) {
                 specifications += "|" + key + ":" + value;
             }
@@ -137,15 +144,16 @@ public class BikeHondaCrawler {
         Map<String, String> bikeDetail = new HashMap<>();
         elements = document.select(".fancybox-thumb");
         Map<String, String> listImage = new HashMap<>();
-        for (Element e: elements){
-            key = elements.select("a").attr("title");
-            value = elements.select("a").attr("href");
-            listImage.put(key,value);
+        for (Element e : elements) {
+            key = e.select("a").attr("title");
+            value = e.select("a").attr("href");
+            listImage.put(key, value);
         }
         image = gson.toJson(listImage);
+        System.out.println(image);
         bikeDetail = bikeInfo(url, name, "Honda", description, version, price, image);
-        System.out.println(bikeDetail.toString());
         listBike.add(bikeDetail);
+        System.out.println(url);
         return listBike;
     }
 
