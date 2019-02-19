@@ -10,7 +10,6 @@ import capstone.bwa.demo.repositories.EventRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
-import okhttp3.internal.Internal;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -20,7 +19,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +26,7 @@ import java.util.Map;
 /*******************************************************************************
  * ::STATUS::
  * PENDING: chờ duyệt
- * ONGOING: đã duyệt đang trong giai đoạn
+ * WAITING_PUBLIC: đã duyệt đang trong giai đoạn
  * REJECT: bị trả về
  * HIDDEN: không đủ điều kiện diễn ra event, hoặc bị BAN
  * FINISHED: event kết thúc
@@ -37,6 +35,7 @@ import java.util.Map;
 @RestController
 public class EventController {
     private final String pending = "PENDING";
+    private final String waitingPublic = "WAITING_PUBLIC";
     private final String ongoing = "ONGOING";
     private final String finished = "FINISHED";
     private final String reject = "REJECT";
@@ -85,35 +84,22 @@ public class EventController {
         EventEntity entity = eventRepository.findById(id);
         if (entity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        if (entity.getStatus().equals(pending) || entity.getStatus().equals(reject)
-                || entity.getStatus().equals(hidden))
+        if (!entity.getStatus().equals(ongoing) && !entity.getStatus().equals(finished))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
 
-        // compare public time & current time
-        try {
-            Date date = new Date(System.currentTimeMillis());
-            SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
-            Date publicTime = format.parse(entity.getPublicTime());
-            if (date.compareTo(publicTime) <= 0) { //current earlier than public
-                return new ResponseEntity(HttpStatus.LOCKED);
-            }
-
-            return new ResponseEntity(entity, HttpStatus.OK);
-        } catch (ParseException e) {
-            throw new CustomException("Time Parse Error", HttpStatus.BAD_REQUEST);
-        }
+        return new ResponseEntity(entity, HttpStatus.OK);
     }
 
     /**
-     * Search like by title (Vietnamese)
+     * return list name events
      *
-     * @param body (txtSearch)
-     * @return 404 if not found
-     * 200 if OK
+     * @return
      */
-    @GetMapping("event/search")
-    public ResponseEntity searchListEvents(@RequestBody Map<String, String> body) {
-        return null;
+    @GetMapping("events/title")
+    public ResponseEntity searchListEventsName() {
+        List<EventEntity> list = eventRepository.findAllTitle(ongoing, finished);
+//        List<Object[]> list = eventRepository.findAllPublicTimeAndEndRegisterTime(ongoing, waitingPublic);
+        return new ResponseEntity(list, HttpStatus.OK);
     }
 
 
@@ -135,14 +121,15 @@ public class EventController {
      * }
      */
     @JsonView(View.IEvents.class)
-    @GetMapping("events/page/{id}/limit/{quantity}")
+    @PostMapping("events/page/{id}/limit/{quantity}")
     public ResponseEntity getListEvents(@PathVariable int id, @PathVariable int quantity,
                                         @RequestBody Map<String, String> body) {
         String status = body.get("status");
-        if (body.isEmpty()) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        if (status.equals(hidden) || status.equals(reject) || status.equals(pending))
+        if (!status.equals(ongoing) && !status.equals(finished))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
+
         List<EventEntity> list;
         // number of page with n elements
         Pageable pageWithElements = PageRequest.of(id, quantity);
@@ -169,7 +156,7 @@ public class EventController {
     @PostMapping("user/{id}/event")
     public ResponseEntity createAnEvent(@PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(id);
-        if (body.isEmpty()) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
@@ -179,6 +166,10 @@ public class EventController {
             EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
             eventEntity.setCreatorId(id);
             eventEntity.setCreatedTime(date.toString());
+
+            eventEntity.setTotalFeedback(0);
+            eventEntity.setTotalRate("0");
+            eventEntity.setTotalSoldTicket(0);
 
             eventRepository.saveAndFlush(eventEntity);
             setEventListImages(body, eventEntity);
@@ -288,12 +279,12 @@ public class EventController {
     @GetMapping("user/{id}/events/page/{pageId}/limit/{quantity}")
     public ResponseEntity getListEventsByUserIdNStatus(@PathVariable int id, @PathVariable int quantity,
                                                        @PathVariable int pageId, @RequestBody Map<String, String> body) {
+        if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
+
         AccountEntity accountEntity = accountRepository.findById(id);
         if (accountEntity == null || !accountEntity.getRoleByRoleId().getName().equals(roleUser)
                 || !accountEntity.getStatus().equals(accountStatus))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-
-        if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
 
         Pageable pageWithElements = PageRequest.of(pageId, quantity);
         List<EventEntity> list;

@@ -44,9 +44,9 @@ public class EventEntity {
     private String endRegisterTime;
     @JsonView(View.IEventDetail.class)
     private Integer totalSoldTicket;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private Integer totalFeedback;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String totalRate;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String status;
