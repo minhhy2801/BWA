@@ -32,20 +32,26 @@ public class CrawlController {
     @Autowired
     private NewsRepository newsRepository;
 
+    @Autowired
+    private ReferencesLinkRepository referencesLinkRepository;
+
     @GetMapping("admin/crawl_bikes")
     public ResponseEntity crawlBike() {
         BikeHondaCrawler crawler = new BikeHondaCrawler();
         List<Map<String, String>> listBike = new ArrayList<>();
+        Map<Integer,String> mapCatelogyAndLink = getCategoryAndLink();
         try {
-            crawler.crawlBike();
-            listBike = crawler.getListXeTayGa();
-            addBike(6, listBike);
-            listBike = crawler.getListXeCon();
-            addBike(5, listBike);
-            listBike = crawler.getListXeSo();
-            addBike(7, listBike);
-            listBike = crawler.getListXeMoTo();
-            addBike(8, listBike);
+            for (Map.Entry<Integer,String> entry:mapCatelogyAndLink.entrySet()){
+                crawler.crawlBike(entry.getValue());
+                listBike = crawler.getListXeTayGa();
+                addBike(6, listBike);
+                listBike = crawler.getListXeCon();
+                addBike(5, listBike);
+                listBike = crawler.getListXeSo();
+                addBike(7, listBike);
+                listBike = crawler.getListXeMoTo();
+                addBike(8, listBike);
+            }
         } catch (IOException e) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
@@ -55,15 +61,15 @@ public class CrawlController {
     @GetMapping("admin/crawl_accessories")
     public ResponseEntity crawlAccessory() {
         BikeHondaCrawler crawler = new BikeHondaCrawler();
-        Map<String,List<Map<String,String>>> listCategoryAccessory = new HashMap<>();
+        Map<String, List<Map<String, String>>> listCategoryAccessory = new HashMap<>();
         try {
             crawler.crawlAccessory();
             listCategoryAccessory = crawler.getCategogyAndAccessory();
-            for (Map.Entry<String,List<Map<String,String>>> entry: listCategoryAccessory.entrySet()){
+            for (Map.Entry<String, List<Map<String, String>>> entry : listCategoryAccessory.entrySet()) {
                 String categogyName = entry.getKey();
-                int categoryId = checkCategory(categogyName);
-                List<Map<String,String>> listAccessory = entry.getValue();
-                addAccessory(categoryId,listAccessory);
+                int categoryId = 1;
+                List<Map<String, String>> listAccessory = entry.getValue();
+                addAccessory(categoryId, listAccessory);
             }
         } catch (IOException e) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -94,19 +100,13 @@ public class CrawlController {
         }
     }
 
-    private int checkCategory(String categogyName) {
-        int categoryID;
-        CategoryEntity categoryEntity = categoryRepository.findByName(categogyName);
-        if (categoryEntity == null) {
-            CategoryEntity newCategory = new CategoryEntity();
-            newCategory.setName(categogyName);
-            newCategory.setType("NewCategogy");
-            newCategory.setStatus("NEW");
-            categoryRepository.saveAndFlush(newCategory);
-            categoryEntity = categoryRepository.findByName(categogyName);
+    private Map<Integer,String> getCategoryAndLink() {
+        List<ReferencesLinkEntity> listLinks = referencesLinkRepository.findAll();
+        Map<Integer,String> mapUrlAndCatelogy = new HashMap<>();
+        for (ReferencesLinkEntity referencesLinkEntity:listLinks){
+            mapUrlAndCatelogy.put(referencesLinkEntity.getCategoryId(),referencesLinkEntity.getUrl());
         }
-        categoryID = categoryEntity.getId();
-        return categoryID;
+        return mapUrlAndCatelogy;
     }
 
     private void addBike(int catelogyId, List<Map<String, String>> listBike) {
@@ -134,6 +134,7 @@ public class CrawlController {
                 imageRepository.saveAndFlush(newImage);
             }
         }
+
     }
 
     private boolean checkDuplicateBike(BikeEntity newBike) {
@@ -143,7 +144,7 @@ public class CrawlController {
             int bike = Integer.parseInt(newBike.getHashBikeCode());
             if (exit == bike) {
                 if (!bikeEntity.getUrl().equals(newBike.getUrl()) || !bikeEntity.getDescription().
-                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())){
+                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())) {
                     bikeEntity.setPrice(newBike.getPrice());
                     bikeEntity.setDescription(newBike.getDescription());
                     bikeEntity.setUrl(newBike.getUrl());
