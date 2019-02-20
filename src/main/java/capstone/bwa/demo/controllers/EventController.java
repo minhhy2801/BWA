@@ -27,6 +27,7 @@ import java.util.Map;
  * ::STATUS::
  * PENDING: chờ duyệt
  * WAITING_PUBLIC: đã duyệt đang trong giai đoạn
+ * ONGOING: đã qua ngày public time
  * REJECT: bị trả về
  * HIDDEN: không đủ điều kiện diễn ra event, hoặc bị BAN
  * FINISHED: event kết thúc
@@ -40,6 +41,8 @@ public class EventController {
     private final String finished = "FINISHED";
     private final String reject = "REJECT";
     private final String hidden = "HIDDEN";
+
+
     private final String getAll = "ALL";
     private final String roleUser = "USER";
     private final String roleAdmin = "ADMIN";
@@ -127,7 +130,7 @@ public class EventController {
         String status = body.get("status");
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        if (!status.equals(ongoing) && !status.equals(finished))
+        if (!status.equals(ongoing) && !status.equals(finished) && !status.equals(getAll))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
 
         List<EventEntity> list;

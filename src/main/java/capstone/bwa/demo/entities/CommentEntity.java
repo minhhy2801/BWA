@@ -10,8 +10,8 @@ public class CommentEntity {
     private Integer newsId;
     private Integer creatorId;
     private String createdTime;
-    private Integer editorId;
     private String editedTime;
+    private Integer editorId;
     private String description;
     private String status;
     private NewsEntity newsByNewsId;

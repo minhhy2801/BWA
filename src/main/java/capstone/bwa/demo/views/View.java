@@ -5,6 +5,6 @@ public class View {
     public interface IEventDetail{};
     public interface IEvents{};
     interface IFeedback{};
-    interface IEventRegistered{};
+    public interface IEventRegistered{};
     interface INews{};
 }

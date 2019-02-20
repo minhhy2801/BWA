@@ -29,10 +29,11 @@ public class EventEntity {
     private Integer minTicket;
     @JsonView(View.IEventDetail.class)
     private Integer maxTicket;
+    @JsonView(View.IEventDetail.class)
     private String createdTime;
     @JsonView(View.IEventDetail.class)
     private String approvedTime;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class})
     private String startTime;
     @JsonView(View.IEventDetail.class)
     private String endTime;

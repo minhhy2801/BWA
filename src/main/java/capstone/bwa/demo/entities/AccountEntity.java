@@ -12,10 +12,8 @@ import java.util.Objects;
 public class AccountEntity {
     @JsonView(View.IAccountProfile.class)
     private int id;
-    @JsonView({View.IAccountProfile.class,
-            View.IEventDetail.class})
+    @JsonView({View.IAccountProfile.class, View.IEventDetail.class, View.IEventRegistered.class})
     private String name;
-
     @JsonView(View.IAccountProfile.class)
     private String phone;
     private String password;
@@ -29,6 +27,9 @@ public class AccountEntity {
     @JsonView(View.IAccountProfile.class)
     private String rate;
     private String status;
+    private String createdTime;
+    private String editedTime;
+
     private RoleEntity roleByRoleId;
     private Collection<CommentEntity> commentsById;
     private Collection<EventEntity> eventsById;
@@ -145,6 +146,26 @@ public class AccountEntity {
         this.status = status;
     }
 
+    @Basic
+    @Column(name = "createdTime")
+    public String getCreatedTime() {
+        return createdTime;
+    }
+
+    public void setCreatedTime(String createdTime) {
+        this.createdTime = createdTime;
+    }
+
+    @Basic
+    @Column(name = "editedTime")
+    public String getEditedTime() {
+        return editedTime;
+    }
+
+    public void setEditedTime(String editedTime) {
+        this.editedTime = editedTime;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -154,6 +175,8 @@ public class AccountEntity {
                 Objects.equals(name, that.name) &&
                 Objects.equals(phone, that.phone) &&
                 Objects.equals(password, that.password) &&
+                Objects.equals(createdTime, that.createdTime) &&
+                Objects.equals(editedTime, that.editedTime) &&
                 Objects.equals(gender, that.gender) &&
                 Objects.equals(address, that.address) &&
                 Objects.equals(avatarUrl, that.avatarUrl) &&
@@ -164,7 +187,7 @@ public class AccountEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, phone, password, gender, address, avatarUrl, roleId, rate, status);
+        return Objects.hash(id, name, phone, password, createdTime, editedTime, gender, address, avatarUrl, roleId, rate, status);
     }
 
     @ManyToOne
