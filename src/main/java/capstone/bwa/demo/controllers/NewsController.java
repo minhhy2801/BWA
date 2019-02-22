@@ -3,12 +3,13 @@ package capstone.bwa.demo.controllers;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.ws.rs.Path;
 import java.util.Map;
 
 
 /*******************************************************************************
  * ::STATUS::
- * PUBLIC
+ * ACTIVE
  * HIDDEN
  *******************************************************************************/
 
@@ -16,52 +17,52 @@ import java.util.Map;
 public class NewsController {
 
     /**
-     * Returns News object
+     * Returns News object with status ACTIVE
+     * status send in body
      *
      * @param id of news
      * @return 404 if not found in db
      * 200 if found
-     * @apiNote example format
-     * {
-     * }
      */
-    @GetMapping("news/{id}")
-    public ResponseEntity getANews(@PathVariable int id) {
+    @PostMapping("news/{id}")
+    public ResponseEntity getANews(@PathVariable int id, @RequestBody Map<String, String> body) {
 
         return null;
     }
 
     /**
-     *  Returns list news object sort last by quantity (status public)
      * @param quantity
-     * @return 404 if not found in db
-     * 200 if found
+     * @param id
+     * @param body
+     * @return list news sort latest with status in body
      */
-    @GetMapping("news/limit/{quantity}")
-    public ResponseEntity getListNews(@PathVariable int quantity) {
+    @PostMapping("news/page/{id}/limit/{quantity}")
+    public ResponseEntity getListNews(@PathVariable int quantity, @PathVariable int id,
+                                      @RequestBody Map<String, String> body) {
 
         return null;
     }
 
     /**
-     * Return list news sort last by quantity, status
-     * if status = All -> get by quantity
+     * Return list news sort latest with status in body
+     *
      * @param id
      * @param quantity
-     * @param body (status)
-     * @return
-     * 404 if not found in db
+     * @param body     (status)
+     * @return 404 if not found in db
      * 403 if not admin
      * 200 if found
      */
-    @GetMapping("admin/{id}/news/limit/{quantity}/status")
-    public ResponseEntity getListNewsByAdmin(@PathVariable int id, @PathVariable int quantity, @RequestBody Map<String, String> body) {
+    @PostMapping("admin/{id}/news/page/{pageId}/limit/{quantity}")
+    public ResponseEntity getListNewsByAdmin(@PathVariable int id, @PathVariable int quantity,
+                                             @RequestBody Map<String, String> body, @PathVariable int pageId) {
 
         return null;
     }
 
     /**
-     * Returns new event object with status PUBLIC
+     * Returns news object with status ACTIVE
+     * only admin can create News
      *
      * @param id
      * @param body
@@ -76,35 +77,28 @@ public class NewsController {
     }
 
     /**
-     * Returns update news object
-     * Admin can update event of other admin
-     * Mem can only update event of him/herself
-     *
      * @param id
-     * @param userId
+     * @param adminId
      * @param body
-     * @return 403 if not admin
-     * 404 if not found news
-     * 200 if update success
+     * @return
      */
-
-    @PutMapping("admin/{userId}/news/{id}")
-    public ResponseEntity updateNews(@PathVariable int id, @PathVariable int userId, @RequestBody Map<String, String> body) {
+    @PutMapping("admin/{adminId}/news/{id}")
+    public ResponseEntity updateNews(@PathVariable int id, @PathVariable int adminId,
+                                     @RequestBody Map<String, String> body) {
 
         return null;
     }
 
     /**
-     * Returns update status news object
-     * @param userId
-     * @param id
-     * @param body (status)
-     * @return 403 if not admin
-     * 200 if update status hidden or public
+     *
+     * @param pageId
+     * @param quantity
+     * @param cateId
+     * @return list news by categoryId (status ACTIVE)
      */
-    @PutMapping("admin/{userId}/news/{id}/status")
-    public ResponseEntity changeStatusNews(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> body){
+    @GetMapping("news/page/{pageId}/limit/{quantity}/category/{cateId}")
+    public ResponseEntity getListNewsByCategory(@PathVariable int pageId, @PathVariable int quantity,
+                                                @PathVariable int cateId){
         return null;
     }
-
 }

@@ -9,7 +9,8 @@ import java.util.Map;
 
 /*******************************************************************************
  * ::STATUS::
- * PUBLIC
+ * PENDING
+ * ACTIVE
  * CLOSED
  * HIDDEN
  *******************************************************************************/
@@ -18,7 +19,6 @@ import java.util.Map;
 public class SupplyProductController {
     /**
      * Return list supply posts
-     * if status = ALL -> return status closed + public
      * status send in body
      *
      * @return 404 if not found
@@ -27,13 +27,15 @@ public class SupplyProductController {
      * <p>
      * }
      */
-    @GetMapping("supply_posts/page/{id}/limit/{quantity}")
-    public ResponseEntity getListSupplyPosts(@PathVariable int quantity, @PathVariable int id, @RequestBody Map<String, String> body) {
+    @PostMapping("supply_posts/page/{id}/limit/{quantity}")
+    public ResponseEntity getListSupplyPosts(@PathVariable int quantity, @PathVariable int id,
+                                             @RequestBody Map<String, String> body) {
         return null;
     }
 
     /**
      * Return supply post
+     * check status
      *
      * @param id
      * @return 404 if not found
@@ -48,7 +50,7 @@ public class SupplyProductController {
     }
 
     /**
-     * Return new supply post
+     * Return new supply post with status PENDING
      *
      * @param id
      * @param body
@@ -62,7 +64,8 @@ public class SupplyProductController {
     }
 
     /**
-     * Return change status
+     * Return update obj or close supply post by user
+     * after update status will PENDING
      *
      * @param id
      * @param userId
@@ -72,15 +75,28 @@ public class SupplyProductController {
      * 200 if OK
      */
     @PutMapping("user/{userId}/supply_post/{id}")
-    public ResponseEntity closeSupplyPost(@PathVariable int id, @PathVariable int userId, @RequestBody Map<String, String> body) {
+    public ResponseEntity updateSupplyPostByUser(@PathVariable int id, @PathVariable int userId,
+                                                 @RequestBody Map<String, String> body) {
 
         return null;
     }
 
     /**
-     *
+     * @param id
+     * @param adminId
+     * @param body
+     * @return change status any supply post
+     */
+    @PutMapping("admin/{adminId}/supply_post/{id}")
+    public ResponseEntity changeStatusSupplyPostByAdmin(@PathVariable int id, @PathVariable int adminId,
+                                                        @RequestBody Map<String, String> body) {
+        return null;
+    }
+
+    /**
      * status send in body
      * if status ALL -> get all supply post sort desc without status
+     *
      * @param userId
      * @param id
      * @param quantity
@@ -95,13 +111,14 @@ public class SupplyProductController {
 
     /**
      * status send in body
-     * if status ALL -> get all supply post sort desc without status
+     *
      * @param adminId
      * @param id
      * @param quantity
      * @param body
-     * @return
-     */
+     * @return list supply posts
+     **/
+
     @GetMapping("admin/{adminId}/supply_posts/page/{id}/limit/{quantity}")
     public ResponseEntity getListSupplyPostsByAdmin(@PathVariable int adminId, @PathVariable int id,
                                                     @PathVariable int quantity, @RequestBody Map<String, String> body) {

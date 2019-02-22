@@ -19,7 +19,7 @@ public class EventEntity {
     private String imgThumbnailUrl;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String title;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String description;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String location;

@@ -2,10 +2,11 @@ package capstone.bwa.demo.controllers;
 
 
 import capstone.bwa.demo.entities.AccountEntity;
+import capstone.bwa.demo.entities.CategoryEntity;
 import capstone.bwa.demo.entities.EventEntity;
 import capstone.bwa.demo.entities.ImageEntity;
-import capstone.bwa.demo.exceptions.CustomException;
 import capstone.bwa.demo.repositories.AccountRepository;
+import capstone.bwa.demo.repositories.CategoryRepository;
 import capstone.bwa.demo.repositories.EventRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import capstone.bwa.demo.views.View;
@@ -17,8 +18,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import java.util.Map;
  * PENDING: chờ duyệt
  * WAITING_PUBLIC: đã duyệt đang trong giai đoạn
  * ONGOING: đã qua ngày public time
+ * CLOSE_REGISTER: Hết ngày đăng ký
  * REJECT: bị trả về
  * HIDDEN: không đủ điều kiện diễn ra event, hoặc bị BAN
  * FINISHED: event kết thúc
@@ -39,6 +39,7 @@ public class EventController {
     private final String waitingPublic = "WAITING_PUBLIC";
     private final String ongoing = "ONGOING";
     private final String finished = "FINISHED";
+    private final String closeRegister = "CLOSE_REGISTER";
     private final String reject = "REJECT";
     private final String hidden = "HIDDEN";
 
@@ -55,6 +56,8 @@ public class EventController {
     private AccountRepository accountRepository;
     @Autowired
     private ImageRepository imageRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     /**
      * Returns an Event object
@@ -139,7 +142,6 @@ public class EventController {
         if (status.equals(getAll))
             list = eventRepository.findAllByStatusOrStatusOrderByIdDesc(ongoing, finished, pageWithElements);
         else list = eventRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
-
         if (list.size() < 1)
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
@@ -169,10 +171,9 @@ public class EventController {
             EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
             eventEntity.setCreatorId(id);
             eventEntity.setCreatedTime(date.toString());
-
             eventEntity.setTotalFeedback(0);
-            eventEntity.setTotalRate("0");
             eventEntity.setTotalSoldTicket(0);
+            eventEntity.setTotalRate(null);
 
             eventRepository.saveAndFlush(eventEntity);
             setEventListImages(body, eventEntity);
@@ -198,12 +199,11 @@ public class EventController {
     @JsonView(View.IEventDetail.class)
     @PutMapping("user/{userId}/event/{id}")
     public ResponseEntity updateAnEvent(@PathVariable int id, @PathVariable int userId, @RequestBody Map<String, String> body) {
-        AccountEntity accountEntity = accountRepository.findById(userId);
         EventEntity eventEntity = eventRepository.findById(id);
+        AccountEntity accountEntity = accountRepository.findById(userId);
 
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
-        if (eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         if (!eventEntity.getCreatorId().equals(userId)) return new ResponseEntity(HttpStatus.FORBIDDEN);
 
         if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
@@ -229,7 +229,8 @@ public class EventController {
      */
 
     @PutMapping("admin/{adminId}/event/{id}/status")
-    public ResponseEntity changeAnEventStatus(@PathVariable int id, @PathVariable int adminId, @RequestBody Map<String, String> body) {
+    public ResponseEntity changeAnEventStatus(@PathVariable int id, @PathVariable int adminId,
+                                              @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(adminId);
         EventEntity eventEntity = eventRepository.findById(id);
 
@@ -241,18 +242,6 @@ public class EventController {
         if (body == null || body.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
         Date date = new Date(System.currentTimeMillis());
         String status = body.get("status");
-//        SimpleDateFormat format = new SimpleDateFormat("hh:mm dd/MM/yyyy");
-//        Date testTime = null;
-//        try {
-//            testTime = format.parse("12:20 16/02/2019");
-//            if (date.compareTo(testTime) <= 0)
-//                System.out.println("time test chưa tới");
-//            else
-//                System.out.println("time test qua rồi");
-//        } catch (ParseException e) {
-//            throw new CustomException("Time Parse Error", HttpStatus.BAD_REQUEST);
-//        }
-
         eventEntity.setApprovedId(adminId);
         eventEntity.setApprovedTime(date.toString());
         eventEntity.setStatus(status);
@@ -299,6 +288,62 @@ public class EventController {
         }
         if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
+        return new ResponseEntity(list, HttpStatus.OK);
+    }
+
+    //------------------
+    @PostMapping("admin/{adminId}/event")
+    public ResponseEntity createEventByAdmin(@RequestBody Map<String, String> body, @PathVariable int adminId) {
+        AccountEntity accountAdminEntity = accountRepository.findById(adminId);
+
+        if (accountAdminEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        Date date = new Date(System.currentTimeMillis());
+        EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
+
+        eventEntity.setCreatedTime(date.toString());
+        eventEntity.setStatus(waitingPublic);
+        eventEntity.setTotalFeedback(0);
+        eventEntity.setTotalSoldTicket(0);
+        eventEntity.setCreatorId(adminId);
+        eventEntity.setApprovedId(adminId);
+        eventRepository.saveAndFlush(eventEntity);
+        setEventListImages(body, eventEntity);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @JsonView(View.IEventDetail.class)
+    @PutMapping("admin/{adminId}/event/{id}")
+    public ResponseEntity updateAnEventByAdmin(@PathVariable int id, @PathVariable int adminId,
+                                               @RequestBody Map<String, String> body) {
+        AccountEntity accountAdminEntity = accountRepository.findById(adminId);
+        EventEntity eventEntity = eventRepository.findById(id);
+
+        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        if (eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (accountAdminEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        eventEntity = paramEventEntityRequest(body, eventEntity);
+        eventRepository.saveAndFlush(eventEntity);
+        List<ImageEntity> list = imageRepository.findAllByEventByOwnId_IdAndType(id, "EVENT");
+        imageRepository.deleteAll(list);
+
+        setEventListImages(body, eventEntity);
+        return new ResponseEntity(eventEntity, HttpStatus.OK);
+    }
+
+    //sửa cái này
+    @JsonView(View.IEvents.class)
+    @PostMapping("events/category/{cateId}")
+    public ResponseEntity searchListEventsName(@PathVariable int cateId) {
+        CategoryEntity categoryEntity = categoryRepository.findById(cateId);
+
+        if (categoryEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        List<EventEntity> list = eventRepository.findAllByCategoryId(cateId);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        //check status category
         return new ResponseEntity(list, HttpStatus.OK);
     }
 

@@ -22,6 +22,7 @@ public class ScheduledTasks {
     private static final Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
     private final String waitingPublic = "WAITING_PUBLIC";
     private final String ongoing = "ONGOING";
+    private final String closeRegister = "CLOSE_REGISTER";
     private final String hidden = "HIDDEN";
 
     //Cron chạy method
@@ -61,13 +62,16 @@ public class ScheduledTasks {
                     if (eventEntity.getTotalSoldTicket() < eventEntity.getMinTicket()) {
                         System.out.println("Không đủ điều kiện mở event");
                         eventEntity.setStatus(hidden);
-                        eventRepository.save(eventEntity);
+                    } else {
+                        System.out.println("Đóng đăng ký rồi nha");
+                        eventEntity.setStatus(closeRegister);
                     }
+                    eventRepository.save(eventEntity);
                 }
             }
         } catch (ParseException ex) {
             logger.error("Cannot parse");
-        }catch (NullPointerException e){
+        } catch (NullPointerException e) {
             logger.error("Cannot compare");
         }
     }

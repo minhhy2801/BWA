@@ -25,5 +25,7 @@ public interface EventRepository extends JpaRepository<EventEntity, Integer> {
     List<EventEntity> findAllByCreatorIdAndStatusOrderByIdDesc(int creatorId, Pageable pageable, String status);
 
     List<EventEntity> findAllByCreatorIdOrderByIdDesc(int creatorId, Pageable pageable);
+
+    List<EventEntity> findAllByCategoryId(int categoryId);
 }
 
