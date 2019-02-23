@@ -8,45 +8,46 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class HondaxemayCrawler {
+public class CrawlNews {
     private String domain;
     private List<String> pages;
     private List<String> newsUrls;
     private final String END_LINE_CHAR = "\n";
+    private final String statusActive = "ACTIVE";
     private HashMap<NewsEntity, ImageEntity> results;
 
-    public HondaxemayCrawler() {
+    public CrawlNews() {
         this.newsUrls = new ArrayList<>();
         this.pages = new ArrayList<>();
-        results = new HashMap<>();
+        this.results = new HashMap<>();
     }
 
-//    public static void main(String[] args) {
-//        HondaxemayCrawler crawler = new HondaxemayCrawler();
-////        crawler.setDomain("https://autodaily.vn/chuyen-muc/xe-moi/xe-may/14");
-////        crawler.setDomain("https://motoanhquoc.vn/tin-tuc");
-//        crawler.setDomain("https://hondaxemay.com.vn/tin-tuc/");
-//        crawler.crawl();
-//    }
-
     //ham tong quat, de api goi
-    public void crawl() {
+    public void crawlNews() {
         try {
-            getPagesLink(); //lay tat ca link theo so trang cua domain dua vao
-            getAllNewsLink(); //lay link cua tat ca bai viet từ những link trang đã lấy phía trên
+            getPagesLink(); //lấy tất cả link theo số trang
+            getAllNewsLink(); //lấy tất cả link bài viết của các link phía trên
             for (String url : newsUrls) {
-                //TH dac biệt, phải bỏ link này
-                if (url.equals("https://hondaxemay.com.vn/tin-tuc/honda-winner-150-phoi-mau-moi-phong-cach-cung-tem-xe-rieng-biet-doi-dien-mao-them-tao-bao-2/")) {
+                //TH đặc biệt, loại bỏ những link này
+                if (url.equals("https://hondaxemay.com.vn/tin-tuc/honda-winner-150-phoi-mau-moi-phong-cach-cung-tem-xe" +
+                        "-rieng-biet-doi-dien-mao-them-tao-bao-2/") || url.equals("https://motoanhquoc.vn/tam-su-" +
+                        "tuoi-30/.html")) {
                     newsUrls.remove(url);
                     break;
                 }
             }
             //crawl bài viết từ các link bài viết đã lấy và lưu trữ lại vào map result
+            List<Document> mapDocument = new ArrayList<>();
             for (String newsURL : newsUrls) {
-                System.out.println(newsURL);
-                crawlNews(newsURL);
+                Document document = Jsoup.connect(newsURL).get();
+                mapDocument.add(document);
+            }
+            for (Document document : mapDocument) {
+                crawlNewsDetail(document);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -54,27 +55,28 @@ public class HondaxemayCrawler {
     }
 
     //crawl nội dung của bài viết và hình ảnh
-    public void crawlNews(String newsURL) throws IOException {
-        //get image entity
+    public void crawlNewsDetail(Document document) throws IOException {
+        //tạo image entity
         ImageEntity imageEntity = new ImageEntity();
-        String url = crawlImages(newsURL);
+        String url = crawlImages(document);
         imageEntity.setUrl(url);
-        if (imageEntity.getUrl().equals(""))
-            return;
+        if (imageEntity.getUrl().equals("")) return;
 
-        //get news entity
-        String title = crawlTitle(newsURL);
-        String description = crawlText(newsURL);
+        //tạo news entity
+        String title = crawlTitle(document);
+        String description = crawlText(document);
 
         NewsEntity newsEntity = new NewsEntity();
         newsEntity.setTitle(title);
         newsEntity.setDescription(description);
 
         newsEntity.setImgThumbnailUrl(getFirstImageURL(imageEntity));
-        newsEntity.setCreatedTime(java.time.LocalDate.now().toString());
-        newsEntity.setStatus("NEW");
-
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        Date date = new Date();
+        newsEntity.setCreatedTime(dateFormat.format(date));
+        newsEntity.setStatus(statusActive);
         imageEntity.setNewsByOwnId(newsEntity);
+
         this.results.put(newsEntity, imageEntity);
     }
 
@@ -88,10 +90,10 @@ public class HondaxemayCrawler {
     }
 
     //crawl title của bài viết
-    private String crawlTitle(String newsURL) throws IOException {
-        Document document = Jsoup.connect(newsURL).get();
+    private String crawlTitle(Document document) throws IOException {
         String selector = "";
         if (domain.equals("https://hondaxemay.com.vn/tin-tuc/")) {
+            //class chứa tittle
             selector = "div#content-print h1.title";
         } else if (domain.equals("https://motoanhquoc.vn/tin-tuc")) {
             selector = ".col-md-12 h2.post-title";
@@ -106,12 +108,11 @@ public class HondaxemayCrawler {
     }
 
     //crawl nội dung chữ của bài viết
-    private String crawlText(String newsURL) throws IOException {
+    private String crawlText(Document document) throws IOException {
         //format cua content:
         //cuoi moi doan se ket thuc bang ky tu \n
         //cac noi dung kieu liet ke trong <ul> <li> se co dang - noidung, cuoi moi dong van co ky tu \n
         //doan cuoi cung se ko co ky tu \n
-        Document document = Jsoup.connect(newsURL).get();
         String selector = "";
         if (domain.equals("https://motoanhquoc.vn/tin-tuc")) {
             selector = ".post-content";
@@ -144,8 +145,7 @@ public class HondaxemayCrawler {
     }
 
     //crawl lấy link các hình ảnh trong bài viết, tạo thành chuỗi url cho ImageEntity
-    private String crawlImages(String newsUrl) throws IOException {
-        Document document = Jsoup.connect(newsUrl).get();
+    private String crawlImages(Document document) throws IOException {
         String selector = "";
         if (domain.equals("https://motoanhquoc.vn/tin-tuc")) {
             selector = ".post-content img[src]";
@@ -156,12 +156,12 @@ public class HondaxemayCrawler {
         }
         Elements imgElements = document.select(selector);
         String imgUrls = "";
+        //lưu hình ảnh dùng dấu , để tách các ảnh
         for (int i = 0; i < imgElements.size(); i++) {
             if (i == (imgElements.size() - 1)) //last element
                 imgUrls += imgElements.get(i).attr("src");
             else imgUrls += imgElements.get(i).attr("src") + ",";
         }
-        System.out.println("Image: " + imgUrls);
         return imgUrls;
     }
 
@@ -178,22 +178,18 @@ public class HondaxemayCrawler {
     private void getAllNewsLink() throws IOException {
         String selector = "";
         if (domain.equals("https://hondaxemay.com.vn/tin-tuc/")) {
-            //get link large-left news
-            //all page will have same this news, so we just crawl 1 time at first page
+            //lấy link từ khung lớn (bài viết nổi bật)
             crawlNewsLink(this.pages.get(0), "div.large-left > a");
-            //get link small-box news
-            //all page will have same this news, so we just crawl 1 time at first page
+            //lấy link từ khung nhỏ (các bài viết nổi bật)
             crawlNewsLink(this.pages.get(0), "div.small-box > a");
+            //selector dùng để tách lấy link bài viết
             selector = "div.row-list > div.news-item > div.inner > a";
         } else if (domain.equals("https://motoanhquoc.vn/tin-tuc")) {
             selector = ".title-relative > a";
         } else if (domain.equals("https://autodaily.vn/chuyen-muc/xe-moi/xe-may/14")) {
             selector = ".late-news-tit > a";
         }
-
         for (String page : this.pages) {
-            //get link row-list news
-
             crawlNewsLink(page, selector);
         }
     }
@@ -206,29 +202,27 @@ public class HondaxemayCrawler {
         int index = 1;
         if (domain.equals("https://hondaxemay.com.vn/tin-tuc/")) {
             selector = "ul.pagination li a[class^='page-numbers']";
-            //do trang có dấu / ở cuối
+            //do trang này có dấu / ở cuối
             index = 2;
         } else if (domain.equals("https://motoanhquoc.vn/tin-tuc")) {
+            //do trang này không có dấu / ở cuối
             selector = ".page-numbers a[class^='page-numbers']";
         } else if (domain.equals("https://autodaily.vn/chuyen-muc/xe-moi/xe-may/14")) {
             selector = "ul.paginations li a";
-            //trang có nút tiến ở cuối
+            //trang này có nút tiến ở cuối
             remove = 2;
         }
         Elements pageNumbers = document.select(selector);
-        //cat bo so trang da co
+        //cắt bỏ số trang
         //vd: /page/24/ -> /page/
         int size = pageNumbers.size() - remove;
         int lastPageNumber = Integer.parseInt(pageNumbers.get(size).text());
-//        System.out.println("last: " + lastPageNumber);
         String url = pageNumbers.last().attr("href");
-        System.out.println("linkbefor: "+url);
         //cắt theo dấu /
         int secondIndex = getNthLastIndexOf(index, "/", url);
         String temp = url.substring(0, secondIndex + 1);
-        System.out.println("linkafter: "+temp);
 
-        //thay so vao de ra tung link
+        //thay số vào để ra từng link
         for (int i = lastPageNumber; i >= 1; i--) {
             pages.add(temp + i + "/");
         }
@@ -249,36 +243,11 @@ public class HondaxemayCrawler {
         }
     }
 
-
-    public String getDomain() {
-        return domain;
-    }
-
     public void setDomain(String domain) {
         this.domain = domain;
     }
 
-    public List<String> getNewsUrls() {
-        return newsUrls;
-    }
-
-    public void setNewsUrls(List<String> newsUrls) {
-        this.newsUrls = newsUrls;
-    }
-
-    public List<String> getPages() {
-        return pages;
-    }
-
-    public void setPages(List<String> pages) {
-        this.pages = pages;
-    }
-
     public HashMap<NewsEntity, ImageEntity> getResults() {
         return results;
-    }
-
-    public void setResults(HashMap<NewsEntity, ImageEntity> results) {
-        this.results = results;
     }
 }
