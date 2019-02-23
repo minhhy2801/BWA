@@ -5,4 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface NewsRepository extends JpaRepository<NewsEntity, Integer>  {
     NewsEntity findById(int id);
+    boolean existsByTitle(String title);
 }

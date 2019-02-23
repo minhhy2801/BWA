@@ -8,4 +8,5 @@ import java.util.List;
 public interface ReferencesLinkRepository extends JpaRepository<ReferencesLinkEntity,Integer> {
     ReferencesLinkEntity findById(int id);
     List<ReferencesLinkEntity> findByCategoryId(int categoryId);
+    ReferencesLinkEntity findByUrl(String url);
 }

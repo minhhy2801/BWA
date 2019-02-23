@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.View.ViewsAccessory;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -8,9 +11,12 @@ import java.util.Objects;
 @Table(name = "News", schema = "dbo", catalog = "BikeWorldDB")
 public class NewsEntity {
     private int id;
+	@JsonView(ViewsAccessory.INews.class)
     private String title;
+	@JsonView(ViewsAccessory.INews.class)
     private String description;
     private Integer creatorId;
+	@JsonView(ViewsAccessory.INews.class)
     private String imgThumbnailUrl;
     private Integer categoryId;
     private Integer editorId;
@@ -18,8 +24,10 @@ public class NewsEntity {
     private String editedTime;
     private String status;
     private Collection<CommentEntity> commentsById;
+	@JsonView(ViewsAccessory.INews.class)
     private Collection<ImageEntity> imagesById;
     private AccountEntity accountByCreatorId;
+	@JsonView(ViewsAccessory.INews.class)
     private CategoryEntity categoryByCategoryId;
     private AccountEntity accountByEditorId;
 

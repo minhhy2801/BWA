@@ -13,7 +13,7 @@ import java.util.Objects;
 @Table(name = "Image", schema = "dbo", catalog = "BikeWorldDB")
 public class ImageEntity {
     private int id;
-    @JsonView({ViewsAccessory.IAccessory.class,ViewsAccessory.IListAccessories.class})
+    @JsonView({ViewsAccessory.IAccessory.class,ViewsAccessory.IListAccessories.class,ViewsAccessory.IBike.class})
     private String url;
     private String type;
     private String status;

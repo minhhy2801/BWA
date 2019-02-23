@@ -8,7 +8,6 @@ import capstone.bwa.demo.entities.ImageEntity;
 import capstone.bwa.demo.repositories.AccessoryRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import com.fasterxml.jackson.annotation.JsonView;
-import java.lang.reflect.Type;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.JsonArray;
@@ -62,7 +61,9 @@ public class AccessoryController {
                 listImage.addAll(listImageEntities);
                 Map<String, Object> jsonMap = new HashMap<>();
                 for (int i = 0; i < listImage.size(); i++) {
-                    jsonMap.put("url", listImage.get(i).getUrl());
+                    if (listImage.get(i).getType().equals("ACCESSORY")) {
+                        jsonMap.put("url", listImage.get(i).getUrl());
+                    }
                 }
                 json = gson.toJson(jsonMap);
                 objectReturn.add("image", getJsonObject(json));

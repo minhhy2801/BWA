@@ -30,6 +30,16 @@ public class BikeHondaCrawler {
         listBikes = new ArrayList<>();
     }
 
+    public static void main(String[] args) {
+        BikeHondaCrawler crawler = new BikeHondaCrawler();
+        try {
+            crawler.getBikeFromKymco("http://www.kymco.com.vn/san-pham");
+            //crawler.getBikeFromYamaha("https://yamaha-motor.com.vn/xe/loai-xe/xe-ga", "Xe Tay Ga");
+        } catch (IOException e) {
+
+        }
+    }
+
     public List<Map<String, String>> getListBikes() {
         return listBikes;
     }
@@ -55,6 +65,7 @@ public class BikeHondaCrawler {
     }
 
     public void crawlBike(String url, String categoryName) throws IOException {
+        //Kiểm tra url và gọi hàm crawl tương ứng
         if (url.contains("motoanhquoc")) {
             getBikeFromTriumph(url);
         } else if (url.contains("yamaha")) {
@@ -72,22 +83,30 @@ public class BikeHondaCrawler {
 
     public void crawlAccessoryHonda(String url) throws IOException {
         List<String> accessoryUrls = getAllProductLinks(url, "a.btn", "href");
+        //crawl và lưu dưới dạng map link và document
         Map<String, Document> mapLinkAndDoc = new HashMap<>();
         mapLinkAndDoc = getListUrlsAndDocuments(accessoryUrls);
         String key, value;
+        //phân tích từng document
         for (Map.Entry<String, Document> mapUrlDocument : mapLinkAndDoc.entrySet()) {
             String accessoryUrl = mapUrlDocument.getKey();
             Document doc = mapUrlDocument.getValue();
+            //lấy elements chứa toàn bộ data của accessory
             Elements elements = getContentFromDoc(doc, ".product-detail");
+            //lấy hình ảnh
             Elements imageData = getElementsFromElements(elements, "#img-big img");
             String imageUrl = imageData.attr("src");
             if (!imageUrl.equals("")) {
+                //lấy elements chứa toàn bộ thông tin của accessory
                 Elements infoData = getElementsFromElements(elements, ".info");
+
                 String name = getDataByDiv(infoData, ".title");
                 String price = getDataByDiv(infoData, ".price").replaceAll("[^0-9]", "")
                         .replace(".", "");
                 infoData = getElementsFromElements(infoData, ".info-detail li:gt(0)");
+
                 String description = "";
+                //lấy thông tin mô tả
                 for (Element e : infoData) {
                     key = getDataByDiv(e.select(".left"), ".left").replace(":", "");
                     value = getDataByDiv(e.select(".right"), ".right").replace(":", "");
@@ -95,6 +114,7 @@ public class BikeHondaCrawler {
                 }
                 description = description.replaceFirst("\\|", "");
                 Map<String, String> accessoryDetail = new HashMap<>();
+                //gán thông tin lấy được để tạo thành thông tin hoàn chỉnh và thêm vào 1 list
                 accessoryDetail = accessoryInfo(accessoryUrl, name, "Honda", description, price, imageUrl);
                 listAccessories.add(accessoryDetail);
             }
@@ -120,11 +140,13 @@ public class BikeHondaCrawler {
         List<Map<String, String>> listBike = new ArrayList<>();
         Map<String, String> bikeDetail = new HashMap<>();
         String name, price, image, version;
+
         Elements nameAndPrice = document.select(".stm-listing-single-price-title");
         price = nameAndPrice.select(".price_unit").text().replaceAll("[^0-9]", "")
                 .replace(".", "");
         name = nameAndPrice.select(".title").text();
         version = name;
+
         String key, value;
         Gson gson = new Gson();
         //Dac diem noi bat and mau sac
@@ -132,9 +154,15 @@ public class BikeHondaCrawler {
         Map<String, String> outerBox = new HashMap<>();
         String features = "";
         int i = 0;
-        for (Element e : elements.select(".list-style-1 li")) {
+        if (elements.select(".list-style-1 li").text().equals("")) {
             i++;
-            features += "|" + i + ":" + e.text();
+            value = elements.select("p").first().text();
+            features += "|" + i + ":" + value;
+        } else {
+            for (Element e : elements.select(".list-style-1 li")) {
+                i++;
+                if (!e.text().equals("")) features += "|" + i + ":" + e.text();
+            }
         }
         outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
         Map<String, String> listImageAndColor = new HashMap();
@@ -145,12 +173,23 @@ public class BikeHondaCrawler {
                 value = color.replace("⇒ ", "").replaceAll("[0-9]", "")
                         .replace("đ", "").replace(".", "").trim();
                 listImageAndColor.put(key, value);
+                key = "url";
+                int vitri = 0;
+                Elements imageElements = document.select("a.prettyphoto");
+                if (vitri <= imageElements.size()) {
+                    e = imageElements.get(vitri);
+                    value = e.attr("href");
+                    vitri++;
+                }
+//                value = "Xem hình ảnh trong gallery";
+                listImageAndColor.put(key, value);
             }
         }
         image = gson.toJson(listImageAndColor);
-        List<Map<String, String>> listImage = new ArrayList<>();
-        Map<String, String> mapImage = new HashMap();
-        //.vc_general a[href~=http]
+        if (!listImageAndColor.toString().equals("")) {
+            Map<String, Object> mapImage = new HashMap();
+            mapImage.put("image",listImageAndColor);
+            //.vc_general a[href~=http]
 //        for (Element e : document.select("a.prettyphoto")) {
 //            key = "url";
 //            value = e.attr("href");
@@ -160,20 +199,21 @@ public class BikeHondaCrawler {
 //        Map<String,Object> jsonImage = new HashMap<>();
 //        jsonImage.put("gallery",listImage);
 //        String gallery = gson.toJson(listImage);
-//        System.out.println(gallery);
-        //Thong so ky thuat
-        String specifications = "";
-        elements = document.select(".stm-tech-infos");
-        for (Element e : elements.select("tr")) {
-            key = e.select("td:eq(0)").text();
-            value = e.select("td:eq(1)").text();
-            if (!key.equals("")) specifications += "|" + key + ":" + value;
+            image = gson.toJson(mapImage);
+            //Thong so ky thuat
+            String specifications = "";
+            elements = document.select(".stm-tech-infos");
+            for (Element e : elements.select("tr")) {
+                key = e.select("td:eq(0)").text();
+                value = e.select("td:eq(1)").text();
+                if (!key.equals("")) specifications += "|" + key + ":" + value;
+            }
+            outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
+            String description = gson.toJson(outerBox);
+            //Create bike and add
+            bikeDetail = bikeInfo(url, name, "Triumph", description, version, price, image);
+            listBike.add(bikeDetail);
         }
-        outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
-        String description = gson.toJson(outerBox);
-//        //Create bike and add
-        bikeDetail = bikeInfo(url, name, "Triumph", description, version, price, image);
-        listBike.add(bikeDetail);
         return listBike;
     }
 
@@ -194,7 +234,7 @@ public class BikeHondaCrawler {
         //Get Map Url and Document
         Map<String, Document> mapLinkBikeAndDocument = new HashMap<>();
         mapLinkBikeAndDocument = getListUrlsAndDocuments(listBikeLinks);
-
+        //get list bike
         for (Map.Entry<String, Document> mapUrlDocument : mapLinkBikeAndDocument.entrySet()) {
             listBikes.addAll(crawlBikeYamaha(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
         }
@@ -222,7 +262,7 @@ public class BikeHondaCrawler {
         for (Element e : elements) {
             key = e.select(".feature_name").text();
             value = e.select(".div").text();
-            features += "|" + key + ":" + value;
+            if (!key.equals("")) features += "|" + key + ":" + value;
         }
         outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
         //Thong so ky thuat
@@ -236,26 +276,30 @@ public class BikeHondaCrawler {
         }
         outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
         String description = gson.toJson(outerBox);
-        //get default image
+        //get default image: sử dụng nếu bike không có hình riêng cho sản phẩm
         elements = document.select(".boxGallery a");
         String defaultImage = elements.select("a").attr("href");
-        //version and price
+        //get price
         String price, image;
         Element element = document.select(".imageArea").first();
         Map<String, String> bikeDetail = new HashMap<>();
-        //Create bike and add
         price = document.select(".priceBike").text().replaceAll("[^0-9]", "")
                 .replace(".", "");
+        //get image
+        //Step1: lấy map id,url của image
         Map<String, String> listImageById = new HashMap();
         for (Element sub : element.select(".reelDiv img")) {
             key = sub.attr("id");
             value = sub.attr("src");
             listImageById.put(key, value);
         }
+        //Step2: so sánh id để lấy thông tin color
         List<Map<String, String>> listImage = new ArrayList<>();
         for (Element e : document.select(".colorBike li")) {
             Map<String, String> mapImage = new HashMap<>();
             key = e.select("a").attr("style");
+            key.replace("background-color:", "");
+            if (key.contains("background-image")) key = "Cập nhật sau";
             mapImage.put("color", key);
             value = e.select("a").attr("id");
             value = "_" + value.replace("-reel", "");
@@ -275,9 +319,11 @@ public class BikeHondaCrawler {
         List<String> listLinkBikes = new ArrayList<>();
         Document doc = Jsoup.connect(url).get();
         Elements elements = doc.select(".product_list");
+
         listLinkBikes = getListLink(elements, "a.btn", "href");
         Map<String, Document> mapLinkXeMoTo = new HashMap<>();
         mapLinkXeMoTo = getListUrlsAndDocuments(listLinkBikes);
+
         for (Map.Entry<String, Document> mapUrlDocument : mapLinkXeMoTo.entrySet()) {
             listBikes.addAll(crawlMotoBikeHonda(mapUrlDocument.getValue(), mapUrlDocument.getKey()));
         }
@@ -290,18 +336,18 @@ public class BikeHondaCrawler {
         Gson gson = new Gson();
         //Dac diem noi bat
         String features = "";
-        Elements elements = document.select(".js_detail_glr");
+        Elements elements = document.select(".js_detail_glr div");
         Map<String, String> outerBox = new HashMap<>();
-        for (Element e : elements) {
+        for (Element e : elements.select("div:not(.thumb)")) {
             key = e.select("h5").text().replace(":", "");
             value = e.select("p").text();
             if (!key.equals("")) features += "|" + key + ":" + value;
         }
-        outerBox.put("outstanding features", features.replaceFirst("\\|", ""));
+        outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
         //Thong so ky thuat
-        elements = document.select("table tr");
+        elements = document.select("table tr td");
         String specifications = "";
-        for (Element e : elements.select("td")) {
+        for (Element e : elements) {
             key = e.select("strong").text();
             e.removeAttr("strong");
             value = e.text();
@@ -309,11 +355,11 @@ public class BikeHondaCrawler {
                 key = e.select("td:eq(0)").text().replace(":", "");
                 value = e.select("td:eq(1)").text();
             }
-            if (specifications.equals("")) {
-                specifications = key + ":" + value;
+            if (!key.equals("")) {
+                specifications += "|" + key + ":" + value;
             }
         }
-        outerBox.put("technical specifications", specifications);
+        outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
         String description = gson.toJson(outerBox);
         //get default image
         elements = document.select(".bike_list img[src]");
@@ -322,7 +368,6 @@ public class BikeHondaCrawler {
         String version, price, image;
         elements = document.select(".bike_list");
         for (Element ec : elements.select(".bike_item")) {
-            //Create bike and add
             Map<String, String> bikeDetail = new HashMap<>();
             version = ec.select("h6").text();
             price = ec.attr("data-price").replaceAll("[^0-9]", "")
@@ -330,6 +375,7 @@ public class BikeHondaCrawler {
             if (version.equals("")) {
                 version = name;
             }
+            //get Image
             image = ec.select("img").attr("src");
             if (image.equals("")) {
                 image = defaultImage;
@@ -347,15 +393,17 @@ public class BikeHondaCrawler {
         List<String> linkXeSo = new ArrayList<>();
 
         Document doc = Jsoup.connect(allUrl).get();
+        //lấy link bike theo category trong từng tab khác nhau
         Elements elements = doc.select(".fleft [data-tabs=\"xe-nhap-khau\"] .box-item-product");
         linkXeTayGa = getListLink(elements, "a", "href");
-        //get link Xe So
+
         elements = doc.select(".fleft [data-tabs=\"xe-so\"] .box-item-product");
         linkXeSo = getListLink(elements, "a", "href");
-        //get link Xe Tay Ga
+
         elements = doc.select(".fleft [data-tabs=\"xe-tay-ga\"] .box-item-product");
         linkXeTayGa.addAll(getListLink(elements, "a", "href"));
 
+        //tạo map link và document
         Map<String, Document> mapLinkTayGa = new HashMap<>();
         Map<String, Document> mapLinkXeSo = new HashMap<>();
 
@@ -382,29 +430,31 @@ public class BikeHondaCrawler {
         for (Element e : elements) {
             key = e.select(".detail-title").text().replace(":", "");
             value = e.select(".detail-content").text();
-            features += "|" + key + ":" + value;
+            if (!key.equals("")) features += "|" + key + ":" + value;
         }
         outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
         //Thong so ky thuat
+        //TH1: data inside td
         String specifications = "";
         elements = document.select(".box-detail-products:contains(THÔNG SỐ)");
         if (!elements.select("tr").isEmpty()) {
             for (Element sub : elements.select("tr")) {
                 key = sub.select("td:eq(0)").text();
                 value = sub.select("td:eq(1)").text();
-                specifications += "|" + key + ":" + value;
+                if (key.equals("")) specifications += "|" + key + ":" + value;
             }
         }
+        //TH2: data inside li
         for (Element e : elements.select("li")) {
             key = e.select(".col-left").text();
             value = e.select(".col-right").text();
             if (!key.equals("")) {
-                specifications += "|" + key + ":" + value;
+                if (key.equals("")) specifications += "|" + key + ":" + value;
             }
         }
         outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
         String description = gson.toJson(outerBox);
-        System.out.println("des: " + description);
+//        System.out.println("des: " + description);
         //version and price
         String version, price, image;
         version = name;
@@ -412,12 +462,15 @@ public class BikeHondaCrawler {
         price = price.replaceAll("[^0-9]", "")
                 .replace(".", "");
         Map<String, String> bikeDetail = new HashMap<>();
+        //get Image
         elements = document.select(".fancybox-thumb");
         List<Map<String, String>> listImage = new ArrayList<>();
         for (Element e : elements) {
+            //color nằm trong class title
             Map<String, String> mapImage = new HashMap<>();
             key = e.select("a").attr("title");
             mapImage.put("color", key);
+            //value trong thẻ a
             value = e.select("a").attr("href");
             mapImage.put("url", value);
             listImage.add(mapImage);
@@ -425,10 +478,10 @@ public class BikeHondaCrawler {
         Map<String, Object> jsonImage = new HashMap<>();
         jsonImage.put("image", listImage);
         image = gson.toJson(jsonImage);
-        System.out.println("image: " + image);
+//        System.out.println("image: " + image);
+        //tạo thông tin chi tiết bike và thêm vào list
         bikeDetail = bikeInfo(url, name, "SYM", description, version, price, image);
         listBike.add(bikeDetail);
-        System.out.println(url);
         return listBike;
     }
 
@@ -439,6 +492,7 @@ public class BikeHondaCrawler {
         //Get list link
         Document document = Jsoup.connect(allUrl).get();
         Elements elements = document.select(".product-row.row");
+        //1st element is xe tay ga
         Element element = elements.get(0);
         String link;
         for (Element e : element.select("a[href~=(?i)\\.]")) {
@@ -484,6 +538,7 @@ public class BikeHondaCrawler {
         List<Map<String, String>> listBike = new ArrayList<>();
         Map<String, String> bikeDetail = new HashMap<>();
         String name, price, image, version;
+        //get price and name
         price = document.select(".price.price-0").text();
         price = price.replaceAll("[^0-9]", "")
                 .replace(".", "");
@@ -496,8 +551,9 @@ public class BikeHondaCrawler {
         Map<String, String> outerBox = new HashMap<>();
         String features = "";
         for (Element e : elements.select(".ct")) {
-            if (!e.select("h2").text().equals("Giới Thiệu Sản Phẩm")) {
-                features += "|" + e.select("h2").text() + ":" + e.select("h3").text();
+            key = e.select("h2").text();
+            if (!key.equals("Giới Thiệu Sản Phẩm") && !key.equals("")) {
+                features += "|" + key + ":" + e.select("h3").text();
             }
         }
         outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
@@ -512,11 +568,15 @@ public class BikeHondaCrawler {
         outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
         String description = gson.toJson(outerBox);
         Map<String, String> mapImage = new HashMap();
+        List<Map<String,String>> listImage = new ArrayList<>();
+        //lấy image
         for (Element e : document.select(".banner-top360.jarallax")) {
             Elements subElements = e.select(".select-color .item");
+            //tạo map id và color
             Map<String, String> mapIdAndStyle = new HashMap<>();
             for (Element child : subElements) {
                 key = child.attr("data-id");
+                //color
                 value = child.attr("style");
                 mapIdAndStyle.put(key, value);
             }
@@ -524,20 +584,24 @@ public class BikeHondaCrawler {
             for (Element child : subElements) {
                 key = child.attr("class").replace("img-top img-top-", "");
                 for (Map.Entry<String, String> entry : mapIdAndStyle.entrySet()) {
+                    //kiểm tra key và data-id
                     if (key.equals(entry.getKey())) {
                         key = entry.getValue();
+                        key = key.replace("background:", "");
                         mapImage.put("color", key);
                     }
                 }
+                //thêm url
                 key = "url";
                 value = child.attr("src");
                 mapImage.put(key, value);
+                listImage.add(mapImage);
             }
         }
         Map<String, Object> jsonImage = new HashMap<>();
-        jsonImage.put("image", jsonImage);
+        jsonImage.put("image", listImage);
         image = gson.toJson(jsonImage);
-//        //Create bike and add
+//        //lấy thông tin bike và thêm vào list
         bikeDetail = bikeInfo(url, name, "KYMCO", description, version, price, image);
         listBike.add(bikeDetail);
         return listBike;
@@ -707,9 +771,10 @@ public class BikeHondaCrawler {
         for (Element e : elements) {
             key = e.select("a").attr("data-title").replaceAll(":", "");
             value = e.select("a").attr("data-description").
-                    replace("<br />", "\n").replace("<p>", "").
-                    replace("</p>", "").replace("<i>(Hình ảnh mang tính minh hoạ)</i>", "");
-            features += "|" + key + ":" + value;
+                    replace("<br />", " ").replace("<p>", "").
+                    replace("</p>", "").replace("\n", "")
+                    .replace("<i>(Hình ảnh mang tính minh hoạ)</i>", "");
+            if (!key.equals("")) features += "|" + key + ":" + value;
         }
         outerBox.put("outstanding_features", features.replaceFirst("\\|", ""));
         //Thong so ky thuat
@@ -724,7 +789,7 @@ public class BikeHondaCrawler {
         }
         outerBox.put("technical_specifications", specifications.replaceFirst("\\|", ""));
         String description = gson.toJson(outerBox);
-        //get default image
+        //lấy default image
         elements = document.select("div.gallery-item img[src]");
         String defaultImage = elements.select("img").first().attr("src");
         //version and price
@@ -733,9 +798,14 @@ public class BikeHondaCrawler {
         for (Element ec : elements.select(".box")) {
             Map<String, String> bikeDetail = new HashMap<>();
             //Create bike and add
+            //get version
+            //TH1: version hiển thị ở bên phải trong elements
             version = ec.select(".color-title").text()
                     .replace("*Hình ảnh minh họa có thể khác so với xe thực tế", "");
+            //
+            //TH2: version hiển thị ở bên trái trong elements
             if (version.equals("Màu sắc sản phẩm")) {
+                //nhiểu hơn 1 version
                 elements = ec.select(".data_version").select(".table-version").select("tr");
                 for (Element tableDetail : elements) {
                     version = tableDetail.select("td:eq(0)").text();
@@ -746,6 +816,7 @@ public class BikeHondaCrawler {
                     listBike.add(bikeDetail);
                 }
             } else {
+                //chỉ có 1 version
                 price = ec.select(".data_version").first().text().replaceAll("[^0-9]", "").replace(".", "");
                 image = crawlImageHonda(defaultImage, ec);
                 bikeDetail = bikeInfo(url, name, "Honda", description, version, price, image);
@@ -755,6 +826,7 @@ public class BikeHondaCrawler {
         return listBike;
     }
 
+    //lấy list link theo elements
     private List<String> getListLink(Elements elements, String selector, String attr) {
         String link;
         List<String> listLink = new ArrayList<>();
@@ -767,6 +839,7 @@ public class BikeHondaCrawler {
         return listLink;
     }
 
+    //lấy bản ghi chi tiết của accessory
     private Map<String, String> accessoryInfo(String url, String name, String brand, String description, String price,
                                               String image) {
         Map<String, String> accessoryDetail = new HashMap<>();
@@ -780,6 +853,7 @@ public class BikeHondaCrawler {
         return accessoryDetail;
     }
 
+    //lấy bản ghi chi tiết của bike
     private Map<String, String> bikeInfo(String url, String name, String brand, String description, String version,
                                          String price, String image) {
         Map<String, String> bikeDetail = new HashMap<>();
@@ -794,6 +868,7 @@ public class BikeHondaCrawler {
         return bikeDetail;
     }
 
+    //lấy link image của bike
     private String crawlImageHonda(String defaultImage, Element element) {
         Elements elements = element.select("a.item.get_data_version");
         List<Map<String, String>> listImage = new ArrayList<>();
@@ -805,6 +880,8 @@ public class BikeHondaCrawler {
             innerBox.put(key, value);
             key = "url";
             value = e.select(".no-360 img[src]").attr("src");
+            //nếu không có image dùng image mặc định
+            if (value.equals("")) value = defaultImage;
             innerBox.put(key, value);
             listImage.add(innerBox);
         }
@@ -816,6 +893,7 @@ public class BikeHondaCrawler {
         return value;
     }
 
+    //tạo map url và document
     private Map<String, Document> getListUrlsAndDocuments(List<String> listLink) throws IOException {
         Map<String, Document> mapDocument = new HashMap<>();
         for (String url : listLink) {
@@ -831,6 +909,7 @@ public class BikeHondaCrawler {
         return mapDocument;
     }
 
+    //lấy text trong thẻ div
     private String getDataByDiv(Elements elements, String divClass) {
         String data = "";
         for (Element element : elements.select(divClass)) {
@@ -854,15 +933,21 @@ public class BikeHondaCrawler {
         return doc.select(selector);
     }
 
+    //lấy toàn bộ link sản phẩm trong trang tổng theo selector và attr
     private List<String> getAllProductLinks(String url, String selector, String attr) throws IOException {
         Elements links = getElements(url, selector);
-        List<String> linkList = new ArrayList<>();
-        links.forEach((link) -> {
-            if (!linkList.contains(link.attr(attr))) {
-                linkList.add(link.attr(attr));
-            }
-        });
+        List<String> linkList = getListLink(links,selector,attr);
         return linkList;
     }
+
+//    private String getColor(String colorText) {
+//        String color = "Cập nhật sau";
+//        if (colorText.contains("background-color")) {
+//            color = colorText.replace("background-color: ", "");
+//        } else if (colorText.contains("background-image")) {
+//
+//        }
+//        return color;
+//    }
 
 }

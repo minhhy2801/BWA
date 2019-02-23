@@ -1,6 +1,7 @@
 package capstone.bwa.demo.controllers;
 
 import capstone.bwa.demo.crawlmodel.BikeHondaCrawler;
+import capstone.bwa.demo.crawlmodel.HondaxemayCrawler;
 import capstone.bwa.demo.entities.*;
 import capstone.bwa.demo.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,7 @@ public class CrawlController {
 
     @GetMapping("admin/crawl/data")
     public ResponseEntity crawlData() {
+        //kiểm tra và add category nếu chưa có
         createCategory("Xe Côn Tay", "BIKE");
         createCategory("Xe Tay Ga", "BIKE");
         createCategory("Xe Số", "BIKE");
@@ -50,8 +52,9 @@ public class CrawlController {
         createCategory("Xe Honda", "BIKE");
         createCategory("Xe Kymco", "BIKE");
         createCategory("Xe Sym", "BIKE");
-        createCategory("Tin Tức","NEWS");
+        createCategory("Tin Tức", "NEWS");
 
+        //thêm referenceLink theo category
         CategoryEntity categoryEntity = categoryRepository.findByName("Xe Tay Ga");
         String url = "https://yamaha-motor.com.vn/xe/loai-xe/xe-ga";
         createReferencesLink(url, categoryEntity);
@@ -124,19 +127,28 @@ public class CrawlController {
         url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3719";
         createReferencesLink(url, categoryEntity);
 
-        try {
-            List<ReferencesLinkEntity> listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(5);
-            crawlAccessory(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(6);
-            crawlAccessory(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(7);
-            crawlAccessory(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(8);
-            crawlAccessory(listReferencesLinkEntities);
-        }catch (IOException e){
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
+        categoryEntity = categoryRepository.findByName("Tin Tức");
+        url = "https://autodaily.vn/chuyen-muc/xe-moi/xe-may/14";
+        createReferencesLink(url, categoryEntity);
+        url = "https://hondaxemay.com.vn/tin-tuc/";
+        createReferencesLink(url, categoryEntity);
+        url = "https://motoanhquoc.vn/tin-tuc";
+        createReferencesLink(url, categoryEntity);
 
+        //lấy list accessory và tiến hành crawl
+//        try {
+//            List<ReferencesLinkEntity> listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(5);
+//            crawlAccessory(listReferencesLinkEntities);
+//            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(6);
+//            crawlAccessory(listReferencesLinkEntities);
+//            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(7);
+//            crawlAccessory(listReferencesLinkEntities);
+//            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(8);
+//            crawlAccessory(listReferencesLinkEntities);
+//        } catch (IOException e) {
+//            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+//        }
+        //lấy list bike và tiến hành crawl
         try {
             List<ReferencesLinkEntity> listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(1);
             crawlBike(listReferencesLinkEntities);
@@ -152,21 +164,62 @@ public class CrawlController {
             crawlBike(listReferencesLinkEntities);
             listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(11);
             crawlBike(listReferencesLinkEntities);
-        }catch (IOException e){
+        } catch (IOException e) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
+
+//        //lấy list news và tiến hành crawl
+//        try {
+//            List<ReferencesLinkEntity> listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(12);
+//            crawlNews(listReferencesLinkEntities);
+//        } catch (IOException e) {
+//            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+//        }
         return new ResponseEntity(bikeRepository.findAll(), HttpStatus.OK);
     }
 
-    private void crawlBike(List<ReferencesLinkEntity> listReferencesLinkEntities) throws IOException{
+    private void crawlNews(List<ReferencesLinkEntity> listReferencesLinkEntities) throws IOException {
+        for (ReferencesLinkEntity referencesLinkEntity : listReferencesLinkEntities) {
+            HondaxemayCrawler crawler = new HondaxemayCrawler();
+            //set link dùng để crawl
+            crawler.setDomain(referencesLinkEntity.getUrl());
+            List<NewsEntity> newsEntities = new ArrayList<>();
+            crawler.crawl();
+
+            crawler.getResults().forEach((newsEntity, imageEntity) -> {
+                //kiểm tra trùng
+                if (isCrawled(newsEntity) == false) {
+                    int catelogyId = referencesLinkEntity.getCategoryId();
+                    newsEntity.setCategoryId(catelogyId);
+                    CategoryEntity categoryEntity = categoryRepository.findById(catelogyId);
+                    newsEntity.setCategoryByCategoryId(categoryEntity);
+                    newsRepository.saveAndFlush(newsEntity);
+                    imageEntity.setOwnId(newsEntity.getId());
+                    imageEntity.setNewsByOwnId(newsEntity);
+                    imageEntity.setType("NEWS");
+                    imageEntity.setStatus("NEW");
+                    imageRepository.saveAndFlush(imageEntity);
+                    newsEntities.add(newsEntity);
+                }
+            });
+        }
+    }
+
+    private boolean isCrawled(NewsEntity news) {
+        return newsRepository.existsByTitle(news.getTitle());
+    }
+
+    private void crawlBike(List<ReferencesLinkEntity> listReferencesLinkEntities) throws IOException {
         for (ReferencesLinkEntity referencesLinkEntity : listReferencesLinkEntities) {
             BikeHondaCrawler crawler = new BikeHondaCrawler();
             List<Map<String, String>> listBikes = new ArrayList<>();
-            crawler.crawlBike(referencesLinkEntity.getUrl(),referencesLinkEntity.getCategoryByCategoryId().getName());
-            if (!crawler.getListBikes().isEmpty()){
+            //truyền vào url dùng để crawl và tên category
+            crawler.crawlBike(referencesLinkEntity.getUrl(), referencesLinkEntity.getCategoryByCategoryId().getName());
+            //TH1: link từng catelogy riêng vd:https://yamaha-motor.com.vn/xe/loai-xe/xe-ga
+            if (!crawler.getListBikes().isEmpty()) {
                 listBikes = crawler.getListBikes();
                 addBike(referencesLinkEntity.getCategoryId(), listBikes);
-            }else{
+            } else {//TH2: link chung vd: https://hondaxemay.com.vn/san-pham/
                 listBikes = crawler.getListXeCon();
                 addBike(1, listBikes);
                 listBikes = crawler.getListXeTayGa();
@@ -200,13 +253,14 @@ public class CrawlController {
     }
 
     private void createReferencesLink(String url, CategoryEntity categoryEntity) {
-
-        ReferencesLinkEntity referencesLinkEntity = new ReferencesLinkEntity();
-        referencesLinkEntity.setCategoryId(categoryEntity.getId());
-        referencesLinkEntity.setCategoryByCategoryId(categoryEntity);
-        referencesLinkEntity.setStatus(statusActive);
-        referencesLinkEntity.setUrl(url);
-        referencesLinkRepository.saveAndFlush(referencesLinkEntity);
+        if (referencesLinkRepository.findByUrl(url) == null) {
+            ReferencesLinkEntity referencesLinkEntity = new ReferencesLinkEntity();
+            referencesLinkEntity.setCategoryId(categoryEntity.getId());
+            referencesLinkEntity.setCategoryByCategoryId(categoryEntity);
+            referencesLinkEntity.setStatus(statusActive);
+            referencesLinkEntity.setUrl(url);
+            referencesLinkRepository.saveAndFlush(referencesLinkEntity);
+        }
     }
 
     private void addAccessory(int catelogyId, List<Map<String, String>> listBike) {
@@ -221,14 +275,19 @@ public class CrawlController {
             newAccessory.setPrice(accessoryDetail.get("price"));
             String hashAccessoryCode = newAccessory.hashCode() + "";
             newAccessory.setHashAccessoryCode(hashAccessoryCode);
-            accessoryRepository.saveAndFlush(newAccessory);
-            AccessoryEntity ownAccessory = accessoryRepository.findByHashAccessoryCode(hashAccessoryCode);
-            ImageEntity newImage = new ImageEntity();
-            newImage.setUrl(accessoryDetail.get("image"));
-            newImage.setOwnId(ownAccessory.getId());
-            newImage.setStatus(statusActive);
-            newImage.setType("ACCESSORY");
-            imageRepository.saveAndFlush(newImage);
+            //kiểm tra trùng
+            boolean addAccessory = checkDuplicateAccessory(newAccessory);
+            if (addAccessory == false) {
+                accessoryRepository.saveAndFlush(newAccessory);
+                AccessoryEntity ownAccessory = accessoryRepository.findByHashAccessoryCode(hashAccessoryCode);
+                //thêm image theo accessory
+                ImageEntity newImage = new ImageEntity();
+                newImage.setUrl(accessoryDetail.get("image"));
+                newImage.setOwnId(ownAccessory.getId());
+                newImage.setStatus(statusActive);
+                newImage.setType("ACCESSORY");
+                imageRepository.saveAndFlush(newImage);
+            }
         }
     }
 
@@ -245,10 +304,12 @@ public class CrawlController {
             newBike.setPrice(bikeDetail.get("price"));
             String hashAccessoryCode = newBike.hashCode() + "";
             newBike.setHashBikeCode(hashAccessoryCode);
+            //kiểm tra trùng
             boolean addBike = checkDuplicateBike(newBike);
-            if (addBike) {
+            if (addBike == false) {
                 bikeRepository.saveAndFlush(newBike);
                 BikeEntity ownBike = bikeRepository.findByHashBikeCode(hashAccessoryCode);
+                //thêm Image theo bike
                 ImageEntity newImage = new ImageEntity();
                 newImage.setUrl(bikeDetail.get("image"));
                 newImage.setOwnId(ownBike.getId());
@@ -257,25 +318,20 @@ public class CrawlController {
                 imageRepository.saveAndFlush(newImage);
             }
         }
+    }
 
+    private boolean checkDuplicateAccessory(AccessoryEntity newAccessory) {
+        boolean exit = accessoryRepository.existsByHashAccessoryCode(newAccessory.getHashAccessoryCode());
+        if (exit == true) {
+            AccessoryEntity exitAccessory = accessoryRepository.findByHashAccessoryCode(newAccessory.getHashAccessoryCode());
+            exitAccessory.setPrice(newAccessory.getPrice());
+            exitAccessory.setDescription(newAccessory.getDescription());
+            return true;
+        }
+        return false;
     }
 
     private boolean checkDuplicateBike(BikeEntity newBike) {
-        List<BikeEntity> listExitBikes = bikeRepository.findAll();
-        for (BikeEntity bikeEntity : listExitBikes) {
-            int exit = Integer.parseInt(bikeEntity.getHashBikeCode());
-            int bike = Integer.parseInt(newBike.getHashBikeCode());
-            if (exit == bike) {
-                if (!bikeEntity.getUrl().equals(newBike.getUrl()) || !bikeEntity.getDescription().
-                        equals(newBike.getDescription()) || !bikeEntity.getPrice().equals(newBike.getPrice())) {
-                    bikeEntity.setPrice(newBike.getPrice());
-                    bikeEntity.setDescription(newBike.getDescription());
-                    bikeEntity.setUrl(newBike.getUrl());
-                    bikeRepository.saveAndFlush(bikeEntity);
-                }
-                return false;
-            }
-        }
-        return true;
+        return bikeRepository.existsByHashBikeCode(newBike.getHashBikeCode());
     }
 }
