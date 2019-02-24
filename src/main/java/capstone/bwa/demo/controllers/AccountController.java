@@ -29,32 +29,58 @@ public class AccountController {
     private final String accountStatus = "ACTIVE";
     private final String roleUser = "USER";
     private final String roleAdmin = "ADMIN";
+    private String phone;
 
     @PostMapping("send_verify_code")
     public ResponseEntity sendCode(@RequestBody Map<String, String> body) throws IOException {
-        String phone = body.get("phone");
+        String phone = body.get("phone").trim();
         //create random number verify code
         String code = new Random().nextInt(9999 - 1000) + 1000 + "";
         BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
         String hashVerifyCode = bCrypt.encode(code);
-
-
-        System.out.println(code);
-        System.out.println(hashVerifyCode);
+//        System.out.println(code);
+//        System.out.println(hashVerifyCode);
         //check Phone in db
         if (accountRepository.findByPhone(phone) != null)
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
-        //send SMS API
-        SmsSender sender = new SmsSender("");   //add accessToken
-        String sms = sender.sendSmsToCreateAccount(phone, "Verify Code BWA: " + code, 2, "BWA");
-
-        Map<String, Object> result = new HashMap<>();
-        JSONObject jsonObj = new JSONObject(sms);
-        result.put("verify", hashVerifyCode);
-        result.put("result", jsonObj.toMap());
-        return new ResponseEntity(result, HttpStatus.ACCEPTED);
+        Map<String, Object> result = sendSMSAPI(code, hashVerifyCode, phone);
+        return new ResponseEntity(result, HttpStatus.OK);
     }
+
+    @PostMapping("send_verify_code_forgot")
+    public ResponseEntity sendForgotCode(@RequestBody Map<String, String> body) throws IOException {
+        BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
+        String phone = body.get("phone").trim();
+        //create random number verify code
+        String code = new Random().nextInt(9999 - 1000) + 1000 + "";
+        String hashVerifyCode = bCrypt.encode(code);
+        //send SMS API
+        if (accountRepository.findByPhone(phone) != null) {
+            Map<String, Object> result = sendSMSAPI(code, hashVerifyCode, phone);
+            return new ResponseEntity(result, HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
+    }
+
+    @PostMapping("forgot_password")
+    public ResponseEntity sendForgotPassword(@RequestBody Map<String, String> body) {
+        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
+        String phone = body.get("phone").trim();
+        String newPassword = body.get("newPassword");
+
+        AccountEntity accountEntity = accountRepository.findByPhone(phone);
+//        System.out.println(accountEntity);
+
+        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (!accountEntity.getStatus().equals(accountStatus)) return new ResponseEntity(HttpStatus.LOCKED);
+
+        accountEntity.setPassword(bCryptPasswordEncoder.encode(newPassword));
+        accountRepository.save(accountEntity);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
 
     @PostMapping("sign_up")
     public ResponseEntity signUpAccount(@RequestBody Map<String, String> body) {
@@ -158,4 +184,14 @@ public class AccountController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
+    private Map<String, Object> sendSMSAPI(String code, String hashVerifyCode, String phone) throws IOException {
+        SmsSender sender = new SmsSender("ywyaveS4F2ghLWONdhFX9izGa5qfPM2S");   //add accessToken
+        String sms = sender.sendSmsToCreateAccount(phone, "Verify Code BWA: " + code, 2, "BWA");
+
+        Map<String, Object> result = new HashMap<>();
+        JSONObject jsonObj = new JSONObject(sms);
+        result.put("verify", hashVerifyCode);
+        result.put("result", jsonObj.toMap());
+        return result;
+    }
 }
