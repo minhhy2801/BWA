@@ -1,7 +1,7 @@
 package capstone.bwa.demo.entities;
 
 import com.fasterxml.jackson.annotation.JsonView;
-import capstone.bwa.demo.View.ViewsAccessory;
+import capstone.bwa.demo.View.Views;
 
 import javax.persistence.*;
 import java.util.Collection;
@@ -10,22 +10,22 @@ import java.util.Objects;
 @Entity
 @Table(name = "Accessory", schema = "dbo", catalog = "BikeWorldDB")
 public class AccessoryEntity {
-    @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
+    @JsonView({Views.IAccessory.class, Views.IListAccessories.class})
     private int id;
-    @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
+    @JsonView({Views.IAccessory.class, Views.IListAccessories.class})
     private String name;
     private String url;
     private String brand;
-    @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
+    @JsonView({Views.IAccessory.class, Views.IListAccessories.class})
     private String price;
     private Integer categoryId;
-    @JsonView({ViewsAccessory.IAccessory.class,ViewsAccessory.IListAccessories.class})
+    @JsonView({Views.IAccessory.class, Views.IListAccessories.class})
     private String description;
     private String hashAccessoryCode;
     private String status;
-    @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
+    @JsonView({Views.IAccessory.class, Views.IListAccessories.class})
     private CategoryEntity categoryByCategoryId;
-    @JsonView({ViewsAccessory.IAccessory.class, ViewsAccessory.IListAccessories.class})
+    @JsonView({Views.IAccessory.class, Views.IListAccessories.class})
     private Collection<ImageEntity> imagesById;
 
     @Id
@@ -137,7 +137,7 @@ public class AccessoryEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(url, name, brand, categoryId, description, status);
+        return Objects.hash(url, name, brand, categoryId);
     }
 
     @ManyToOne

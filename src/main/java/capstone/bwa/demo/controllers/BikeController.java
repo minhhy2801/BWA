@@ -1,13 +1,12 @@
 package capstone.bwa.demo.controllers;
 
-import capstone.bwa.demo.View.ViewsAccessory;
+import capstone.bwa.demo.View.Views;
 import capstone.bwa.demo.entities.BikeEntity;
 import capstone.bwa.demo.entities.CategoryEntity;
 import capstone.bwa.demo.entities.ImageEntity;
 import capstone.bwa.demo.repositories.BikeRepository;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +29,7 @@ public class BikeController {
         return new ResponseEntity(bikeRepository.findAll(), HttpStatus.OK);
     }
 
-    @JsonView(ViewsAccessory.IBike.class)
+    @JsonView(Views.IBike.class)
     @GetMapping("bike/{id}")
     public ResponseEntity getBikeFromId(@PathVariable int id) {
         BikeEntity bikeEntity = bikeRepository.findById(id);

@@ -1,7 +1,9 @@
 package capstone.bwa.demo.controllers;
 
-import capstone.bwa.demo.crawlmodel.BikeHondaCrawler;
-import capstone.bwa.demo.crawlmodel.HondaxemayCrawler;
+import capstone.bwa.demo.crawlmodel.CrawlAccessory;
+import capstone.bwa.demo.crawlmodel.CrawlBike;
+import capstone.bwa.demo.crawlmodel.CrawlNews;
+import capstone.bwa.demo.crawlmodel.DBSetup;
 import capstone.bwa.demo.entities.*;
 import capstone.bwa.demo.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,9 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,247 +37,185 @@ public class CrawlController {
     private ReferencesLinkRepository referencesLinkRepository;
 
     private final String statusActive = "ACTIVE";
+    private final String typeBike = "BIKE";
+    private final String typeAccessory = "ACCESSORY";
+    private final String typeNews = "NEWS";
 
-    @GetMapping("admin/crawl/data")
-    public ResponseEntity crawlData() {
-        //kiểm tra và add category nếu chưa có
-        createCategory("Xe Côn Tay", "BIKE");
-        createCategory("Xe Tay Ga", "BIKE");
-        createCategory("Xe Số", "BIKE");
-        createCategory("Xe Mô Tô", "BIKE");
-        createCategory("Phụ kiện thay thế Honda", "ACCESSORY");
-        createCategory("Phụ kiện lắp thêm Honda", "ACCESSORY");
-        createCategory("Phụ kiện ốp Honda", "ACCESSORY");
-        createCategory("Phụ kiện dán Honda", "ACCESSORY");
-        createCategory("Xe Honda", "BIKE");
-        createCategory("Xe Kymco", "BIKE");
-        createCategory("Xe Sym", "BIKE");
-        createCategory("Tin Tức", "NEWS");
+    @GetMapping("admin/crawl/bike")
+    public ResponseEntity crawlBike() {
+        DBSetup dbSetup = new DBSetup();
 
-        //thêm referenceLink theo category
-        CategoryEntity categoryEntity = categoryRepository.findByName("Xe Tay Ga");
-        String url = "https://yamaha-motor.com.vn/xe/loai-xe/xe-ga";
-        createReferencesLink(url, categoryEntity);
+        //tạo db nếu chưa có
+        setCategoriesAndReferenceLinksDB();
 
+        //lấy list link theo category với type bike
+        List<String> listLink = dbSetup.listLinksXeSo();
+        //lấy category theo tên category
+        CategoryEntity categoryEntity = categoryRepository.findByName("Xe Số");
+        //crawl bike theo category và list link của category đó
+        crawlBike(categoryEntity, listLink);
+
+        listLink = dbSetup.listLinksXeTayGa();
+        categoryEntity = categoryRepository.findByName("Xe Tay Ga");
+        crawlBike(categoryEntity, listLink);
+
+        listLink = dbSetup.listLinksXeConTay();
         categoryEntity = categoryRepository.findByName("Xe Côn Tay");
-        url = "https://yamaha-motor.com.vn/xe/loai-xe/xe-nhap-khau";
-        createReferencesLink(url, categoryEntity);
+        crawlBike(categoryEntity, listLink);
 
-        categoryEntity = categoryRepository.findByName("Xe Số");
-        url = "https://yamaha-motor.com.vn/xe/loai-xe/xe-so";
-        createReferencesLink(url, categoryEntity);
-
+        listLink = dbSetup.listLinksXeMoTo();
         categoryEntity = categoryRepository.findByName("Xe Mô Tô");
-        url = "https://motoanhquoc.vn/inventory/?body=adventure&view_type=list";
-        createReferencesLink(url, categoryEntity);
-        url = "https://motoanhquoc.vn/inventory/?body=cruiser&view_type=list";
-        createReferencesLink(url, categoryEntity);
-        url = "https://motoanhquoc.vn/inventory/?body=modern-classics&view_type=list";
-        createReferencesLink(url, categoryEntity);
-        url = "https://motoanhquoc.vn/inventory/?body=roadsters&view_type=list";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/hondamoto/san-pham";
-        createReferencesLink(url, categoryEntity);
+        crawlBike(categoryEntity, listLink);
 
-        categoryEntity = categoryRepository.findByName("Xe Honda");
-        url = "https://hondaxemay.com.vn/san-pham/";
-        createReferencesLink(url, categoryEntity);
+        //list link special không chia theo category xe
+        listLink = dbSetup.listLinksSpecial();
+        crawlBikeWithSpecialLink(listLink);
 
-        categoryEntity = categoryRepository.findByName("Xe Kymco");
-        url = "http://www.kymco.com.vn/san-pham";
-        createReferencesLink(url, categoryEntity);
-
-        categoryEntity = categoryRepository.findByName("Xe Sym");
-        url = "http://www.sym.com.vn/san-pham.html";
-        createReferencesLink(url, categoryEntity);
-
-        categoryEntity = categoryRepository.findByName("Phụ kiện thay thế Honda");
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3721";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3721";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3721";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3721";
-        createReferencesLink(url, categoryEntity);
-
-        categoryEntity = categoryRepository.findByName("Phụ kiện lắp thêm Honda");
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3722";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3722";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3722";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3722";
-        createReferencesLink(url, categoryEntity);
-
-        categoryEntity = categoryRepository.findByName("Phụ kiện ốp Honda");
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3828&filter_orderby=latest&filter_tax=3720";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3861&filter_orderby=latest&filter_tax=3720";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3720";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3720";
-        createReferencesLink(url, categoryEntity);
-
-        categoryEntity = categoryRepository.findByName("Phụ kiện dán Honda");
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3840&filter_orderby=latest&filter_tax=3719";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/phukien/wp-admin/admin-ajax.php?action=action_get_html_accessories_tu_12_2016&security=c9c004c5be&type_car=3829&filter_orderby=latest&filter_tax=3719";
-        createReferencesLink(url, categoryEntity);
-
-        categoryEntity = categoryRepository.findByName("Tin Tức");
-        url = "https://autodaily.vn/chuyen-muc/xe-moi/xe-may/14";
-        createReferencesLink(url, categoryEntity);
-        url = "https://hondaxemay.com.vn/tin-tuc/";
-        createReferencesLink(url, categoryEntity);
-        url = "https://motoanhquoc.vn/tin-tuc";
-        createReferencesLink(url, categoryEntity);
-
-        //lấy list accessory và tiến hành crawl
-//        try {
-//            List<ReferencesLinkEntity> listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(5);
-//            crawlAccessory(listReferencesLinkEntities);
-//            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(6);
-//            crawlAccessory(listReferencesLinkEntities);
-//            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(7);
-//            crawlAccessory(listReferencesLinkEntities);
-//            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(8);
-//            crawlAccessory(listReferencesLinkEntities);
-//        } catch (IOException e) {
-//            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-//        }
-        //lấy list bike và tiến hành crawl
-        try {
-            List<ReferencesLinkEntity> listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(1);
-            crawlBike(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(2);
-            crawlBike(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(3);
-            crawlBike(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(4);
-            crawlBike(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(9);
-            crawlBike(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(10);
-            crawlBike(listReferencesLinkEntities);
-            listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(11);
-            crawlBike(listReferencesLinkEntities);
-        } catch (IOException e) {
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        }
-
-//        //lấy list news và tiến hành crawl
-//        try {
-//            List<ReferencesLinkEntity> listReferencesLinkEntities = referencesLinkRepository.findByCategoryId(12);
-//            crawlNews(listReferencesLinkEntities);
-//        } catch (IOException e) {
-//            return new ResponseEntity(HttpStatus.BAD_REQUEST);
-//        }
-        return new ResponseEntity(bikeRepository.findAll(), HttpStatus.OK);
+        return new ResponseEntity(HttpStatus.OK);
     }
 
-    private void crawlNews(List<ReferencesLinkEntity> listReferencesLinkEntities) throws IOException {
-        for (ReferencesLinkEntity referencesLinkEntity : listReferencesLinkEntities) {
-            HondaxemayCrawler crawler = new HondaxemayCrawler();
+    @GetMapping("admin/crawl/accessory")
+    public ResponseEntity crawlAccessory() {
+        DBSetup dbSetup = new DBSetup();
+
+        //tạo db nếu chưa có
+        setCategoriesAndReferenceLinksDB();
+
+        //lấy list link theo category với type accessory
+        List<String> listLinks = dbSetup.listLinksAccessoryDan();
+        //lấy category theo tên category
+        CategoryEntity categoryEntity = categoryRepository.findByName("Honda Phụ Kiện Dán");
+        //crawl accessory theo category và list link của category đó
+        crawlAccessory(categoryEntity, listLinks);
+
+        listLinks = dbSetup.listLinksAccessoryOp();
+        categoryEntity = categoryRepository.findByName("Honda Phụ Kiện Ốp");
+        crawlAccessory(categoryEntity, listLinks);
+
+        listLinks = dbSetup.listLinksAccessoryLapThem();
+        categoryEntity = categoryRepository.findByName("Honda Phụ Kiện Lắp Thêm");
+        crawlAccessory(categoryEntity, listLinks);
+
+        listLinks = dbSetup.listLinksAccessoryThayThe();
+        categoryEntity = categoryRepository.findByName("Honda Phụ Kiện Thay Thế");
+        crawlAccessory(categoryEntity, listLinks);
+
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    @GetMapping("admin/crawl/news")
+    public ResponseEntity crawlNews() {
+        DBSetup dbSetup = new DBSetup();
+        setCategoriesAndReferenceLinksDB();
+        List<String> listLinks = dbSetup.listLinksNews();
+        CategoryEntity categoryEntity = categoryRepository.findByName("Tin Tức");
+        //crawl news theo list link
+        crawlNews(categoryEntity,listLinks);
+        return new ResponseEntity(HttpStatus.OK);
+    }
+
+    private void crawlNews(CategoryEntity categoryEntity,List<String> listLink) {
+        for (String url : listLink) {
+            CrawlNews crawler = new CrawlNews();
             //set link dùng để crawl
-            crawler.setDomain(referencesLinkEntity.getUrl());
-            List<NewsEntity> newsEntities = new ArrayList<>();
-            crawler.crawl();
+            crawler.setDomain(url);
+            crawler.crawlNews();
 
             crawler.getResults().forEach((newsEntity, imageEntity) -> {
                 //kiểm tra trùng
-                if (isCrawled(newsEntity) == false) {
-                    int catelogyId = referencesLinkEntity.getCategoryId();
-                    newsEntity.setCategoryId(catelogyId);
-                    CategoryEntity categoryEntity = categoryRepository.findById(catelogyId);
+                if (checkDuplicateNews(newsEntity) == false) {
+                    //set news infor và lưu
+                    int categoryId = categoryEntity.getId();
+                    newsEntity.setCategoryId(categoryId);
                     newsEntity.setCategoryByCategoryId(categoryEntity);
                     newsRepository.saveAndFlush(newsEntity);
+                    // set image info và lưu
                     imageEntity.setOwnId(newsEntity.getId());
                     imageEntity.setNewsByOwnId(newsEntity);
                     imageEntity.setType("NEWS");
-                    imageEntity.setStatus("NEW");
+                    imageEntity.setStatus(statusActive);
                     imageRepository.saveAndFlush(imageEntity);
-                    newsEntities.add(newsEntity);
                 }
             });
         }
     }
 
-    private boolean isCrawled(NewsEntity news) {
+    private boolean checkDuplicateNews(NewsEntity news) {
+        //kiểm tra tin tức trùng theo title
         return newsRepository.existsByTitle(news.getTitle());
     }
 
-    private void crawlBike(List<ReferencesLinkEntity> listReferencesLinkEntities) throws IOException {
-        for (ReferencesLinkEntity referencesLinkEntity : listReferencesLinkEntities) {
-            BikeHondaCrawler crawler = new BikeHondaCrawler();
+    private void crawlBike(CategoryEntity categoryEntity, List<String> listLink) {
+        for (String url : listLink) {
+            CrawlBike crawler = new CrawlBike();
             List<Map<String, String>> listBikes = new ArrayList<>();
-            //truyền vào url dùng để crawl và tên category
-            crawler.crawlBike(referencesLinkEntity.getUrl(), referencesLinkEntity.getCategoryByCategoryId().getName());
-            //TH1: link từng catelogy riêng vd:https://yamaha-motor.com.vn/xe/loai-xe/xe-ga
-            if (!crawler.getListBikes().isEmpty()) {
-                listBikes = crawler.getListBikes();
-                addBike(referencesLinkEntity.getCategoryId(), listBikes);
-            } else {//TH2: link chung vd: https://hondaxemay.com.vn/san-pham/
-                listBikes = crawler.getListXeCon();
-                addBike(1, listBikes);
-                listBikes = crawler.getListXeTayGa();
-                addBike(2, listBikes);
-                listBikes = crawler.getListXeMoTo();
-                addBike(4, listBikes);
-                listBikes = crawler.getListXeSo();
-                addBike(3, listBikes);
-            }
+            //truyền vào url dùng để crawl
+            crawler.crawlBike(url);
+            //lấy list bike đã crawl
+            listBikes = crawler.getListBikes();
+            //thêm thông tin category và lưu bike nếu không trùng
+            addBike(categoryEntity, listBikes);
         }
     }
 
-    private void crawlAccessory(List<ReferencesLinkEntity> listReferencesLinkEntities) throws IOException {
-        for (ReferencesLinkEntity referencesLinkEntity : listReferencesLinkEntities) {
-            BikeHondaCrawler crawler = new BikeHondaCrawler();
+    private void crawlBikeWithSpecialLink(List<String> listLink) {
+        for (String url : listLink) {
+            CrawlBike crawler = new CrawlBike();
+            List<Map<String, String>> listBikes = new ArrayList<>();
+            //truyền vào url dùng để crawl
+            crawler.crawlBike(url);
+            //special link không phân category riêng biệt nên khi crawl cần lưu bike theo các category bike
+            CategoryEntity categoryEntity = categoryRepository.findByName("Xe Tay Ga");
+            listBikes = crawler.getListXeCon();
+            //thêm thông tin category và lưu
+            addBike(categoryEntity, listBikes);
+
+            categoryEntity = categoryRepository.findByName("Xe Tay Ga");
+            listBikes = crawler.getListXeTayGa();
+            addBike(categoryEntity, listBikes);
+
+            categoryEntity = categoryRepository.findByName("Xe Mô Tô");
+            listBikes = crawler.getListXeMoTo();
+            addBike(categoryEntity, listBikes);
+
+            categoryEntity = categoryRepository.findByName("Xe Số");
+            listBikes = crawler.getListXeSo();
+            addBike(categoryEntity, listBikes);
+        }
+    }
+
+    private void crawlAccessory(CategoryEntity categoryEntity, List<String> listLink) {
+        for (String url : listLink) {
+            CrawlAccessory crawlAccessory = new CrawlAccessory();
             List<Map<String, String>> listAccessories = new ArrayList<>();
-            crawler.crawlAccessoryHonda(referencesLinkEntity.getUrl());
-            listAccessories = crawler.getListAccessories();
-            addAccessory(referencesLinkEntity.getCategoryId(), listAccessories);
+            //crawl accessory theo link danh sách accessory
+            crawlAccessory.crawlAccessoryFromHonda(url);
+            //lấy accessory info đã crawl
+            listAccessories = crawlAccessory.getListAccessories();
+            //thêm thông tin về category và lưu accessory
+            addAccessory(categoryEntity, listAccessories);
         }
     }
 
-    private void createCategory(String name, String type) {
-        if (categoryRepository.findByName(name) == null) {
-            CategoryEntity categoryEntity = new CategoryEntity();
-            categoryEntity.setName(name);
-            categoryEntity.setType(type);
-            categoryEntity.setStatus(statusActive);
-            categoryRepository.saveAndFlush(categoryEntity);
-        }
-    }
-
-    private void createReferencesLink(String url, CategoryEntity categoryEntity) {
-        if (referencesLinkRepository.findByUrl(url) == null) {
-            ReferencesLinkEntity referencesLinkEntity = new ReferencesLinkEntity();
-            referencesLinkEntity.setCategoryId(categoryEntity.getId());
-            referencesLinkEntity.setCategoryByCategoryId(categoryEntity);
-            referencesLinkEntity.setStatus(statusActive);
-            referencesLinkEntity.setUrl(url);
-            referencesLinkRepository.saveAndFlush(referencesLinkEntity);
-        }
-    }
-
-    private void addAccessory(int catelogyId, List<Map<String, String>> listBike) {
+    private void addAccessory(CategoryEntity categoryEntity, List<Map<String, String>> listBike) {
         for (Map<String, String> accessoryDetail : listBike) {
             AccessoryEntity newAccessory = new AccessoryEntity();
+            //lấy thông tin về accessory từ map theo key
             newAccessory.setName(accessoryDetail.get("name"));
             newAccessory.setUrl(accessoryDetail.get("url"));
-            newAccessory.setCategoryId(catelogyId);
+            newAccessory.setCategoryId(categoryEntity.getId());
             newAccessory.setBrand(accessoryDetail.get("brand"));
             newAccessory.setStatus(accessoryDetail.get("status"));
             newAccessory.setDescription(accessoryDetail.get("description"));
             newAccessory.setPrice(accessoryDetail.get("price"));
+            //tạo hashCode
             String hashAccessoryCode = newAccessory.hashCode() + "";
             newAccessory.setHashAccessoryCode(hashAccessoryCode);
+            newAccessory.setCategoryByCategoryId(categoryEntity);
             //kiểm tra trùng
             boolean addAccessory = checkDuplicateAccessory(newAccessory);
             if (addAccessory == false) {
+                //lưu accessory nếu không trùng
                 accessoryRepository.saveAndFlush(newAccessory);
                 AccessoryEntity ownAccessory = accessoryRepository.findByHashAccessoryCode(hashAccessoryCode);
                 //thêm image theo accessory
@@ -291,22 +229,26 @@ public class CrawlController {
         }
     }
 
-    private void addBike(int catelogyId, List<Map<String, String>> listBike) {
+    private void addBike(CategoryEntity categoryEntity, List<Map<String, String>> listBike) {
         for (Map<String, String> bikeDetail : listBike) {
             BikeEntity newBike = new BikeEntity();
+            //lấy thông tin bike từ map theo key
             newBike.setName(bikeDetail.get("name"));
             newBike.setUrl(bikeDetail.get("url"));
-            newBike.setCategoryId(catelogyId);
+            newBike.setCategoryId(categoryEntity.getId());
+            newBike.setCategoryByCategoryId(categoryEntity);
             newBike.setBrand(bikeDetail.get("brand"));
             newBike.setStatus(bikeDetail.get("status"));
             newBike.setDescription(bikeDetail.get("description"));
             newBike.setVersion(bikeDetail.get("version"));
             newBike.setPrice(bikeDetail.get("price"));
+            //tạo hashCode
             String hashAccessoryCode = newBike.hashCode() + "";
             newBike.setHashBikeCode(hashAccessoryCode);
             //kiểm tra trùng
             boolean addBike = checkDuplicateBike(newBike);
             if (addBike == false) {
+                //lưu bike nếu không trùng
                 bikeRepository.saveAndFlush(newBike);
                 BikeEntity ownBike = bikeRepository.findByHashBikeCode(hashAccessoryCode);
                 //thêm Image theo bike
@@ -321,17 +263,120 @@ public class CrawlController {
     }
 
     private boolean checkDuplicateAccessory(AccessoryEntity newAccessory) {
-        boolean exit = accessoryRepository.existsByHashAccessoryCode(newAccessory.getHashAccessoryCode());
-        if (exit == true) {
+        //kiểm tra trùng theo hashCode
+        boolean exited = accessoryRepository.existsByHashAccessoryCode(newAccessory.getHashAccessoryCode());
+        if (exited == true) {
+            //nếu trùng thì kiểm tra price và description
             AccessoryEntity exitAccessory = accessoryRepository.findByHashAccessoryCode(newAccessory.getHashAccessoryCode());
-            exitAccessory.setPrice(newAccessory.getPrice());
-            exitAccessory.setDescription(newAccessory.getDescription());
+            if (!exitAccessory.getPrice().equals(newAccessory.getPrice())
+                    || !exitAccessory.getDescription().equals(newAccessory.getDescription())) {
+                //thay đổi thông tin của accessory (price và description) nếu price hoặc descripton thay đổi
+                exitAccessory.setDescription(newAccessory.getDescription());
+                exitAccessory.setPrice(newAccessory.getPrice());
+                //update accessory
+                accessoryRepository.saveAndFlush(exitAccessory);
+            }
             return true;
         }
         return false;
     }
 
     private boolean checkDuplicateBike(BikeEntity newBike) {
-        return bikeRepository.existsByHashBikeCode(newBike.getHashBikeCode());
+        //kiểm tra trùng theo hashCode
+        boolean exited = bikeRepository.existsByHashBikeCode(newBike.getHashBikeCode());
+        if (exited == true) {
+            //nếu trùng thì kiểm tra price và description
+            BikeEntity exitBike = bikeRepository.findByHashBikeCode(newBike.getHashBikeCode());
+            if (!exitBike.getPrice().equals(newBike.getPrice())
+                    || !exitBike.getDescription().equals(newBike.getDescription())) {
+                //thay đổi thông tin của bike (price và description) nếu price hoặc descripton thay đổi
+                exitBike.setDescription(newBike.getDescription());
+                exitBike.setPrice(newBike.getPrice());
+                //update bike
+                bikeRepository.saveAndFlush(exitBike);
+            }
+            return true;
+        }
+        return false;
     }
+
+    public void setCategoriesAndReferenceLinksDB() {
+        //thêm category và reference nếu chưa có
+        DBSetup dbSetup = new DBSetup();
+        //Lấy list category và lưu nếu chưa có
+        List<String> listCategory = dbSetup.listCategoryBike();
+        listCategory(listCategory, typeBike);
+
+        listCategory = dbSetup.listCategoryAccessory();
+        listCategory(listCategory, typeAccessory);
+
+        listCategory = dbSetup.listCategoryNews();
+        listCategory(listCategory, typeNews);
+
+        //Lấy list reference vaf lưu nếu chưa có
+        List<String> listLinkCategory = dbSetup.listLinksAccessoryOp();
+        listReferenceLink(listLinkCategory, "Honda Phụ Kiện Ốp");
+
+        listLinkCategory = dbSetup.listLinksAccessoryLapThem();
+        listReferenceLink(listLinkCategory, "Honda Phụ Kiện Lắp Thêm");
+
+        listLinkCategory = dbSetup.listLinksAccessoryThayThe();
+        listReferenceLink(listLinkCategory, "Honda Phụ Kiện Thay Thế");
+
+        listLinkCategory = dbSetup.listLinksAccessoryDan();
+        listReferenceLink(listLinkCategory, "Honda Phụ Kiện Dán");
+
+        listLinkCategory = dbSetup.listLinksSpecial();
+        listReferenceLink(listLinkCategory, "Special");
+
+        listLinkCategory = dbSetup.listLinksNews();
+        listReferenceLink(listLinkCategory, "Tin Tức");
+
+        listLinkCategory = dbSetup.listLinksXeConTay();
+        listReferenceLink(listLinkCategory, "Xe Côn Tay");
+
+        listLinkCategory = dbSetup.listLinksXeTayGa();
+        listReferenceLink(listLinkCategory, "Xe Tay Ga");
+
+        listLinkCategory = dbSetup.listLinksXeSo();
+        listReferenceLink(listLinkCategory, "Xe Số");
+
+        listLinkCategory = dbSetup.listLinksXeMoTo();
+        listReferenceLink(listLinkCategory, "Xe Mô Tô");
+    }
+
+    private void listReferenceLink(List<String> listLinkCategory, String categoryName) {
+        for (String url : listLinkCategory) {
+            //kiểm tra reference có hay chưa
+            boolean exited = referencesLinkRepository.existsByUrl(url);
+            if (exited == false) {
+                //thêm nếu chưa có
+                ReferencesLinkEntity referencesLinkEntity = new ReferencesLinkEntity();
+                referencesLinkEntity.setUrl(url);
+                referencesLinkEntity.setStatus(statusActive);
+                //lấy category theo tên category để gán
+                CategoryEntity categoryEntity = categoryRepository.findByName(categoryName);
+                referencesLinkEntity.setCategoryId(categoryEntity.getId());
+                referencesLinkEntity.setCategoryByCategoryId(categoryEntity);
+
+                referencesLinkRepository.save(referencesLinkEntity);
+            }
+        }
+    }
+
+    private void listCategory(List<String> listCategory, String typeBike) {
+        for (String name : listCategory) {
+            //kiểm tra category có hay chưa
+            boolean exited = categoryRepository.existsByName(name);
+            if (exited == false) {
+                //thêm nếu chưa có
+                CategoryEntity categoryEntity = new CategoryEntity();
+                categoryEntity.setType(typeBike);
+                categoryEntity.setStatus(statusActive);
+                categoryEntity.setName(name);
+                categoryRepository.save(categoryEntity);
+            }
+        }
+    }
+
 }

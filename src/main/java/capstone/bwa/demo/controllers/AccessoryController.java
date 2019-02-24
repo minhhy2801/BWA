@@ -1,7 +1,7 @@
 package capstone.bwa.demo.controllers;
 
 
-import capstone.bwa.demo.View.ViewsAccessory;
+import capstone.bwa.demo.View.Views;
 import capstone.bwa.demo.entities.AccessoryEntity;
 import capstone.bwa.demo.entities.CategoryEntity;
 import capstone.bwa.demo.entities.ImageEntity;
@@ -9,8 +9,6 @@ import capstone.bwa.demo.repositories.AccessoryRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,14 +28,14 @@ public class AccessoryController {
     @Autowired
     ImageRepository imageRepository;
 
-    @JsonView(ViewsAccessory.IListAccessories.class)
+    @JsonView(Views.IListAccessories.class)
     @GetMapping("accessories")
     public ResponseEntity getAllAccessory() {
         List<AccessoryEntity> accessoryEntityList = accessoryRepository.findAll();
         return new ResponseEntity(accessoryEntityList, HttpStatus.OK);
     }
 
-    @JsonView(ViewsAccessory.IAccessory.class)
+    @JsonView(Views.IAccessory.class)
     @GetMapping("accessory/{id}")
     public ResponseEntity getAccessory(@PathVariable int id) {
         AccessoryEntity accessoryEntity = accessoryRepository.findById(id);

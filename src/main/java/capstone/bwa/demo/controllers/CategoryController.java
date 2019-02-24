@@ -1,6 +1,7 @@
 package capstone.bwa.demo.controllers;
 
 
+import capstone.bwa.demo.crawlmodel.DBSetup;
 import capstone.bwa.demo.entities.CategoryEntity;
 import capstone.bwa.demo.repositories.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,12 +9,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController("category")
 public class CategoryController {
     @Autowired
     CategoryRepository categoryRepository;
+
+    private final String statusActive = "ACTIVE";
+    private final String typeBike = "BIKE";
+    private final String typeAccessory = "ACCESSORY";
 
     @GetMapping("admin/categories")
     public ResponseEntity getAllCategory(){
@@ -70,4 +76,5 @@ public class CategoryController {
         }
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
+
 }

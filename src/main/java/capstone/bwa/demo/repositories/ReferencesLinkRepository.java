@@ -9,4 +9,5 @@ public interface ReferencesLinkRepository extends JpaRepository<ReferencesLinkEn
     ReferencesLinkEntity findById(int id);
     List<ReferencesLinkEntity> findByCategoryId(int categoryId);
     ReferencesLinkEntity findByUrl(String url);
+    boolean existsByUrl(String url);
 }
