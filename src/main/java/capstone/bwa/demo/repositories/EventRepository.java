@@ -12,13 +12,13 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<EventEntity, Integer> {
     EventEntity findById(int id);
 
-    @Query("SELECT e.title FROM EventEntity e WHERE e.status = :status1 OR e.status = :status2")
-    List<EventEntity> findAllTitle(@Param("status1") String status1, @Param("status2") String status2);
+    @Query("SELECT e.id, e.title FROM EventEntity e WHERE e.status IN :status")
+    List<EventEntity> findAllTitle(@Param("status") List<String> status);
 
-    @Query("SELECT e.id, e.publicTime, e.endRegisterTime FROM EventEntity e WHERE e.status = :status1 OR e.status = :status2")
-    List<Object[]> findAllPublicTimeAndEndRegisterTime(@Param("status1") String status1, @Param("status2") String status2);
+    @Query("SELECT e.id, e.publicTime, e.endRegisterTime, e.endTime FROM EventEntity e WHERE e.status IN :status")
+    List<Object[]> findAllPublicTimeAndEndRegisterTime(@Param("status") List<String> status);
 
-    List<EventEntity> findAllByStatusOrStatusOrderByIdDesc(String status1, String status2, Pageable pageable);
+    List<EventEntity> findAllByStatusInOrderByIdDesc(List<String> status, Pageable pageable);
 
     List<EventEntity> findAllByStatusOrderByIdDesc(String status, Pageable pageable);
 

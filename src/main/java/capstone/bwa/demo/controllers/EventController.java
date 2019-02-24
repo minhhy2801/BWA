@@ -18,6 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +45,6 @@ public class EventController {
     private final String closeRegister = "CLOSE_REGISTER";
     private final String reject = "REJECT";
     private final String hidden = "HIDDEN";
-
 
     private final String getAll = "ALL";
     private final String roleUser = "USER";
@@ -90,7 +92,7 @@ public class EventController {
         EventEntity entity = eventRepository.findById(id);
         if (entity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        if (!entity.getStatus().equals(ongoing) && !entity.getStatus().equals(finished))
+        if (!entity.getStatus().equals(ongoing) && !entity.getStatus().equals(finished) && !entity.getStatus().equals(closeRegister))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
 
         return new ResponseEntity(entity, HttpStatus.OK);
@@ -103,8 +105,11 @@ public class EventController {
      */
     @GetMapping("events/title")
     public ResponseEntity searchListEventsName() {
-        List<EventEntity> list = eventRepository.findAllTitle(ongoing, finished);
-//        List<Object[]> list = eventRepository.findAllPublicTimeAndEndRegisterTime(ongoing, waitingPublic);
+        List<String> statusEventShow = new ArrayList<>();
+        statusEventShow.add(ongoing);
+        statusEventShow.add(closeRegister);
+        statusEventShow.add(finished);
+        List<EventEntity> list = eventRepository.findAllTitle(statusEventShow);
         return new ResponseEntity(list, HttpStatus.OK);
     }
 
@@ -133,15 +138,21 @@ public class EventController {
         String status = body.get("status");
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        if (!status.equals(ongoing) && !status.equals(finished) && !status.equals(getAll))
+        if (!status.equals(ongoing) && !status.equals(finished)
+                && !status.equals(closeRegister) && !status.equals(getAll))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
 
         List<EventEntity> list;
         // number of page with n elements
         Pageable pageWithElements = PageRequest.of(id, quantity);
-        if (status.equals(getAll))
-            list = eventRepository.findAllByStatusOrStatusOrderByIdDesc(ongoing, finished, pageWithElements);
-        else list = eventRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
+        if (status.equals(getAll)) {
+            List<String> statusEventShow = new ArrayList<>();
+            statusEventShow.add(ongoing);
+            statusEventShow.add(closeRegister);
+            statusEventShow.add(finished);
+            list = eventRepository.findAllByStatusInOrderByIdDesc(statusEventShow, pageWithElements);
+        } else list = eventRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
+
         if (list.size() < 1)
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
@@ -167,13 +178,12 @@ public class EventController {
         if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
                 accountEntity.getStatus().equals(accountStatus)) {
             Date date = new Date(System.currentTimeMillis());
-
+            DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
             EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
             eventEntity.setCreatorId(id);
-            eventEntity.setCreatedTime(date.toString());
+            eventEntity.setCreatedTime(dateFormat.format(date));
             eventEntity.setTotalFeedback(0);
             eventEntity.setTotalSoldTicket(0);
-            eventEntity.setTotalRate(null);
 
             eventRepository.saveAndFlush(eventEntity);
             setEventListImages(body, eventEntity);
@@ -373,7 +383,6 @@ public class EventController {
         String priceTicket = body.get("priceTicket");
         int minTicket = Integer.parseInt(body.get("minTicket"));
         int maxTicket = Integer.parseInt(body.get("maxTicket"));
-//            String createdTime = body.get("createdTime");
         String startSignUpTime = body.get("startRegisterTime");
         String endSignUpTime = body.get("endRegisterTime");
         String startEventTime = body.get("startTime");

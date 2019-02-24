@@ -9,5 +9,6 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Intege
     CategoryEntity findById(int id);
 
     CategoryEntity findByName(String name);
+
     List<CategoryEntity> findAllByTypeAndStatus(String type, String status);
 }

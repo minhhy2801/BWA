@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -24,6 +25,7 @@ public class ScheduledTasks {
     private final String ongoing = "ONGOING";
     private final String closeRegister = "CLOSE_REGISTER";
     private final String hidden = "HIDDEN";
+    private final String finished = "FINISHED";
 
     //Cron chạy method
     //1 day run
@@ -36,29 +38,34 @@ public class ScheduledTasks {
     }
 
     private void updateEventStatus() {
-        List<Object[]> listEventsWaiting = eventRepository.findAllPublicTimeAndEndRegisterTime(waitingPublic, ongoing);
+        List<String> statusEventShow = new ArrayList<>();
+        statusEventShow.add(ongoing);
+        statusEventShow.add(closeRegister);
+        statusEventShow.add(waitingPublic);
+        List<Object[]> listEventsWaiting = eventRepository.findAllPublicTimeAndEndRegisterTime(statusEventShow);
         try {
             Date date = new Date(System.currentTimeMillis());
-            SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy");
-            String strPublic;
-            String strEndSignUp;
+            SimpleDateFormat format = new SimpleDateFormat("dd-MM-yyyy");
+            String strPublic = "";
+            String strEndSignUp = "";
+            String strEndEvent = "";
             int id;
             for (Object[] event : listEventsWaiting) {
                 strPublic = event[1].toString().trim();
                 strEndSignUp = event[2].toString().trim();
+                strEndEvent = event[3].toString().trim();
                 Date publicTime = format.parse(strPublic);
                 Date endSignUpTime = format.parse(strEndSignUp);
+                Date endEvent = format.parse(strEndEvent);
+                id = Integer.parseInt(event[0].toString().trim());
+                EventEntity eventEntity = eventRepository.findById(id);
                 if (date.compareTo(publicTime) > 0) { //current earlier than public
-                    id = Integer.parseInt(event[0].toString().trim());
                     System.out.println("Event " + id + "are public");
-                    EventEntity eventEntity = eventRepository.findById(id);
                     eventEntity.setStatus(ongoing);
                     eventRepository.save(eventEntity);
                 }
                 if (date.compareTo(endSignUpTime) > 0) {
-                    id = Integer.parseInt(event[0].toString().trim());
                     System.out.println("Event " + id + "end sign up");
-                    EventEntity eventEntity = eventRepository.findById(id);
                     if (eventEntity.getTotalSoldTicket() < eventEntity.getMinTicket()) {
                         System.out.println("Không đủ điều kiện mở event");
                         eventEntity.setStatus(hidden);
@@ -66,6 +73,10 @@ public class ScheduledTasks {
                         System.out.println("Đóng đăng ký rồi nha");
                         eventEntity.setStatus(closeRegister);
                     }
+                    eventRepository.save(eventEntity);
+                }
+                if (date.compareTo(endEvent) > 0) {
+                    eventEntity.setStatus(finished);
                     eventRepository.save(eventEntity);
                 }
             }

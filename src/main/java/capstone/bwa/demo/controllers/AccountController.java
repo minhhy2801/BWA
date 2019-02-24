@@ -87,8 +87,10 @@ public class AccountController {
         String phone = body.get("phone");
         String name = body.get("name");
         String password = body.get("password");
+
         AccountEntity accountEntity = new AccountEntity();
         BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(); //bcrypt pass
+        if (accountRepository.findByPhone(phone) != null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         Date today = new Date(System.currentTimeMillis());
         accountEntity.setName(name);

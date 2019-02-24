@@ -71,8 +71,8 @@ public class CrawlNews {
         newsEntity.setDescription(description);
 
         newsEntity.setImgThumbnailUrl(getFirstImageURL(imageEntity));
-        DateFormat dateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
-        Date date = new Date();
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+        Date date = new Date(System.currentTimeMillis());
         newsEntity.setCreatedTime(dateFormat.format(date));
         newsEntity.setStatus(statusActive);
         imageEntity.setNewsByOwnId(newsEntity);
