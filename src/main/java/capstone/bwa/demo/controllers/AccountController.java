@@ -46,7 +46,7 @@ public class AccountController {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         //send SMS API
-        SmsSender sender = new SmsSender("");   //add accessToken
+        SmsSender sender = new SmsSender("ywyaveS4F2ghLWONdhFX9izGa5qfPM2S");   //add accessToken
         String sms = sender.sendSmsToCreateAccount(phone, "Verify Code BWA: " + code, 2, "BWA");
 
         Map<String, Object> result = new HashMap<>();

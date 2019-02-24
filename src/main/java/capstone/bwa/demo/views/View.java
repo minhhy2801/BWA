@@ -4,8 +4,13 @@ public class View {
     public interface IAccountProfile{};
     public interface IEventDetail{};
     public interface IEvents{};
-    interface IFeedback{};
-    public interface IEventRegistered{};
     public interface ICategories{};
-    interface INews{};
+    public interface IEventRegistered{};
+    public interface IAccessory{};
+    public interface IAccessories{};
+    public interface IBike{};
+    public interface ICategory{};
+    public interface INews{};
+    public interface IFeedback{};
+
 }

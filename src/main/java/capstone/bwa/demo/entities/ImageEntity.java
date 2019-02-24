@@ -14,7 +14,8 @@ import java.util.Objects;
 public class ImageEntity {
     @JsonView(View.IEventDetail.class)
     private int id;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, 
+    View.IAccessory.class, View.IAccessories.class, View.IBike.class})
     private String url;
     private String type;
     private String status;

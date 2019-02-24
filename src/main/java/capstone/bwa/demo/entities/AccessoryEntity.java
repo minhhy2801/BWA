@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -7,16 +10,22 @@ import java.util.Objects;
 @Entity
 @Table(name = "Accessory", schema = "dbo", catalog = "BikeWorldDB")
 public class AccessoryEntity {
+    @JsonView({View.IAccessory.class, View.IAccessories.class})
     private int id;
+    @JsonView({View.IAccessory.class, View.IAccessories.class})
     private String name;
     private String url;
     private String brand;
+    @JsonView({View.IAccessory.class, View.IAccessories.class})
     private String price;
     private Integer categoryId;
+    @JsonView({View.IAccessory.class, View.IAccessories.class})
     private String description;
     private String hashAccessoryCode;
     private String status;
+    @JsonView({View.IAccessory.class, View.IAccessories.class})
     private CategoryEntity categoryByCategoryId;
+    @JsonView({View.IAccessory.class, View.IAccessories.class})
     private Collection<ImageEntity> imagesById;
 
     @Id
@@ -125,14 +134,14 @@ public class AccessoryEntity {
                 Objects.equals(hashAccessoryCode, that.hashAccessoryCode) &&
                 Objects.equals(status, that.status);
     }
-
+    //change hashCode
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, url, brand, price, categoryId, description, hashAccessoryCode, status);
+        return Objects.hash(url, name, brand, categoryId);
     }
 
     @ManyToOne
-    @JoinColumn(name = "categoryId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "categoryId", referencedColumnName = "id", insertable = false, updatable = false)
     public CategoryEntity getCategoryByCategoryId() {
         return categoryByCategoryId;
     }
@@ -148,5 +157,17 @@ public class AccessoryEntity {
 
     public void setImagesById(Collection<ImageEntity> imagesById) {
         this.imagesById = imagesById;
+    }
+
+    @Override
+    public String toString() {
+        return "AccessoryEntity{" +
+                "name='" + name + '\'' +
+                ", url='" + url + '\'' +
+                ", brand='" + brand + '\'' +
+                ", price='" + price + '\'' +
+                ", categoryId=" + categoryId +
+                ", description='" + description + '\'' +
+                '}';
     }
 }

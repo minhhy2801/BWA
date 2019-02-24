@@ -1,10 +1,20 @@
 package capstone.bwa.demo.controllers;
 
+import capstone.bwa.demo.entities.CategoryEntity;
+import capstone.bwa.demo.entities.ImageEntity;
+import capstone.bwa.demo.entities.NewsEntity;
+import capstone.bwa.demo.repositories.NewsRepository;
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.ws.rs.Path;
-import java.util.Map;
+import java.util.*;
 
 
 /*******************************************************************************
@@ -16,6 +26,10 @@ import java.util.Map;
 @RestController
 public class NewsController {
 
+    @Autowired
+    private NewsRepository newsRepository;
+
+
     /**
      * Returns News object with status ACTIVE
      * status send in body
@@ -24,10 +38,48 @@ public class NewsController {
      * @return 404 if not found in db
      * 200 if found
      */
+    @JsonView(View.INews.class)
     @PostMapping("news/{id}")
-    public ResponseEntity getANews(@PathVariable int id, @RequestBody Map<String, String> body) {
+    public ResponseEntity getANews(@PathVariable int id) {
+        NewsEntity newsEntity = newsRepository.findById(id);
+        if (newsEntity != null) {
+            Gson gson = new Gson();
+            try {
+                JsonObject objectReturn = new JsonObject();
+                objectReturn.addProperty("title", newsEntity.getTitle());
+                objectReturn.addProperty("description", newsEntity.getDescription());
+                objectReturn.addProperty("imageThumnail", newsEntity.getImgThumbnailUrl());
+                CategoryEntity categoryEntity = newsEntity.getCategoryByCategoryId();
+                String json = getJson("name", categoryEntity.getName());
+                objectReturn.add("category", getJsonObject(json));
 
-        return null;
+                Collection<ImageEntity> listImageEntities = newsEntity.getImagesById();
+                List<ImageEntity> listImage = new ArrayList<>();
+                for (ImageEntity imageEntity : listImageEntities) {
+                    if (imageEntity.getType().equals("NEWS")) {
+                        listImage.add(imageEntity);
+                    }
+                }
+                List<Map<String, String>> jsonMap = new ArrayList<>();
+                for (ImageEntity imageEntity : listImage) {
+                    Map<String, String> mapUrl = new HashMap<>();
+                    if (imageEntity.getType().equals("NEWS")) {
+                        mapUrl.put("url", imageEntity.getUrl());
+                        jsonMap.add(mapUrl);
+                    }
+                }
+                Map<String, Object> data = new HashMap<>();
+                data.put("image", jsonMap);
+                json = gson.toJson(data);
+                objectReturn.add("image", getJsonObject(json));
+
+                String jsonReturn = gson.toJson(objectReturn);
+                return new ResponseEntity(jsonReturn, HttpStatus.OK);
+            } catch (Exception e) {
+                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            }
+        }
+        return new ResponseEntity(HttpStatus.NOT_FOUND);
     }
 
     /**
@@ -90,7 +142,6 @@ public class NewsController {
     }
 
     /**
-     *
      * @param pageId
      * @param quantity
      * @param cateId
@@ -98,7 +149,24 @@ public class NewsController {
      */
     @GetMapping("news/page/{pageId}/limit/{quantity}/category/{cateId}")
     public ResponseEntity getListNewsByCategory(@PathVariable int pageId, @PathVariable int quantity,
-                                                @PathVariable int cateId){
+                                                @PathVariable int cateId) {
         return null;
     }
+
+    private JsonObject getJsonObject(String json) {
+        JsonParser parser = new JsonParser();
+        JsonObject object = parser.parse(json).getAsJsonObject();
+        return object;
+    }
+
+    private String getJson(String key, Object object) {
+        Gson gson = new Gson();
+        String json;
+        Map<String, Object> jsonMap = new HashMap<>();
+        jsonMap.put(key, object);
+        json = gson.toJson(jsonMap);
+        return json;
+    }
+
 }
+

@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -8,14 +11,20 @@ import java.util.Objects;
 @Table(name = "Bike", schema = "dbo", catalog = "BikeWorldDB")
 public class BikeEntity {
     private int id;
+    @JsonView(View.IBike.class)
     private String name;
     private String url;
+    @JsonView(View.IBike.class)
     private String brand;
+    @JsonView(View.IBike.class)
     private String price;
     private Integer categoryId;
+    @JsonView(View.IBike.class)
     private String description;
     private String hashBikeCode;
     private String status;
+    @JsonView(View.IBike.class)
+    private String version;
     private CategoryEntity categoryByCategoryId;
     private Collection<ImageEntity> imagesById;
 
@@ -110,6 +119,16 @@ public class BikeEntity {
         this.status = status;
     }
 
+    @Basic
+    @Column(name = "version")
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -128,7 +147,7 @@ public class BikeEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, url, brand, price, categoryId, description, hashBikeCode, status);
+        return Objects.hash(name, brand, categoryId, version);
     }
 
     @ManyToOne
@@ -148,5 +167,21 @@ public class BikeEntity {
 
     public void setImagesById(Collection<ImageEntity> imagesById) {
         this.imagesById = imagesById;
+    }
+
+    @Override
+    public String toString() {
+        return "BikeEntity{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", url='" + url + '\'' +
+                ", brand='" + brand + '\'' +
+                ", price='" + price + '\'' +
+                ", categoryId=" + categoryId +
+                ", description='" + description + '\'' +
+                ", hashBikeCode='" + hashBikeCode + '\'' +
+                ", status='" + status + '\'' +
+                ", version='" + version + '\'' +
+                '}';
     }
 }

@@ -75,6 +75,4 @@ public class TransactionDetailController {
     public ResponseEntity closeFinishedListTrans(@PathVariable int userId, @PathVariable int supProId, @RequestBody Map<String, String> body) {
         return null;
     }
-
-
 }
