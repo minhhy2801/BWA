@@ -1,6 +1,7 @@
 package capstone.bwa.demo.controllers;
 
 import capstone.bwa.demo.entities.AccountEntity;
+import capstone.bwa.demo.exceptions.CustomException;
 import capstone.bwa.demo.repositories.AccountRepository;
 import capstone.bwa.demo.repositories.RoleRepository;
 import capstone.bwa.demo.services.SmsSender;
@@ -16,6 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,10 +32,9 @@ public class AccountController {
     private final String accountStatus = "ACTIVE";
     private final String roleUser = "USER";
     private final String roleAdmin = "ADMIN";
-    private String phone;
 
     @PostMapping("send_verify_code")
-    public ResponseEntity sendCode(@RequestBody Map<String, String> body) throws IOException {
+    public ResponseEntity sendSignUpCode(@RequestBody Map<String, String> body) {
         String phone = body.get("phone").trim();
         //create random number verify code
         String code = new Random().nextInt(9999 - 1000) + 1000 + "";
@@ -49,7 +51,7 @@ public class AccountController {
     }
 
     @PostMapping("send_verify_code_forgot")
-    public ResponseEntity sendForgotCode(@RequestBody Map<String, String> body) throws IOException {
+    public ResponseEntity sendForgotCode(@RequestBody Map<String, String> body) {
         BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
         String phone = body.get("phone").trim();
         //create random number verify code
@@ -92,9 +94,10 @@ public class AccountController {
         BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(); //bcrypt pass
         if (accountRepository.findByPhone(phone) != null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
-        Date today = new Date(System.currentTimeMillis());
+        Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         accountEntity.setName(name);
-        accountEntity.setCreatedTime(today.toString());
+        accountEntity.setCreatedTime(dateFormat.format(date));
         accountEntity.setPhone(phone);
         accountEntity.setRoleId(1);
         accountEntity.setPassword(bCryptPasswordEncoder.encode(password));
@@ -127,6 +130,7 @@ public class AccountController {
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
         Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         String name = body.get("name");
         String gender = body.get("gender");
         String address = body.get("address");
@@ -135,7 +139,7 @@ public class AccountController {
         accountEntity.setName(name);
         accountEntity.setGender(gender);
         accountEntity.setAddress(address);
-        accountEntity.setEditedTime(date.toString());
+        accountEntity.setEditedTime(dateFormat.format(date));
         accountEntity.setAvatarUrl(avatarUrl);
 
         accountRepository.save(accountEntity);
@@ -157,9 +161,10 @@ public class AccountController {
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
-        Date today = new Date(System.currentTimeMillis());
+        Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         String status = body.get("status");
-        accountUserEntity.setEditedTime(today.toString());
+        accountUserEntity.setEditedTime(dateFormat.format(date));
         accountUserEntity.setStatus(status);
         accountRepository.save(accountUserEntity);
         return new ResponseEntity(HttpStatus.OK);
@@ -186,14 +191,17 @@ public class AccountController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    private Map<String, Object> sendSMSAPI(String code, String hashVerifyCode, String phone) throws IOException {
-        SmsSender sender = new SmsSender("ywyaveS4F2ghLWONdhFX9izGa5qfPM2S");   //add accessToken
-        String sms = sender.sendSmsToCreateAccount(phone, "Verify Code BWA: " + code, 2, "BWA");
-
-        Map<String, Object> result = new HashMap<>();
-        JSONObject jsonObj = new JSONObject(sms);
-        result.put("verify", hashVerifyCode);
-        result.put("result", jsonObj.toMap());
-        return result;
+    private Map<String, Object> sendSMSAPI(String code, String hashVerifyCode, String phone) {
+        SmsSender sender = new SmsSender("");   //add accessToken
+        try {
+            String sms = sender.sendSmsToCreateAccount(phone, "Verify Code BWA: " + code, 2, "BWA");
+            Map<String, Object> result = new HashMap<>();
+            JSONObject jsonObj = new JSONObject(sms);
+            result.put("verify", hashVerifyCode);
+            result.put("result", jsonObj.toMap());
+            return result;
+        } catch (IOException e) {
+            throw new CustomException("Add accessToken", HttpStatus.BAD_REQUEST);
+        }
     }
 }

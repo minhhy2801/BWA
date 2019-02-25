@@ -1,17 +1,27 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+import org.hibernate.annotations.NotFound;
+import org.hibernate.annotations.NotFoundAction;
+
 import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
 @Table(name = "Feedback", schema = "dbo", catalog = "BikeWorldDB")
 public class FeedbackEntity {
+    @JsonView(View.IFeedback.class)
     private int id;
     private Integer ownId;
+    @JsonView(View.IFeedback.class)
     private String createdTime;
+    @JsonView(View.IFeedback.class)
     private String description;
+    @JsonView(View.IFeedback.class)
     private String rate;
     private String status;
+    @JsonView(View.IFeedback.class)
     private EventRegisteredEntity eventRegisteredByOwnId;
     private TransactionDetailEntity transactionDetailByOwnId;
 
@@ -94,7 +104,8 @@ public class FeedbackEntity {
         return Objects.hash(id, ownId, createdTime, description, rate, status);
     }
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public EventRegisteredEntity getEventRegisteredByOwnId() {
         return eventRegisteredByOwnId;
@@ -104,7 +115,8 @@ public class FeedbackEntity {
         this.eventRegisteredByOwnId = eventRegisteredByOwnId;
     }
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @NotFound(action = NotFoundAction.IGNORE)
     @JoinColumn(name = "ownId", referencedColumnName = "id", insertable = false, updatable = false)
     public TransactionDetailEntity getTransactionDetailByOwnId() {
         return transactionDetailByOwnId;

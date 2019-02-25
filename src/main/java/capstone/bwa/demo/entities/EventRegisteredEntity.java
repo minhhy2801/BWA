@@ -21,7 +21,7 @@ public class EventRegisteredEntity {
     private Integer purchasedTicket;
     private String status;
     private EventEntity eventByEventId;
-    @JsonView({View.IEventRegistered.class})
+    @JsonView({View.IEventRegistered.class, View.IFeedback.class})
     private AccountEntity accountByRegisteredId;
     private Collection<FeedbackEntity> feedbacksById;
 
