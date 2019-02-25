@@ -16,7 +16,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +36,7 @@ public class FeedbackController {
     private final String statusPaid = "PAID";
     private final String eventFeedback = "EVENT";
     private final String transFeedback = "TRANS";
+    private static final long ONE_MINUTE_IN_MILLIS = 60000;
 
     /*************************************
      * FEEDBACK EVENT
@@ -76,18 +79,21 @@ public class FeedbackController {
         EventEntity eventEntity = eventRepository.findById(id);
         if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         EventRegisteredEntity eventRegisteredEntity = eventRegisteredRepository.findDistinctFirstByAccountByRegisteredId_IdAndEventByEventId_Id(userId, id);
+
 //        System.out.println(eventRegisteredEntity);
+
         if (eventRegisteredEntity == null || feedbackRepository.existsByOwnId(eventRegisteredEntity.getId()))
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
+        FeedbackEntity feedbackEntity = new FeedbackEntity();
 
         String description = body.get("description");
         String rate = body.get("rate");
+
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-
-        FeedbackEntity feedbackEntity = new FeedbackEntity();
         feedbackEntity.setCreatedTime(dateFormat.format(date));
+
         feedbackEntity.setDescription(description);
         feedbackEntity.setRate(rate);
         feedbackEntity.setOwnId(eventRegisteredEntity.getId());
@@ -116,15 +122,36 @@ public class FeedbackController {
 
         if (accountEntity == null || eventEntity == null || feedbackEntity == null)
             return new ResponseEntity(HttpStatus.NOT_FOUND);
+        EventRegisteredEntity eventRegisteredEntity = eventRegisteredRepository.findById(feedbackEntity.getEventRegisteredByOwnId().getId());
+//        System.out.println(eventRegisteredEntity);
+        if (!eventRegisteredEntity.getRegisteredId().equals(userId) ||
+                !eventRegisteredEntity.getEventId().equals(eventId))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
 
-        String description = body.get("description");
-        String rate = body.get("rate");
-        feedbackEntity.setDescription(description);
-        feedbackEntity.setRate(rate);
-        feedbackRepository.save(feedbackEntity);
+        try {
+            Date date = new Date(System.currentTimeMillis());
+            DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+            Date createTime = dateFormat.parse(feedbackEntity.getCreatedTime());
+            Calendar calendar = Calendar.getInstance();
+            calendar.setTime(createTime);
+            calendar.add(Calendar.MINUTE, 15);
+            Date afterAdding15Mins = calendar.getTime();
+            System.out.println(afterAdding15Mins);
+            if (date.compareTo(afterAdding15Mins) < 0) {
+                String description = body.get("description");
+                String rate = body.get("rate");
+                feedbackEntity.setDescription(description);
+                feedbackEntity.setRate(rate);
+                feedbackRepository.save(feedbackEntity);
 
-        return new ResponseEntity(feedbackEntity, HttpStatus.OK);
+                return new ResponseEntity(feedbackEntity, HttpStatus.OK);
+            }
+//            else System.out.println("hết cho sửa rồi");
+        } catch (ParseException e) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /*************************************

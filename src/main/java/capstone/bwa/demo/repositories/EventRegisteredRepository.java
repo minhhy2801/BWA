@@ -8,6 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface EventRegisteredRepository extends JpaRepository<EventRegisteredEntity, Integer> {
+    EventRegisteredEntity findById(int id);
+
     List<EventRegisteredEntity> findAllByEventByEventId(EventEntity eventEntity);
 
     @Query("SELECT e.id FROM EventRegisteredEntity e WHERE e.status = :status AND e.eventId = :eventId")
