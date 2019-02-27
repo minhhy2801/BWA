@@ -13,7 +13,7 @@ public class AccountEntity {
     @JsonView({View.IAccountProfile.class})
     private int id;
     @JsonView({View.IAccountProfile.class, View.IEventDetail.class,
-            View.IEventRegistered.class, View.IFeedback.class})
+            View.IEventRegistered.class, View.IFeedback.class, View.ISupplyPosts.class})
     private String name;
     @JsonView(View.IAccountProfile.class)
     private String phone;
@@ -22,7 +22,7 @@ public class AccountEntity {
     private String gender;
     @JsonView(View.IAccountProfile.class)
     private String address;
-    @JsonView(View.IAccountProfile.class)
+    @JsonView({View.IAccountProfile.class, View.IFeedback.class})
     private String avatarUrl;
     private Integer roleId;
     @JsonView(View.IAccountProfile.class)

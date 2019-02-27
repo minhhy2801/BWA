@@ -1,9 +1,9 @@
 package capstone.bwa.demo.controllers;
 
+import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.exceptions.CustomException;
 import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.RoleRepository;
 import capstone.bwa.demo.services.SmsSender;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PostAuthorize;
-import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,9 +28,6 @@ public class AccountController {
 
     @Autowired
     private AccountRepository accountRepository;
-    private final String accountStatus = "ACTIVE";
-    private final String roleUser = "USER";
-    private final String roleAdmin = "ADMIN";
 
     @PostMapping("send_verify_code")
     public ResponseEntity sendSignUpCode(@RequestBody Map<String, String> body) {
@@ -76,7 +72,8 @@ public class AccountController {
 
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!accountEntity.getStatus().equals(accountStatus)) return new ResponseEntity(HttpStatus.LOCKED);
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.LOCKED);
 
         accountEntity.setPassword(bCryptPasswordEncoder.encode(newPassword));
         accountRepository.save(accountEntity);
@@ -101,7 +98,7 @@ public class AccountController {
         accountEntity.setPhone(phone);
         accountEntity.setRoleId(1);
         accountEntity.setPassword(bCryptPasswordEncoder.encode(password));
-        accountEntity.setStatus(accountStatus);
+        accountEntity.setStatus(MainConstants.ACCOUNT_ACTIVE);
         accountEntity.setRate("0");
         accountRepository.saveAndFlush(accountEntity);
         return new ResponseEntity(HttpStatus.CREATED);
@@ -115,7 +112,8 @@ public class AccountController {
         AccountEntity accountEntity = accountRepository.findById(id);
         if (accountEntity == null)
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!accountEntity.getStatus().equals(accountStatus)) return new ResponseEntity(HttpStatus.LOCKED);
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.LOCKED);
 
         return new ResponseEntity(accountEntity, HttpStatus.OK);
     }
@@ -125,7 +123,8 @@ public class AccountController {
     public ResponseEntity editProfile(@RequestBody Map<String, String> body, @PathVariable int id) {
         AccountEntity accountEntity = accountRepository.findById(id);
 
-        if (!accountEntity.getStatus().equals(accountStatus)) return new ResponseEntity(HttpStatus.LOCKED);
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.LOCKED);
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
@@ -154,7 +153,7 @@ public class AccountController {
         AccountEntity accountAdminEntity = accountRepository.findById(adminId);
         AccountEntity accountUserEntity = accountRepository.findById(id);
 
-        if (!accountAdminEntity.getRoleByRoleId().getName().equals(roleAdmin))
+        if (!accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
             return new ResponseEntity(HttpStatus.LOCKED);
 
         if (accountAdminEntity == null || accountUserEntity == null)
@@ -177,7 +176,8 @@ public class AccountController {
         BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder();
 
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!accountEntity.getStatus().equals(accountStatus)) return new ResponseEntity(HttpStatus.LOCKED);
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.LOCKED);
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
         String oldPassword = body.get("oldPassword");

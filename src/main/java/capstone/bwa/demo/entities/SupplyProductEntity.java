@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -7,12 +10,16 @@ import java.util.Objects;
 @Entity
 @Table(name = "SupplyProduct", schema = "dbo", catalog = "BikeWorldDB")
 public class SupplyProductEntity {
+    @JsonView(View.ISupplyPosts.class)
     private int id;
+    @JsonView(View.ISupplyPosts.class)
     private String title;
     private String description;
     private Integer creatorId;
     private Integer approvedId;
+    @JsonView(View.ISupplyPosts.class)
     private String imgThumbnailUrl;
+    @JsonView(View.ISupplyPosts.class)
     private String createdTime;
     private String approvedTime;
     private String closedTime;
@@ -20,12 +27,15 @@ public class SupplyProductEntity {
     private String rate;
     private Integer categoryId;
     private Integer itemId;
+    @JsonView(View.ISupplyPosts.class)
     private String status;
-    private String priority;
+    private String typeItem;
     private Collection<ImageEntity> imagesById;
     private Collection<RequestNotificationEntity> requestNotificationsById;
+    @JsonView(View.ISupplyPosts.class)
     private AccountEntity accountByCreatorId;
     private AccountEntity accountByApprovedId;
+    @JsonView(View.ISupplyPosts.class)
     private CategoryEntity categoryByCategoryId;
     private Collection<TransactionDetailEntity> transactionDetailsById;
 
@@ -171,13 +181,13 @@ public class SupplyProductEntity {
     }
 
     @Basic
-    @Column(name = "priority")
-    public String getPriority() {
-        return priority;
+    @Column(name = "typeItem")
+    public String getTypeItem() {
+        return typeItem;
     }
 
-    public void setPriority(String priority) {
-        this.priority = priority;
+    public void setTypeItem(String priority) {
+        this.typeItem = priority;
     }
 
     @Override
@@ -199,12 +209,12 @@ public class SupplyProductEntity {
                 Objects.equals(categoryId, that.categoryId) &&
                 Objects.equals(itemId, that.itemId) &&
                 Objects.equals(status, that.status) &&
-                Objects.equals(priority, that.priority);
+                Objects.equals(typeItem, that.typeItem);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, title, description, creatorId, approvedId, imgThumbnailUrl, createdTime, approvedTime, closedTime, location, rate, categoryId, itemId, status, priority);
+        return Objects.hash(id, title, description, creatorId, approvedId, imgThumbnailUrl, createdTime, approvedTime, closedTime, location, rate, categoryId, itemId, status, typeItem);
     }
 
     @OneToMany(mappedBy = "supplyProductByOwnId")

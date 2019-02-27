@@ -1,5 +1,6 @@
 package capstone.bwa.demo.controllers;
 
+import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.entities.EventEntity;
 import capstone.bwa.demo.entities.EventRegisteredEntity;
@@ -13,7 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.xml.crypto.Data;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -21,10 +23,6 @@ import java.util.Map;
 
 @RestController
 public class EventRegisteredController {
-    private final String ongoing = "ONGOING";
-    private final String accountActive = "ACTIVE";
-    private final String statusPaid = "PAID";
-
     @Autowired
     private EventRegisteredRepository eventRegisteredRepository;
     @Autowired
@@ -73,19 +71,20 @@ public class EventRegisteredController {
     public ResponseEntity registerEvent(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(userId);
         EventEntity eventEntity = eventRepository.findById(id);
-
         if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!eventEntity.getStatus().equals(ongoing) && !accountEntity.getStatus().equals(accountActive))
+        if (!eventEntity.getStatus().equals(MainConstants.EVENT_ONGOING) &&
+                !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.LOCKED);
         int purchasedTicket = Integer.parseInt(body.get("purchasedTicket"));
         Date today = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
 
         EventRegisteredEntity eventRegisteredEntity = new EventRegisteredEntity();
         eventRegisteredEntity.setRegisteredId(accountEntity.getId());
         eventRegisteredEntity.setEventId(eventEntity.getId());
         eventRegisteredEntity.setPurchasedTicket(purchasedTicket);
-        eventRegisteredEntity.setRegisteredTime(today.toString());
-        eventRegisteredEntity.setStatus(statusPaid);
+        eventRegisteredEntity.setRegisteredTime(dateFormat.format(today));
+        eventRegisteredEntity.setStatus(MainConstants.REGISTERED_PAID);
         eventRegisteredRepository.save(eventRegisteredEntity);
         int totalSoldTicket = eventEntity.getTotalSoldTicket() + purchasedTicket;
         eventEntity.setTotalSoldTicket(totalSoldTicket);

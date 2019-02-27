@@ -26,10 +26,11 @@ public class TokenAuthencationService {
     public static final String HEADER_STRING = "Authorization";
 
 
-    public static void addAuthentication(HttpServletResponse responses, String phone, boolean isAdmin) {
+    public static void addAuthentication(HttpServletResponse responses, String phone, boolean isAdmin, int id) {
         String token = JWT.create().withSubject(phone)
                 .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .withClaim("isAdmin", isAdmin)
+                .withClaim("userId", id)
                 .withIssuer("FPT")
                 .sign(Algorithm.HMAC512(SECRET.getBytes()));
 //        System.out.println("ADD TOKEN");

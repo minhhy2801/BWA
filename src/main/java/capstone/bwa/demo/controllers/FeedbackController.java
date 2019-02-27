@@ -1,5 +1,6 @@
 package capstone.bwa.demo.controllers;
 
+import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.entities.EventEntity;
 import capstone.bwa.demo.entities.EventRegisteredEntity;
@@ -33,10 +34,6 @@ public class FeedbackController {
     private EventRepository eventRepository;
     @Autowired
     private EventRegisteredRepository eventRegisteredRepository;
-    private final String statusPaid = "PAID";
-    private final String eventFeedback = "EVENT";
-    private final String transFeedback = "TRANS";
-    private static final long ONE_MINUTE_IN_MILLIS = 60000;
 
     /*************************************
      * FEEDBACK EVENT
@@ -55,12 +52,17 @@ public class FeedbackController {
     @JsonView(View.IFeedback.class)
     @GetMapping("event/{id}/feedback")
     public ResponseEntity getListFeedbackEvent(@PathVariable int id) {
-        List<Integer> listRegisterIds = eventRegisteredRepository.findAllIdByEventId(statusPaid, id);
-        System.out.println(listRegisterIds);
-        List<FeedbackEntity> feedbackEntities = feedbackRepository.findAllByEventRegisteredIdsIn(listRegisterIds, eventFeedback);
-        if (feedbackEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        List<Integer> listRegisterIds = eventRegisteredRepository
+                .findAllIdByEventId(MainConstants.REGISTERED_PAID, id);
+//        System.out.println(listRegisterIds);
+        if (listRegisterIds.size() > 0) {
+            List<FeedbackEntity> feedbackEntities = feedbackRepository
+                    .findAllByEventRegisteredIdsIn(listRegisterIds, MainConstants.STATUS_EVENT);
+            if (feedbackEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+            return new ResponseEntity(feedbackEntities, HttpStatus.OK);
 
-        return new ResponseEntity(feedbackEntities, HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -97,8 +99,13 @@ public class FeedbackController {
         feedbackEntity.setDescription(description);
         feedbackEntity.setRate(rate);
         feedbackEntity.setOwnId(eventRegisteredEntity.getId());
-        feedbackEntity.setStatus(eventFeedback);
+        feedbackEntity.setStatus(MainConstants.STATUS_EVENT);
         feedbackRepository.save(feedbackEntity);
+        float numRate = Float.parseFloat(rate) + Float.parseFloat(eventEntity.getTotalRate());
+        System.out.println("Rate: " + numRate);
+        eventEntity.setTotalRate(numRate + "");
+        eventEntity.setTotalFeedback(eventEntity.getTotalFeedback() + 1);
+        eventRepository.save(eventEntity);
         return new ResponseEntity(feedbackEntity, HttpStatus.OK);
     }
 
@@ -133,18 +140,26 @@ public class FeedbackController {
             Date date = new Date(System.currentTimeMillis());
             DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
             Date createTime = dateFormat.parse(feedbackEntity.getCreatedTime());
+            //Set created time + 15mins
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(createTime);
             calendar.add(Calendar.MINUTE, 15);
             Date afterAdding15Mins = calendar.getTime();
-            System.out.println(afterAdding15Mins);
+//            System.out.println(afterAdding15Mins);
             if (date.compareTo(afterAdding15Mins) < 0) {
+
                 String description = body.get("description");
                 String rate = body.get("rate");
+
+                float numRate = Float.parseFloat(rate)
+                        + Float.parseFloat(eventEntity.getTotalRate())
+                        - Float.parseFloat(feedbackEntity.getRate());
+                eventEntity.setTotalRate(numRate + "");
+                eventRepository.save(eventEntity);
+
                 feedbackEntity.setDescription(description);
                 feedbackEntity.setRate(rate);
                 feedbackRepository.save(feedbackEntity);
-
                 return new ResponseEntity(feedbackEntity, HttpStatus.OK);
             }
 //            else System.out.println("hết cho sửa rồi");

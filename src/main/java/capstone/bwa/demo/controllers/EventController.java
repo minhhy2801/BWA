@@ -1,6 +1,7 @@
 package capstone.bwa.demo.controllers;
 
 
+import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.entities.CategoryEntity;
 import capstone.bwa.demo.entities.EventEntity;
@@ -25,33 +26,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-/*******************************************************************************
- * ::STATUS::
- * PENDING: chờ duyệt
- * WAITING_PUBLIC: đã duyệt đang trong giai đoạn
- * ONGOING: đã qua ngày public time
- * CLOSE_REGISTER: Hết ngày đăng ký
- * REJECT: bị trả về
- * HIDDEN: không đủ điều kiện diễn ra event, hoặc bị BAN
- * FINISHED: event kết thúc
- *******************************************************************************/
 
 @RestController
 public class EventController {
-    private final String pending = "PENDING";
-    private final String waitingPublic = "WAITING_PUBLIC";
-    private final String ongoing = "ONGOING";
-    private final String finished = "FINISHED";
-    private final String closeRegister = "CLOSE_REGISTER";
-    private final String reject = "REJECT";
-    private final String hidden = "HIDDEN";
-
-    private final String getAll = "ALL";
-    private final String roleUser = "USER";
-    private final String roleAdmin = "ADMIN";
-    private final String accountStatus = "ACTIVE";
-
-
     @Autowired
     private EventRepository eventRepository;
     @Autowired
@@ -92,7 +69,9 @@ public class EventController {
         EventEntity entity = eventRepository.findById(id);
         if (entity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        if (!entity.getStatus().equals(ongoing) && !entity.getStatus().equals(finished) && !entity.getStatus().equals(closeRegister))
+        if (!entity.getStatus().equals(MainConstants.EVENT_ONGOING) &&
+                !entity.getStatus().equals(MainConstants.EVENT_FINISHED) &&
+                !entity.getStatus().equals(MainConstants.EVENT_CLOSED))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
 
         return new ResponseEntity(entity, HttpStatus.OK);
@@ -106,10 +85,11 @@ public class EventController {
     @GetMapping("events/title")
     public ResponseEntity searchListEventsName() {
         List<String> statusEventShow = new ArrayList<>();
-        statusEventShow.add(ongoing);
-        statusEventShow.add(closeRegister);
-        statusEventShow.add(finished);
+        statusEventShow.add(MainConstants.EVENT_ONGOING);
+        statusEventShow.add(MainConstants.EVENT_CLOSED);
+        statusEventShow.add(MainConstants.EVENT_FINISHED);
         List<EventEntity> list = eventRepository.findAllTitle(statusEventShow);
+//        System.out.println("search title " + statusEventShow);
         return new ResponseEntity(list, HttpStatus.OK);
     }
 
@@ -138,18 +118,20 @@ public class EventController {
         String status = body.get("status");
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        if (!status.equals(ongoing) && !status.equals(finished)
-                && !status.equals(closeRegister) && !status.equals(getAll))
+        if (!status.equals(MainConstants.EVENT_ONGOING) && !status.equals(MainConstants.EVENT_CLOSED)
+                && !status.equals(MainConstants.EVENT_FINISHED) && !status.equals(MainConstants.GET_ALL))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
 
         List<EventEntity> list;
         // number of page with n elements
         Pageable pageWithElements = PageRequest.of(id, quantity);
-        if (status.equals(getAll)) {
+
+        if (status.equals(MainConstants.GET_ALL)) {
             List<String> statusEventShow = new ArrayList<>();
-            statusEventShow.add(ongoing);
-            statusEventShow.add(closeRegister);
-            statusEventShow.add(finished);
+            statusEventShow.add(MainConstants.EVENT_ONGOING);
+            statusEventShow.add(MainConstants.EVENT_CLOSED);
+            statusEventShow.add(MainConstants.EVENT_FINISHED);
+
             list = eventRepository.findAllByStatusInOrderByIdDesc(statusEventShow, pageWithElements);
         } else list = eventRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
 
@@ -175,8 +157,8 @@ public class EventController {
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
-                accountEntity.getStatus().equals(accountStatus)) {
+        if (accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) &&
+                accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
             Date date = new Date(System.currentTimeMillis());
             DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
             EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
@@ -216,8 +198,8 @@ public class EventController {
         if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         if (!eventEntity.getCreatorId().equals(userId)) return new ResponseEntity(HttpStatus.FORBIDDEN);
 
-        if (accountEntity.getRoleByRoleId().getName().equals(roleUser) &&
-                accountEntity.getStatus().equals(accountStatus)) {
+        if (accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) &&
+                accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
             eventEntity = paramEventEntityRequest(body, eventEntity);
             eventRepository.saveAndFlush(eventEntity);
             List<ImageEntity> list = imageRepository.findAllByEventByOwnId_IdAndType(id, "EVENT");
@@ -245,8 +227,8 @@ public class EventController {
         EventEntity eventEntity = eventRepository.findById(id);
 
         if (accountEntity == null || eventEntity == null
-                || !accountEntity.getStatus().equals(accountStatus)
-                || !accountEntity.getRoleByRoleId().getName().equals(roleAdmin))
+                || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
+                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (body == null || body.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -284,14 +266,14 @@ public class EventController {
         if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
 
         AccountEntity accountEntity = accountRepository.findById(id);
-        if (accountEntity == null || !accountEntity.getRoleByRoleId().getName().equals(roleUser)
-                || !accountEntity.getStatus().equals(accountStatus))
+        if (accountEntity == null || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER)
+                || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         Pageable pageWithElements = PageRequest.of(pageId, quantity);
         List<EventEntity> list;
         String status = body.get("status");
-        if (status.equals(getAll)) {
+        if (status.equals(MainConstants.GET_ALL)) {
             list = eventRepository.findAllByCreatorIdOrderByIdDesc(id, pageWithElements);
         } else {
             list = eventRepository.findAllByCreatorIdAndStatusOrderByIdDesc(id, pageWithElements, status);
@@ -313,7 +295,7 @@ public class EventController {
         EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
 
         eventEntity.setCreatedTime(date.toString());
-        eventEntity.setStatus(waitingPublic);
+        eventEntity.setStatus(MainConstants.EVENT_WAITING);
         eventEntity.setTotalFeedback(0);
         eventEntity.setTotalSoldTicket(0);
         eventEntity.setCreatorId(adminId);
@@ -403,7 +385,7 @@ public class EventController {
         eventEntity.setStartTime(startEventTime);
         eventEntity.setEndTime(endEventTime);
         eventEntity.setPublicTime(publicTime);
-        eventEntity.setStatus(pending);
+        eventEntity.setStatus(MainConstants.PENDING);
         return eventEntity;
     }
 

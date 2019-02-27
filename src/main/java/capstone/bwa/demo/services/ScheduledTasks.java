@@ -1,5 +1,6 @@
 package capstone.bwa.demo.services;
 
+import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.EventEntity;
 import capstone.bwa.demo.repositories.EventRepository;
 import org.slf4j.Logger;
@@ -21,11 +22,6 @@ public class ScheduledTasks {
     @Autowired
     private EventRepository eventRepository;
     private static final Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
-    private final String waitingPublic = "WAITING_PUBLIC";
-    private final String ongoing = "ONGOING";
-    private final String closeRegister = "CLOSE_REGISTER";
-    private final String hidden = "HIDDEN";
-    private final String finished = "FINISHED";
 
     //Cron chạy method
     //1 day run
@@ -39,9 +35,9 @@ public class ScheduledTasks {
 
     private void updateEventStatus() {
         List<String> statusEventShow = new ArrayList<>();
-        statusEventShow.add(ongoing);
-        statusEventShow.add(closeRegister);
-        statusEventShow.add(waitingPublic);
+        statusEventShow.add(MainConstants.EVENT_ONGOING);
+        statusEventShow.add(MainConstants.EVENT_CLOSED);
+        statusEventShow.add(MainConstants.EVENT_WAITING);
         List<Object[]> listEventsWaiting = eventRepository.findAllPublicTimeAndEndRegisterTime(statusEventShow);
         try {
             Date date = new Date(System.currentTimeMillis());
@@ -61,22 +57,22 @@ public class ScheduledTasks {
                 EventEntity eventEntity = eventRepository.findById(id);
                 if (date.compareTo(publicTime) > 0) { //current earlier than public
                     System.out.println("Event " + id + "are public");
-                    eventEntity.setStatus(ongoing);
+                    eventEntity.setStatus(MainConstants.EVENT_ONGOING);
                     eventRepository.save(eventEntity);
                 }
                 if (date.compareTo(endSignUpTime) > 0) {
                     System.out.println("Event " + id + "end sign up");
                     if (eventEntity.getTotalSoldTicket() < eventEntity.getMinTicket()) {
                         System.out.println("Không đủ điều kiện mở event");
-                        eventEntity.setStatus(hidden);
+                        eventEntity.setStatus(MainConstants.HIDDEN);
                     } else {
                         System.out.println("Đóng đăng ký rồi nha");
-                        eventEntity.setStatus(closeRegister);
+                        eventEntity.setStatus(MainConstants.EVENT_CLOSED);
                     }
                     eventRepository.save(eventEntity);
                 }
                 if (date.compareTo(endEvent) > 0) {
-                    eventEntity.setStatus(finished);
+                    eventEntity.setStatus(MainConstants.EVENT_FINISHED);
                     eventRepository.save(eventEntity);
                 }
             }
@@ -87,16 +83,16 @@ public class ScheduledTasks {
         }
     }
 
-    //Khoảng cách thời gian giữa các lần chạy method
-    public void scheduleTaskWithFixedRate() {
-    }
-
-    //Khoảng cách thời gian giữa các lần chạy hoàn thành method
-    public void scheduleTaskWithFixedDelay() {
-    }
-
-    //Thời gian delay cho lần đầu tiên chạy method
-    public void scheduleTaskWithInitialDelay() {
-    }
+//    //Khoảng cách thời gian giữa các lần chạy method
+//    public void scheduleTaskWithFixedRate() {
+//    }
+//
+//    //Khoảng cách thời gian giữa các lần chạy hoàn thành method
+//    public void scheduleTaskWithFixedDelay() {
+//    }
+//
+//    //Thời gian delay cho lần đầu tiên chạy method
+//    public void scheduleTaskWithInitialDelay() {
+//    }
 
 }
