@@ -80,12 +80,13 @@ public class SupplyProductController {
      * <p>
      * }
      */
+    @JsonView(View.ISupplyPostDetail.class)
     @GetMapping("supply_post/{id}")
     public ResponseEntity getSupplyPost(@PathVariable int id) {
         SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
         if (supplyProductEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!supplyProductEntity.equals(MainConstants.SUPPLY_POST_PUBLIC) ||
-                !supplyProductEntity.equals(MainConstants.SUPPLY_POST_CLOSED))
+        if (!supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_PUBLIC) &&
+                !supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED))
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         return new ResponseEntity(supplyProductEntity, HttpStatus.OK);

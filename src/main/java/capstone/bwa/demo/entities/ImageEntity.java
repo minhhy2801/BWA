@@ -12,9 +12,9 @@ import java.util.Objects;
 @Entity
 @Table(name = "Image", schema = "dbo", catalog = "BikeWorldDB")
 public class ImageEntity {
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.ISupplyPostDetail.class})
     private int id;
-    @JsonView({View.IEventDetail.class, 
+    @JsonView({View.IEventDetail.class, View.ISupplyPostDetail.class,
     View.IAccessory.class, View.IAccessories.class, View.IBike.class})
     private String url;
     private String type;

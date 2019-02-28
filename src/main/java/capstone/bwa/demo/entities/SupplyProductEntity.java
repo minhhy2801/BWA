@@ -10,32 +10,37 @@ import java.util.Objects;
 @Entity
 @Table(name = "SupplyProduct", schema = "dbo", catalog = "BikeWorldDB")
 public class SupplyProductEntity {
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private int id;
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView({View.ISupplyPosts.class,  View.ISupplyPostDetail.class})
     private String title;
+    @JsonView(View.ISupplyPostDetail.class)
     private String description;
     private Integer creatorId;
     private Integer approvedId;
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private String imgThumbnailUrl;
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private String createdTime;
     private String approvedTime;
+    @JsonView(View.ISupplyPostDetail.class)
     private String closedTime;
+    @JsonView(View.ISupplyPostDetail.class)
     private String location;
+    @JsonView(View.ISupplyPostDetail.class)
     private String rate;
     private Integer categoryId;
     private Integer itemId;
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private String status;
     private String typeItem;
+    @JsonView(View.ISupplyPostDetail.class)
     private Collection<ImageEntity> imagesById;
     private Collection<RequestNotificationEntity> requestNotificationsById;
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private AccountEntity accountByCreatorId;
     private AccountEntity accountByApprovedId;
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private CategoryEntity categoryByCategoryId;
     private Collection<TransactionDetailEntity> transactionDetailsById;
 
