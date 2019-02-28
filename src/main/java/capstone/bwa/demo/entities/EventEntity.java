@@ -10,18 +10,18 @@ import java.util.Objects;
 @Entity
 @Table(name = "Event", schema = "dbo", catalog = "BikeWorldDB")
 public class EventEntity {
-    @JsonView({View.IEventDetail.class, View.IEvents.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class})
     private int id;
     private Integer creatorId;
     private Integer approvedId;
     private Integer categoryId;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String imgThumbnailUrl;
-    @JsonView({View.IEventDetail.class, View.IEvents.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class})
     private String title;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String description;
-    @JsonView({View.IEventDetail.class, View.IEvents.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class})
     private String location;
     @JsonView(View.IEventDetail.class)
     private String priceTicket;
@@ -29,11 +29,11 @@ public class EventEntity {
     private Integer minTicket;
     @JsonView(View.IEventDetail.class)
     private Integer maxTicket;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class})
     private String createdTime;
     @JsonView(View.IEventDetail.class)
     private String approvedTime;
-    @JsonView({View.IEventDetail.class})
+    @JsonView({View.IEventDetail.class, View.IEventsUser.class})
     private String startTime;
     @JsonView(View.IEventDetail.class)
     private String endTime;
@@ -49,7 +49,7 @@ public class EventEntity {
     private Integer totalFeedback;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String totalRate;
-    @JsonView({View.IEventDetail.class, View.IEvents.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class})
     private String status;
     @JsonView(View.IEventDetail.class)
     private AccountEntity accountByCreatorId;

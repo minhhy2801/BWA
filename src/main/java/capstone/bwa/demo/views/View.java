@@ -6,6 +6,7 @@ public class View {
     public interface ISupplyPostDetail{};
     public interface IEventDetail{};
     public interface IEvents{};
+    public interface IEventsUser{};
     public interface ICategories{};
     public interface IEventRegistered{};
     public interface IAccessory{};

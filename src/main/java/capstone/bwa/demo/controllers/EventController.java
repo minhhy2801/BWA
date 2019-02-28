@@ -259,8 +259,8 @@ public class EventController {
      * totalSoldTicket, totalFeedback, totalRate
      * }
      */
-    @JsonView(View.IEvents.class)
-    @GetMapping("user/{id}/events/page/{pageId}/limit/{quantity}")
+    @JsonView(View.IEventsUser.class)
+    @PostMapping("user/{id}/events/page/{pageId}/limit/{quantity}")
     public ResponseEntity getListEventsByUserIdNStatus(@PathVariable int id, @PathVariable int quantity,
                                                        @PathVariable int pageId, @RequestBody Map<String, String> body) {
         if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
