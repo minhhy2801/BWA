@@ -40,16 +40,13 @@ public class SupplyProductController {
      * <p>
      * }
      */
-
     @JsonView(View.ISupplyPosts.class)
     @PostMapping("supply_posts/page/{id}/limit/{quantity}")
     public ResponseEntity getListSupplyPosts(@PathVariable int quantity, @PathVariable int id,
                                              @RequestBody Map<String, String> body) {
         String status = body.get("status");
-        System.out.println(status);
 
-        if (!status.equals(MainConstants.SUPPLY_POST_PUBLIC)
-                && !status.equals(MainConstants.SUPPLY_POST_CLOSED)
+        if (!status.equals(MainConstants.SUPPLY_POST_PUBLIC) && !status.equals(MainConstants.SUPPLY_POST_CLOSED)
                 && !status.equals(MainConstants.GET_ALL)) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }

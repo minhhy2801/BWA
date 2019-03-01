@@ -14,6 +14,8 @@ public class MainConstants {
     public static String SUPPLY_POST_PUBLIC = "PUBLIC";
     public static String SUPPLY_POST_CLOSED = "CLOSED";
     public static String REGISTERED_PAID = "PAID";
+    public static String TRANSACTION_SUCCESS = "PAID_SUCCESS";
+    public static String TRANSACTION_FAIL = "PAID_FAIL";
     public static String STATUS_EVENT = "EVENT";
     public static String STATUS_TRANS = "TRANS";
 

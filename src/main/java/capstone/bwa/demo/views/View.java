@@ -12,7 +12,8 @@ public class View {
     public interface IAccessory{};
     public interface IAccessories{};
     public interface IBike{};
-    public interface ICategory{};
+    public interface ITransactions{};
+    public interface ITransactionDetail{};
     public interface INews{};
     public interface IFeedback{};
 

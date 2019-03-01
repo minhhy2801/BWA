@@ -10,14 +10,19 @@ import java.util.Objects;
 @Entity
 @Table(name = "TransactionDetail", schema = "dbo", catalog = "BikeWorldDB")
 public class TransactionDetailEntity {
+    @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
     private int id;
+    @JsonView(View.ITransactionDetail.class)
     private String createdTime;
+    @JsonView(View.ITransactionDetail.class)
     private String editedTime;
+    @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
     private String status;
     private Integer supplyProductId;
     private Integer interactiveId;
     private Collection<FeedbackEntity> feedbacksById;
     private SupplyProductEntity supplyProductBySupplyProductId;
+    @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
     private AccountEntity accountByInteractiveId;
 
     @Id
