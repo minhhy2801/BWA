@@ -3,10 +3,9 @@ package capstone.bwa.demo.controllers;
 import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.entities.BikeEntity;
+import capstone.bwa.demo.entities.ImageEntity;
 import capstone.bwa.demo.entities.SupplyProductEntity;
-import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.FeedbackRepository;
-import capstone.bwa.demo.repositories.SupplyProductRepository;
+import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +15,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 
 @RestController
@@ -29,6 +28,10 @@ public class SupplyProductController {
     private AccountRepository accountRepository;
     @Autowired
     private FeedbackRepository feedbackRepository;
+    @Autowired
+    private BikeRepository bikeRepository;
+    @Autowired
+    private ImageRepository imageRepository;
 
     /**
      * Return list supply posts
@@ -97,15 +100,22 @@ public class SupplyProductController {
      * @return 403 if cannot create
      * 200 if OK
      */
-    @PostMapping("user/{id}/supply_post")
-    public ResponseEntity createSupplyPost(@PathVariable int id, @RequestBody Map<String, String> body) {
+    @JsonView(View.ISupplyPostDetail.class)
+    @PostMapping("user/{id}/supply_post_bike")
+    public ResponseEntity createSupplyPostBike(@PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(id);
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
                 !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER))
             return new ResponseEntity(HttpStatus.LOCKED);
+        Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
 
-        return null;
+        SupplyProductEntity supplyProductEntity = paramSupplyPostEntityRequest(body);
+        supplyProductEntity.setCreatedTime(dateFormat.format(date));
+        supplyProductEntity.setStatus(MainConstants.PENDING);
+        supplyProductRepository.save(supplyProductEntity);
+        return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
     }
 
     /**
@@ -172,19 +182,64 @@ public class SupplyProductController {
     }
 
     //==========================
-    private SupplyProductEntity paramSupplyPostEntityRequest(Map<String, String> body, SupplyProductEntity supplyProductEntity) {
+    private SupplyProductEntity paramSupplyPostEntityRequest(Map<String, String> body) {
+        SupplyProductEntity supplyProductEntity = new SupplyProductEntity();
         String title = body.get("title");
         String description = body.get("description");
         String imgThumbnail = body.get("imgThumbnailUrl");
         String location = body.get("location");
-        int cateId = Integer.parseInt(body.get("categoryId"));
-        String typeItem = body.get("typeItem");
+        int cateId = Integer.parseInt(body.get("categoryIdSupplyPost"));
+
+        supplyProductEntity.setTitle(title);
+        supplyProductEntity.setDescription(description);
+        supplyProductEntity.setImgThumbnailUrl(imgThumbnail);
+        supplyProductEntity.setLocation(location);
+        supplyProductEntity.setCategoryId(cateId);
+        BikeEntity bikeEntity = paramBikeEntityRequest(body);
+        bikeRepository.save(bikeEntity);
+        supplyProductEntity.setItemId(bikeEntity.getId());
 
         return supplyProductEntity;
     }
 
-    private BikeEntity paramBikeEntityRequest(Map<String, String> body, BikeEntity bikeEntity) {
+    private BikeEntity paramBikeEntityRequest(Map<String, String> body) {
+        BikeEntity bikeEntity = new BikeEntity();
+        String name = body.get("name");
+        String brand = body.get("brand");
+        String price = body.get("price");
+        int cateId = Integer.parseInt(body.get("categoryIdBike"));
+        String version = body.get("version");
+        String img = body.get("images"); //arrays images
 
+        //set description
+        Map<String, String> map = new HashMap<>();
+        map.put("numOfKms", body.get("numOfKms"));
+        map.put("stateVehicle", body.get("stateVehicle"));
+        map.put("color", body.get("color"));
+        map.put("yearOfBike", body.get("yearOfBike"));
+        map.put("state", body.get("state"));
+        //----
+        bikeEntity.setName(name);
+        bikeEntity.setBrand(brand);
+        bikeEntity.setPrice(price);
+        bikeEntity.setStatus(MainConstants.STATUS_SUPPLY_POST);
+        bikeEntity.setHashBikeCode(bikeEntity.hashCode() + "");
+        bikeEntity.setCategoryId(cateId);
+        bikeEntity.setVersion(version);
+//        System.out.println(map);
+        bikeEntity.setDescription(map.toString());
+        String tmp = img.replace("[", "").replace("]", "").trim();
+        String[] arr = tmp.split(",");
+        List<ImageEntity> list = new ArrayList<>();
+        for (int i = 0; i < arr.length; i++) {
+            ImageEntity imageEntity = new ImageEntity();
+            imageEntity.setUrl(arr[i].trim());
+            imageEntity.setOwnId(bikeEntity.getId());
+            imageEntity.setType(MainConstants.STATUS_BIKE);
+            list.add(imageEntity);
+//                System.out.println("url " + imageEntity.getUrl());
+        }
+        imageRepository.saveAll(list);
 
         return bikeEntity;
     }

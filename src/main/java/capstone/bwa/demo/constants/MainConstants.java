@@ -17,6 +17,8 @@ public class MainConstants {
     public static String TRANSACTION_SUCCESS = "PAID_SUCCESS";
     public static String TRANSACTION_FAIL = "PAID_FAIL";
     public static String STATUS_EVENT = "EVENT";
+    public static String STATUS_SUPPLY_POST = "SUPPLY_POST";
     public static String STATUS_TRANS = "TRANS";
+    public static String STATUS_BIKE = "BIKE";
 
 }

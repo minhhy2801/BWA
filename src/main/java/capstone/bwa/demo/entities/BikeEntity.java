@@ -147,11 +147,11 @@ public class BikeEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, brand, categoryId, version);
+        return Objects.hash(name, brand, version, price);
     }
 
     @ManyToOne
-    @JoinColumn(name = "categoryId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "categoryId", referencedColumnName = "id", insertable = false, updatable = false)
     public CategoryEntity getCategoryByCategoryId() {
         return categoryByCategoryId;
     }
