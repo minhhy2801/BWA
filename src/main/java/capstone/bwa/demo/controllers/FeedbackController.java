@@ -1,14 +1,8 @@
 package capstone.bwa.demo.controllers;
 
 import capstone.bwa.demo.constants.MainConstants;
-import capstone.bwa.demo.entities.AccountEntity;
-import capstone.bwa.demo.entities.EventEntity;
-import capstone.bwa.demo.entities.EventRegisteredEntity;
-import capstone.bwa.demo.entities.FeedbackEntity;
-import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.EventRegisteredRepository;
-import capstone.bwa.demo.repositories.EventRepository;
-import capstone.bwa.demo.repositories.FeedbackRepository;
+import capstone.bwa.demo.entities.*;
+import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.ws.rs.Path;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -33,8 +28,11 @@ public class FeedbackController {
     @Autowired
     private EventRepository eventRepository;
     @Autowired
+    private SupplyProductRepository supplyProductRepository;
+    @Autowired
     private EventRegisteredRepository eventRegisteredRepository;
-
+    @Autowired
+    private TransactionDetailRepository transactionDetailRepository;
     /*************************************
      * FEEDBACK EVENT
      * ***********************************/
@@ -84,7 +82,8 @@ public class FeedbackController {
 
 //        System.out.println(eventRegisteredEntity);
 
-        if (eventRegisteredEntity == null || feedbackRepository.existsByOwnId(eventRegisteredEntity.getId()))
+        if (eventRegisteredEntity == null ||
+                feedbackRepository.existsByOwnIdAndStatus(eventRegisteredEntity.getId(), MainConstants.STATUS_EVENT))
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         FeedbackEntity feedbackEntity = new FeedbackEntity();
@@ -183,9 +182,19 @@ public class FeedbackController {
      * userName, createTime, avatar, description, rate
      * }
      */
+    @JsonView(View.IFeedback.class)
     @GetMapping("supply_post/{id}/feedback")
     public ResponseEntity getFeedbackSupplyPost(@PathVariable int id) {
-        return null;
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
+        if (supplyProductEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED)) {
+            TransactionDetailEntity transactionDetailEntity = transactionDetailRepository.findBySupplyProductIdAndStatus(id, MainConstants.TRANSACTION_SUCCESS);
+            if (transactionDetailEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+            FeedbackEntity feedbackEntity = feedbackRepository.findByTransactionDetailByOwnId_IdAndStatus(transactionDetailEntity.getId(), MainConstants.STATUS_TRANS);
+            if (feedbackEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+            return new ResponseEntity(feedbackEntity, HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -199,9 +208,38 @@ public class FeedbackController {
      * 400 if can not create
      * 200 if OK
      */
+    @JsonView(View.IFeedback.class)
     @PostMapping("user/{userId}/supply_post/{id}/feedback")
     public ResponseEntity createFeedbackSupplyPost(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> body) {
-        return null;
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
+        if (accountEntity == null || supplyProductEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED) &&
+                accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
+
+            TransactionDetailEntity transactionDetailEntity = transactionDetailRepository.findBySupplyProductIdAndStatus(id, MainConstants.TRANSACTION_SUCCESS);
+            if (transactionDetailEntity.getInteractiveId().equals(userId)) {
+                if (!feedbackRepository.existsByOwnIdAndStatus(transactionDetailEntity.getId(), MainConstants.STATUS_TRANS)) {
+                    FeedbackEntity feedbackEntity = new FeedbackEntity();
+
+                    String description = body.get("description");
+                    String rate = body.get("rate");
+
+                    Date date = new Date(System.currentTimeMillis());
+                    DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+                    feedbackEntity.setCreatedTime(dateFormat.format(date));
+
+                    feedbackEntity.setDescription(description);
+                    feedbackEntity.setRate(rate);
+                    feedbackEntity.setOwnId(transactionDetailEntity.getId());
+                    feedbackEntity.setStatus(MainConstants.STATUS_TRANS);
+                    feedbackRepository.save(feedbackEntity);
+                    supplyProductEntity.setRate(rate);
+                    supplyProductRepository.save(supplyProductEntity);
+                }
+            }
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -214,10 +252,60 @@ public class FeedbackController {
      * 403 if not user who feedback
      * 200 if OK
      */
-    @PutMapping("user/{userId}/supply_post/{id}/feedback")
-    public ResponseEntity updateFeedbackSupplyPost(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> body) {
-        return null;
+    @JsonView(View.IFeedback.class)
+    @PutMapping("user/{userId}/supply_post/{supplyId}/feedback/{id}")
+    public ResponseEntity updateFeedbackSupplyPost(@PathVariable int userId, @PathVariable int supplyId,
+                                                   @PathVariable int id, @RequestBody Map<String, String> body) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(supplyId);
+        FeedbackEntity feedbackEntity = feedbackRepository.findById(id);
+        if (accountEntity == null || supplyProductEntity == null || feedbackEntity == null)
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (feedbackEntity.getTransactionDetailByOwnId().getInteractiveId().equals(userId) &&
+                feedbackEntity.getStatus().equals(MainConstants.STATUS_TRANS)) {
+            try {
+                Date date = new Date(System.currentTimeMillis());
+                DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+                Date createTime = dateFormat.parse(feedbackEntity.getCreatedTime());
+                //Set created time + 15mins
+                Calendar calendar = Calendar.getInstance();
+                calendar.setTime(createTime);
+                calendar.add(Calendar.MINUTE, 15);
+                Date afterAdding15Mins = calendar.getTime();
+//            System.out.println(afterAdding15Mins);
+                if (date.compareTo(afterAdding15Mins) < 0) {
+
+                    String description = body.get("description");
+                    String rate = body.get("rate");
+
+                    supplyProductEntity.setRate(rate);
+                    supplyProductRepository.save(supplyProductEntity);
+                    feedbackEntity.setDescription(description);
+                    feedbackEntity.setRate(rate);
+                    feedbackRepository.save(feedbackEntity);
+                    return new ResponseEntity(feedbackEntity, HttpStatus.OK);
+                }
+            } catch (ParseException e) {
+                return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            }
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
+    @JsonView(View.IFeedback.class)
+        @GetMapping("user/profile/{userId}/success_feedback")
+    public ResponseEntity getListFeedbackInViewProfile(@PathVariable int userId) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        List<Integer> listIds = supplyProductRepository.findAllIdsByStatusAnAndCreatorId(MainConstants.SUPPLY_POST_CLOSED, userId);
+        if (listIds.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        List<Integer> list = transactionDetailRepository.findAllIdsByStatusAnAndSupplyPostIdIn(MainConstants.TRANSACTION_SUCCESS, listIds);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        List<FeedbackEntity> feedbackEntities = feedbackRepository.findAllByEventRegisteredIdsIn(list, MainConstants.STATUS_TRANS);
+        if (feedbackEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        return new ResponseEntity(feedbackEntities, HttpStatus.OK);
+    }
 
 }

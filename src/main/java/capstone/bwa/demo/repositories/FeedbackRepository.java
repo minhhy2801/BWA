@@ -9,8 +9,14 @@ import java.util.List;
 
 public interface FeedbackRepository extends JpaRepository<FeedbackEntity, Integer> {
     FeedbackEntity findById(int id);
+
     @Query("SELECT e FROM FeedbackEntity e WHERE e.ownId IN :eventRegisterIds AND e.status = :status")
     List<FeedbackEntity> findAllByEventRegisteredIdsIn(@Param("eventRegisterIds") List<Integer> list, String status);
 
-    boolean existsByOwnId(int id);
+    FeedbackEntity findByTransactionDetailByOwnId_IdAndStatus(int id, String type);
+
+    @Query("SELECT e.id FROM FeedbackEntity e WHERE e.status = :status AND e.ownId IN :id")
+    List<FeedbackEntity> findAllByStatusAnAndTransactionIdIn(@Param("status") String status, @Param("id") List<Integer> id);
+
+    boolean existsByOwnIdAndStatus(int id, String status);
 }

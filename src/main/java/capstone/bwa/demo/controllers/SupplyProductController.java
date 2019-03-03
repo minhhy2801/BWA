@@ -8,6 +8,9 @@ import capstone.bwa.demo.entities.SupplyProductEntity;
 import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -226,8 +229,10 @@ public class SupplyProductController {
         bikeEntity.setHashBikeCode(bikeEntity.hashCode() + "");
         bikeEntity.setCategoryId(cateId);
         bikeEntity.setVersion(version);
-//        System.out.println(map);
-        bikeEntity.setDescription(map.toString());
+        Gson gson = new Gson();
+        String desc = gson.toJson(map);
+
+        bikeEntity.setDescription(desc);
         String tmp = img.replace("[", "").replace("]", "").trim();
         String[] arr = tmp.split(",");
         List<ImageEntity> list = new ArrayList<>();

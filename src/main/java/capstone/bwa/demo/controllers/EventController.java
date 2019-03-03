@@ -164,6 +164,7 @@ public class EventController {
             EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
             eventEntity.setCreatorId(id);
             eventEntity.setCreatedTime(dateFormat.format(date));
+            eventEntity.setTotalRate("0");
             eventEntity.setTotalFeedback(0);
             eventEntity.setTotalSoldTicket(0);
 
@@ -268,6 +269,30 @@ public class EventController {
         AccountEntity accountEntity = accountRepository.findById(id);
         if (accountEntity == null || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER)
                 || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        Pageable pageWithElements = PageRequest.of(pageId, quantity);
+        List<EventEntity> list;
+        String status = body.get("status");
+        if (status.equals(MainConstants.GET_ALL)) {
+            list = eventRepository.findAllByCreatorIdOrderByIdDesc(id, pageWithElements);
+        } else {
+            list = eventRepository.findAllByCreatorIdAndStatusOrderByIdDesc(id, pageWithElements, status);
+        }
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        return new ResponseEntity(list, HttpStatus.OK);
+    }
+
+
+    @JsonView(View.IEventsUser.class)
+    @PostMapping("user/profile/{id}/events/page/{pageId}/limit/{quantity}")
+    public ResponseEntity getListEventsViewProfile(@PathVariable int id, @PathVariable int quantity,
+                                                   @PathVariable int pageId, @RequestBody Map<String, String> body) {
+        if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
+
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         Pageable pageWithElements = PageRequest.of(pageId, quantity);
