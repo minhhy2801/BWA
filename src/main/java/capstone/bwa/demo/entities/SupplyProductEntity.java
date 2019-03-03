@@ -12,7 +12,7 @@ import java.util.Objects;
 public class SupplyProductEntity {
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private int id;
-    @JsonView({View.ISupplyPosts.class,  View.ISupplyPostDetail.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private String title;
     @JsonView(View.ISupplyPostDetail.class)
     private String description;
@@ -34,10 +34,9 @@ public class SupplyProductEntity {
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private String status;
     private String typeItem;
-    @JsonView(View.ISupplyPostDetail.class)
     private Collection<ImageEntity> imagesById;
     private Collection<RequestNotificationEntity> requestNotificationsById;
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
+    @JsonView({View.ISupplyPosts.class})
     private AccountEntity accountByCreatorId;
     private AccountEntity accountByApprovedId;
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})

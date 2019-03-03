@@ -68,7 +68,6 @@ public class SupplyProductController {
             list = supplyProductRepository.findAllByStatusInOrderByIdDesc(statusSupplyPost, pageWithElements);
         } else list = supplyProductRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
         if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
-
         return new ResponseEntity(list, HttpStatus.OK);
     }
 
@@ -91,8 +90,13 @@ public class SupplyProductController {
         if (!supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_PUBLIC) &&
                 !supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED))
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        List<ImageEntity> imageEntities = imageRepository.findAllBySupplyProductByOwnId_IdAndType(id, MainConstants.STATUS_SUPPLY_POST);
 
-        return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
+        Map<String, Object> map = new HashMap<>();
+        map.put("supply_post", supplyProductEntity);
+        map.put("images", imageEntities);
+
+        return new ResponseEntity(map, HttpStatus.OK);
     }
 
     /**

@@ -1,6 +1,5 @@
 package capstone.bwa.demo.entities;
 
-import capstone.bwa.demo.entities.*;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.hibernate.annotations.NotFound;
@@ -12,10 +11,10 @@ import java.util.Objects;
 @Entity
 @Table(name = "Image", schema = "dbo", catalog = "BikeWorldDB")
 public class ImageEntity {
-    @JsonView({View.IEventDetail.class, View.ISupplyPostDetail.class})
+    @JsonView({View.ISupplyPostDetail.class, View.IEventDetail.class})
     private int id;
-    @JsonView({View.IEventDetail.class, View.ISupplyPostDetail.class,
-    View.IAccessory.class, View.IAccessories.class, View.IBike.class})
+    @JsonView({View.IAccessory.class, View.IAccessories.class, View.IBike.class,
+            View.ISupplyPostDetail.class, View.IEventDetail.class})
     private String url;
     private String type;
     private String status;

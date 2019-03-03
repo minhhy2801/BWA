@@ -21,10 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @RestController
@@ -73,8 +70,13 @@ public class EventController {
                 !entity.getStatus().equals(MainConstants.EVENT_FINISHED) &&
                 !entity.getStatus().equals(MainConstants.EVENT_CLOSED))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
+        List<ImageEntity> imageEntities = imageRepository.findAllByEventByOwnId_IdAndType(id, MainConstants.STATUS_EVENT);
 
-        return new ResponseEntity(entity, HttpStatus.OK);
+        Map<String, Object> map = new HashMap<>();
+        map.put("event", entity);
+        map.put("images", imageEntities);
+        
+        return new ResponseEntity(map, HttpStatus.OK);
     }
 
     /**

@@ -57,7 +57,6 @@ public class EventEntity {
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private CategoryEntity categoryByCategoryId;
     private Collection<EventRegisteredEntity> eventRegisteredsById;
-    @JsonView(View.IEventDetail.class)
     private Collection<ImageEntity> imagesById;
 
     @Id
