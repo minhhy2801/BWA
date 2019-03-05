@@ -20,5 +20,8 @@ public class MainConstants {
     public static String STATUS_SUPPLY_POST = "SUPPLY_POST";
     public static String STATUS_TRANS = "TRANS";
     public static String STATUS_BIKE = "BIKE";
+    public static String NEWS_HIDDEN = "HIDDEN";
+    public static String NEWS_PUBLIC = "PUBLIC";
+    public static String NEWS_ACTIVE = "ACTIVE";
 
 }

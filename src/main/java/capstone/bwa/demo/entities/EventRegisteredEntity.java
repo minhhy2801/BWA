@@ -12,7 +12,6 @@ import java.util.Objects;
 public class EventRegisteredEntity {
     @JsonView({View.IEventRegistered.class})
     private int id;
-    @JsonView({View.IEventRegistered.class})
     private Integer eventId;
     private Integer registeredId;
     @JsonView({View.IEventRegistered.class})
@@ -20,6 +19,7 @@ public class EventRegisteredEntity {
     @JsonView({View.IEventRegistered.class})
     private Integer purchasedTicket;
     private String status;
+    @JsonView({View.IEventRegistered.class})
     private EventEntity eventByEventId;
     @JsonView({View.IEventRegistered.class, View.IFeedback.class})
     private AccountEntity accountByRegisteredId;

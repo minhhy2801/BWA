@@ -12,7 +12,7 @@ import java.util.Objects;
 public class CategoryEntity {
     private int id;
     @JsonView({View.IEventDetail.class, View.IEvents.class, View.ISupplyPostDetail.class,
-            View.IAccessory.class, View.IAccessories.class, View.ISupplyPosts.class})
+            View.IAccessory.class, View.IAccessories.class, View.ISupplyPosts.class, View.INews.class})
     private String name;
     @JsonView({View.IAccessory.class, View.IAccessories.class})
     private String type;

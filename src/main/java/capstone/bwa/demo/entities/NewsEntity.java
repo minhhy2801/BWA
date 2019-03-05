@@ -24,7 +24,7 @@ public class NewsEntity {
     private String editedTime;
     private String status;
     private Collection<CommentEntity> commentsById;
-	@JsonView(View.INews.class)
+//	@JsonView(View.INews.class)
     private Collection<ImageEntity> imagesById;
     private AccountEntity accountByCreatorId;
 	@JsonView(View.INews.class)
