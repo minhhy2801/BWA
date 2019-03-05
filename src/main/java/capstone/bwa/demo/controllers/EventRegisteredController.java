@@ -11,6 +11,7 @@ import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -91,7 +92,18 @@ public class EventRegisteredController {
         eventRepository.save(eventEntity);
 
         return new ResponseEntity(eventRegisteredEntity, HttpStatus.OK);
+    }
 
+    @JsonView(View.IEventRegistered.class)
+    @GetMapping("user/{id}/list_event_registered")
+    public ResponseEntity getListEventRegisteredOfUser(@PathVariable int id) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        List<EventRegisteredEntity> eventRegisteredEntities = eventRegisteredRepository.findAllByAccountByRegisteredId_Id(id);
+        if (eventRegisteredEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        return new ResponseEntity(eventRegisteredEntities, HttpStatus.OK);
     }
 }
 

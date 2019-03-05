@@ -175,7 +175,8 @@ public class TransactionDetailController {
     public ResponseEntity closeSupplyPostTransactions(@PathVariable int userId, @PathVariable int supProId) {
         AccountEntity accountEntity = accountRepository.findById(userId);
         SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(supProId);
-        if (supplyProductEntity == null || accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (supplyProductEntity == null || accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
@@ -198,5 +199,18 @@ public class TransactionDetailController {
             return new ResponseEntity(HttpStatus.OK);
         }
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
+    }
+
+    @JsonView(View.ITransactions.class)
+    @GetMapping("user/{id}/list_trans")
+    public ResponseEntity getListTransOfUser(@PathVariable int id) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        List<TransactionDetailEntity> transactionDetailEntities = transactionDetailRepository.findAllByAccountByInteractiveId_Id(id);
+        if (transactionDetailEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        return new ResponseEntity(transactionDetailEntities, HttpStatus.OK);
     }
 }
