@@ -12,7 +12,7 @@ import java.util.Objects;
 public class TransactionDetailEntity {
     @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
     private int id;
-    @JsonView(View.ITransactionDetail.class)
+    @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
     private String createdTime;
     @JsonView(View.ITransactionDetail.class)
     private String editedTime;
@@ -21,6 +21,7 @@ public class TransactionDetailEntity {
     private Integer supplyProductId;
     private Integer interactiveId;
     private Collection<FeedbackEntity> feedbacksById;
+    @JsonView(View.ITransactions.class)
     private SupplyProductEntity supplyProductBySupplyProductId;
     @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
     private AccountEntity accountByInteractiveId;

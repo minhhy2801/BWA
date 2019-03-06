@@ -124,7 +124,7 @@ public class TransactionDetailController {
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         if (accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
-                && !supplyProductEntity.getCategoryId().equals(accountEntity.getId())
+                && !supplyProductEntity.getCreatorId().equals(accountEntity.getId())
                 && supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_PUBLIC)) {
             TransactionDetailEntity transactionDetailEntity = new TransactionDetailEntity();
             transactionDetailEntity.setInteractiveId(userId);
@@ -209,7 +209,8 @@ public class TransactionDetailController {
         if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        List<TransactionDetailEntity> transactionDetailEntities = transactionDetailRepository.findAllByAccountByInteractiveId_Id(id);
+        List<TransactionDetailEntity> transactionDetailEntities = transactionDetailRepository.findAllByInteractiveId(id);
+
         if (transactionDetailEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
         return new ResponseEntity(transactionDetailEntities, HttpStatus.OK);
     }

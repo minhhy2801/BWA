@@ -24,5 +24,5 @@ public interface TransactionDetailRepository extends JpaRepository<TransactionDe
 
     List<TransactionDetailEntity> findAllBySupplyProductId(int supProId);
 
-    List<TransactionDetailEntity> findAllByAccountByInteractiveId_Id(int id);
+    List<TransactionDetailEntity> findAllByInteractiveId(int id);
 }
