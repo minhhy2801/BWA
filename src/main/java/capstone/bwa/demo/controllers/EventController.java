@@ -169,10 +169,7 @@ public class EventController {
             eventEntity.setTotalRate("0");
             eventEntity.setTotalFeedback(0);
             eventEntity.setTotalSoldTicket(0);
-
-            eventRepository.saveAndFlush(eventEntity);
-            setEventListImages(body, eventEntity);
-
+            eventRepository.save(eventEntity);
             return new ResponseEntity(HttpStatus.OK);
         }
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -204,11 +201,7 @@ public class EventController {
         if (accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) &&
                 accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
             eventEntity = paramEventEntityRequest(body, eventEntity);
-            eventRepository.saveAndFlush(eventEntity);
-            List<ImageEntity> list = imageRepository.findAllByEventByOwnId_IdAndType(id, "EVENT");
-            imageRepository.deleteAll(list);
-
-            setEventListImages(body, eventEntity);
+            eventRepository.save(eventEntity);
         }
         return new ResponseEntity(eventEntity, HttpStatus.OK);
     }
@@ -327,8 +320,7 @@ public class EventController {
         eventEntity.setTotalSoldTicket(0);
         eventEntity.setCreatorId(adminId);
         eventEntity.setApprovedId(adminId);
-        eventRepository.saveAndFlush(eventEntity);
-        setEventListImages(body, eventEntity);
+        eventRepository.save(eventEntity);
         return new ResponseEntity(HttpStatus.OK);
     }
 
@@ -344,11 +336,7 @@ public class EventController {
         if (accountAdminEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         eventEntity = paramEventEntityRequest(body, eventEntity);
-        eventRepository.saveAndFlush(eventEntity);
-        List<ImageEntity> list = imageRepository.findAllByEventByOwnId_IdAndType(id, "EVENT");
-        imageRepository.deleteAll(list);
-
-        setEventListImages(body, eventEntity);
+        eventRepository.save(eventEntity);
         return new ResponseEntity(eventEntity, HttpStatus.OK);
     }
 
@@ -368,21 +356,6 @@ public class EventController {
 
 
     //==========================
-    private void setEventListImages(Map<String, String> body, EventEntity eventEntity) {
-        String img = body.get("images").trim();
-        String tmp = img.replace("[", "").replace("]", "").trim();
-        String[] arr = tmp.split(",");
-
-        for (int i = 0; i < arr.length; i++) {
-            ImageEntity imageEntity = new ImageEntity();
-            imageEntity.setUrl(arr[i].trim());
-            imageEntity.setOwnId(eventEntity.getId());
-            imageEntity.setType("EVENT");
-            imageRepository.save(imageEntity);
-//                System.out.println("url " + imageEntity.getUrl());
-        }
-    }
-
     private EventEntity paramEventEntityRequest(Map<String, String> body, EventEntity eventEntity) {
         int cateId = Integer.parseInt(body.get("categoryId"));
         String imgThumbnail = body.get("imgThumbnailUrl");
