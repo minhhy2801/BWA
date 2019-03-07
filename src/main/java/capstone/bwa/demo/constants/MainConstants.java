@@ -16,12 +16,16 @@ public class MainConstants {
     public static String REGISTERED_PAID = "PAID";
     public static String TRANSACTION_SUCCESS = "PAID_SUCCESS";
     public static String TRANSACTION_FAIL = "PAID_FAIL";
+
+    public static String NEWS_HIDDEN = "HIDDEN";
+    public static String NEWS_PUBLIC = "PUBLIC";
+    public static String NEWS_ACTIVE = "DRAFT";
+    public static String STATUS_NEWS = "NEWS";
     public static String STATUS_EVENT = "EVENT";
     public static String STATUS_SUPPLY_POST = "SUPPLY_POST";
     public static String STATUS_TRANS = "TRANS";
     public static String STATUS_BIKE = "BIKE";
-    public static String NEWS_HIDDEN = "HIDDEN";
-    public static String NEWS_PUBLIC = "PUBLIC";
-    public static String NEWS_ACTIVE = "ACTIVE";
+    public static String STATUS_ACCESSORY = "ACCESSORY";
+
 
 }

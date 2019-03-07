@@ -6,8 +6,10 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -19,6 +21,7 @@ public class CrawlNews {
     private final String END_LINE_CHAR = "\n";
     private final String statusActive = "ACTIVE";
     private HashMap<NewsEntity, ImageEntity> results;
+    private static final Logger logger = LoggerFactory.getLogger(CrawlNews.class);
 
     public CrawlNews() {
         this.newsUrls = new ArrayList<>();
@@ -50,33 +53,36 @@ public class CrawlNews {
                 crawlNewsDetail(document);
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+//            ex.printStackTrace();
+            logger.error("Error " + ex.getMessage());
         }
     }
 
     //crawl nội dung của bài viết và hình ảnh
-    public void crawlNewsDetail(Document document) throws IOException {
+    public void crawlNewsDetail(Document document){
         //tạo image entity
         ImageEntity imageEntity = new ImageEntity();
         String url = crawlImages(document);
+
         imageEntity.setUrl(url);
+
         if (imageEntity.getUrl().equals("")) return;
 
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+        Date date = new Date(System.currentTimeMillis());
         //tạo news entity
         String title = crawlTitle(document);
         String description = crawlText(document);
 
         NewsEntity newsEntity = new NewsEntity();
-        newsEntity.setTitle(title);
-        newsEntity.setDescription(description);
 
+        newsEntity.setTitle(title);
+        if(newsEntity.getTitle().equals("") || newsEntity.getTitle() == null) return;
+        newsEntity.setDescription(description);
         newsEntity.setImgThumbnailUrl(getFirstImageURL(imageEntity));
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-        Date date = new Date(System.currentTimeMillis());
         newsEntity.setCreatedTime(dateFormat.format(date));
         newsEntity.setStatus(statusActive);
-        imageEntity.setNewsByOwnId(newsEntity);
-
+//        imageEntity.setOwnId(newsEntity.getId());
         this.results.put(newsEntity, imageEntity);
     }
 
@@ -90,7 +96,7 @@ public class CrawlNews {
     }
 
     //crawl title của bài viết
-    private String crawlTitle(Document document) throws IOException {
+    private String crawlTitle(Document document) {
         String selector = "";
         if (domain.equals("https://hondaxemay.com.vn/tin-tuc/")) {
             //class chứa tittle
@@ -108,7 +114,7 @@ public class CrawlNews {
     }
 
     //crawl nội dung chữ của bài viết
-    private String crawlText(Document document) throws IOException {
+    private String crawlText(Document document){
         //format cua content:
         //cuoi moi doan se ket thuc bang ky tu \n
         //cac noi dung kieu liet ke trong <ul> <li> se co dang - noidung, cuoi moi dong van co ky tu \n
@@ -145,7 +151,7 @@ public class CrawlNews {
     }
 
     //crawl lấy link các hình ảnh trong bài viết, tạo thành chuỗi url cho ImageEntity
-    private String crawlImages(Document document) throws IOException {
+    private String crawlImages(Document document){
         String selector = "";
         if (domain.equals("https://motoanhquoc.vn/tin-tuc")) {
             selector = ".post-content img[src]";

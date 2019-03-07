@@ -1,5 +1,6 @@
 package capstone.bwa.demo.controllers;
 
+import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.crawlmodel.CrawlAccessory;
 import capstone.bwa.demo.crawlmodel.CrawlBike;
 import capstone.bwa.demo.crawlmodel.CrawlNews;
@@ -110,40 +111,38 @@ public class CrawlController {
         List<String> listLinks = dbSetup.listLinksNews();
         CategoryEntity categoryEntity = categoryRepository.findByName("Tin Tức");
         //crawl news theo list link
-        crawlNews(categoryEntity,listLinks);
+        crawlNews(categoryEntity, listLinks);
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    private void crawlNews(CategoryEntity categoryEntity,List<String> listLink) {
+    private void crawlNews(CategoryEntity categoryEntity, List<String> listLink) {
         for (String url : listLink) {
             CrawlNews crawler = new CrawlNews();
             //set link dùng để crawl
             crawler.setDomain(url);
             crawler.crawlNews();
-
             crawler.getResults().forEach((newsEntity, imageEntity) -> {
                 //kiểm tra trùng
-                if (checkDuplicateNews(newsEntity) == false) {
+                if (!newsRepository.existsByTitle(newsEntity.getTitle())) {
                     //set news infor và lưu
-                    int categoryId = categoryEntity.getId();
-                    newsEntity.setCategoryId(categoryId);
-                    newsEntity.setCategoryByCategoryId(categoryEntity);
-                    newsRepository.saveAndFlush(newsEntity);
+                    newsEntity.setCategoryId(categoryEntity.getId());
+                    newsRepository.save(newsEntity);
+                    System.out.println("News " + newsEntity.getTitle());
                     // set image info và lưu
                     imageEntity.setOwnId(newsEntity.getId());
-                    imageEntity.setNewsByOwnId(newsEntity);
-                    imageEntity.setType("NEWS");
+                    imageEntity.setType(MainConstants.STATUS_NEWS);
                     imageEntity.setStatus(statusActive);
-                    imageRepository.saveAndFlush(imageEntity);
+                    imageRepository.save(imageEntity);
+                    System.out.println("Img " + imageEntity.getId());
                 }
             });
         }
     }
 
-    private boolean checkDuplicateNews(NewsEntity news) {
-        //kiểm tra tin tức trùng theo title
-        return newsRepository.existsByTitle(news.getTitle());
-    }
+//    private boolean checkDuplicateNews(NewsEntity news) {
+//        //kiểm tra tin tức trùng theo title
+//        return newsRepository.existsByTitle(news.getTitle());
+//    }
 
     private void crawlBike(CategoryEntity categoryEntity, List<String> listLink) {
         for (String url : listLink) {
