@@ -170,7 +170,7 @@ public class EventController {
             eventEntity.setTotalFeedback(0);
             eventEntity.setTotalSoldTicket(0);
             eventRepository.save(eventEntity);
-            return new ResponseEntity(HttpStatus.OK);
+            return new ResponseEntity(eventEntity.getId(), HttpStatus.OK);
         }
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }

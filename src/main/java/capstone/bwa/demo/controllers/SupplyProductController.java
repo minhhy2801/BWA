@@ -35,6 +35,8 @@ public class SupplyProductController {
     private BikeRepository bikeRepository;
     @Autowired
     private ImageRepository imageRepository;
+    @Autowired
+    private TransactionDetailRepository transactionDetailRepository;
 
     /**
      * Return list supply posts
@@ -157,20 +159,20 @@ public class SupplyProductController {
 
     /**
      * status send in body
-     * if status ALL -> get all supply post sort desc without status
      *
      * @param userId
-     * @param id
-     * @param quantity
-     * @param body
      * @return list supply posts base on userId
      */
-    @GetMapping("user/{userId}/supply_posts/page/{id}/limit/{quantity}")
-    public ResponseEntity getListSupplyPostsByUser(@PathVariable int userId, @PathVariable int id,
-                                                   @PathVariable int quantity, @RequestBody Map<String, String> body) {
+    @JsonView(View.ISupplyPosts.class)
+    @GetMapping("user/{userId}/supply_posts")
+    public ResponseEntity getListSupplyPostsByUser(@PathVariable int userId) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) || accountEntity == null)
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        List<SupplyProductEntity> list = supplyProductRepository.findAllByCreatorIdOrderByIdDesc(userId);
 
-
-        return null;
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        return new ResponseEntity(list, HttpStatus.OK);
     }
 
     /**
