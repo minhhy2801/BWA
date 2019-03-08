@@ -12,7 +12,7 @@ import java.util.Objects;
 public class AccountEntity {
     @JsonView({View.IAccountProfile.class, View.ISupplyPostDetail.class, View.ITransactions.class,
             View.IEventDetail.class, View.ITransactionDetail.class, View.IFeedback.class,
-            View.ISupplyPosts.class, View.ISupplyPostsAdmin.class})
+            View.ISupplyPosts.class, View.ISupplyPostsAdmin.class, View.IEventRegistered.class})
     private int id;
     @JsonView({View.IAccountProfile.class, View.IEventDetail.class, View.ISupplyPostDetail.class,
             View.ITransactions.class, View.ITransactionDetail.class, View.ISupplyPostsAdmin.class,
