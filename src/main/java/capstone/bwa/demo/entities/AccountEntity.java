@@ -11,10 +11,11 @@ import java.util.Objects;
 @Table(name = "Account", schema = "dbo", catalog = "BikeWorldDB")
 public class AccountEntity {
     @JsonView({View.IAccountProfile.class, View.ISupplyPostDetail.class, View.ITransactions.class,
-            View.IEventDetail.class, View.ITransactionDetail.class, View.IFeedback.class})
+            View.IEventDetail.class, View.ITransactionDetail.class, View.IFeedback.class,
+            View.ISupplyPosts.class, View.ISupplyPostsAdmin.class})
     private int id;
     @JsonView({View.IAccountProfile.class, View.IEventDetail.class, View.ISupplyPostDetail.class,
-            View.ITransactions.class, View.ITransactionDetail.class,
+            View.ITransactions.class, View.ITransactionDetail.class, View.ISupplyPostsAdmin.class,
             View.IEventRegistered.class, View.IFeedback.class, View.ISupplyPosts.class})
     private String name;
     @JsonView(View.IAccountProfile.class)

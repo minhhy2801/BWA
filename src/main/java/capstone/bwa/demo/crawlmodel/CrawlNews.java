@@ -82,7 +82,6 @@ public class CrawlNews {
         newsEntity.setImgThumbnailUrl(getFirstImageURL(imageEntity));
         newsEntity.setCreatedTime(dateFormat.format(date));
         newsEntity.setStatus(statusActive);
-//        imageEntity.setOwnId(newsEntity.getId());
         this.results.put(newsEntity, imageEntity);
     }
 

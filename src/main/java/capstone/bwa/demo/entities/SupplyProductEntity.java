@@ -10,9 +10,11 @@ import java.util.Objects;
 @Entity
 @Table(name = "SupplyProduct", schema = "dbo", catalog = "BikeWorldDB")
 public class SupplyProductEntity {
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ITransactions.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ITransactions.class,
+            View.ISupplyPostsAdmin.class})
     private int id;
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ITransactions.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ITransactions.class,
+            View.ISupplyPostsAdmin.class})
     private String title;
     @JsonView(View.ISupplyPostDetail.class)
     private String description;
@@ -20,10 +22,11 @@ public class SupplyProductEntity {
     private Integer approvedId;
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private String imgThumbnailUrl;
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class})
     private String createdTime;
+    @JsonView(View.ISupplyPostsAdmin.class)
     private String approvedTime;
-    @JsonView(View.ISupplyPostDetail.class)
+    @JsonView({View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class})
     private String closedTime;
     @JsonView(View.ISupplyPostDetail.class)
     private String location;
@@ -31,13 +34,14 @@ public class SupplyProductEntity {
     private String rate;
     private Integer categoryId;
     private Integer itemId;
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class})
     private String status;
     private String typeItem;
     private Collection<ImageEntity> imagesById;
     private Collection<RequestNotificationEntity> requestNotificationsById;
-    @JsonView({View.ISupplyPosts.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostsAdmin.class})
     private AccountEntity accountByCreatorId;
+    @JsonView(View.ISupplyPostsAdmin.class)
     private AccountEntity accountByApprovedId;
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private CategoryEntity categoryByCategoryId;

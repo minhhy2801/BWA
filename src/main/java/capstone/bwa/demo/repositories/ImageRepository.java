@@ -16,7 +16,7 @@ public interface ImageRepository extends JpaRepository<ImageEntity, Integer> {
 
     List<ImageEntity> findAllBySupplyProductByOwnId_IdAndType(int id, String type);
 
-    List<ImageEntity> findAllByEventByOwnId_IdAndType(int id, String type);
+    List<ImageEntity> findAllByOwnIdAndType(int id, String type);
 
     @Query("SELECT e.url FROM ImageEntity e WHERE e.type = :type and e.ownId = :ownId")
     String findAllByNewsByOwnId_IdAndType(@Param("type")String type, @Param("ownId")int ownId);

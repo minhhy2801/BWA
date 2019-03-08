@@ -139,11 +139,6 @@ public class CrawlController {
         }
     }
 
-//    private boolean checkDuplicateNews(NewsEntity news) {
-//        //kiểm tra tin tức trùng theo title
-//        return newsRepository.existsByTitle(news.getTitle());
-//    }
-
     private void crawlBike(CategoryEntity categoryEntity, List<String> listLink) {
         for (String url : listLink) {
             CrawlBike crawler = new CrawlBike();

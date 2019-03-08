@@ -9,8 +9,6 @@ import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -30,13 +28,10 @@ public class SupplyProductController {
     @Autowired
     private AccountRepository accountRepository;
     @Autowired
-    private FeedbackRepository feedbackRepository;
     @Autowired
     private BikeRepository bikeRepository;
     @Autowired
     private ImageRepository imageRepository;
-    @Autowired
-    private TransactionDetailRepository transactionDetailRepository;
 
     /**
      * Return list supply posts
@@ -119,10 +114,12 @@ public class SupplyProductController {
             return new ResponseEntity(HttpStatus.LOCKED);
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-
-        SupplyProductEntity supplyProductEntity = paramSupplyPostEntityRequest(body);
+        SupplyProductEntity supplyProductEntity = new SupplyProductEntity();
+        BikeEntity bikeEntity = new BikeEntity();
+        supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, bikeEntity);
+        supplyProductEntity.setCreatorId(id);
         supplyProductEntity.setCreatedTime(dateFormat.format(date));
-        supplyProductEntity.setStatus(MainConstants.PENDING);
+//        supplyProductEntity.setStatus(MainConstants.PENDING);
         supplyProductRepository.save(supplyProductEntity);
         return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
     }
@@ -138,11 +135,30 @@ public class SupplyProductController {
      * 404 if found
      * 200 if OK
      */
-    @PutMapping("user/{userId}/supply_post/{id}")
-    public ResponseEntity updateSupplyPostByUser(@PathVariable int id, @PathVariable int userId,
-                                                 @RequestBody Map<String, String> body) {
+    @JsonView(View.ISupplyPostDetail.class)
+    @PutMapping("user/{userId}/supply_post_bike/{id}")
+    public ResponseEntity updateSupplyPostBikeByUser(@PathVariable int id, @PathVariable int userId,
+                                                     @RequestBody Map<String, String> body) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
 
-        return null;
+        if (accountEntity == null || supplyProductEntity == null)
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
+                !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) ||
+                supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED))
+            return new ResponseEntity(HttpStatus.LOCKED);
+        if (supplyProductEntity.getCreatorId().equals(userId)) {
+
+            int bikeId = supplyProductEntity.getItemId();
+            BikeEntity bikeEntity = bikeRepository.findById(bikeId);
+            supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, bikeEntity);
+//        supplyProductEntity.setStatus(MainConstants.PENDING);
+            supplyProductRepository.save(supplyProductEntity);
+            return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -154,7 +170,22 @@ public class SupplyProductController {
     @PutMapping("admin/{adminId}/supply_post/{id}")
     public ResponseEntity changeStatusSupplyPostByAdmin(@PathVariable int id, @PathVariable int adminId,
                                                         @RequestBody Map<String, String> body) {
-        return null;
+        AccountEntity accountEntity = accountRepository.findById(adminId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
+        if (accountEntity == null || supplyProductEntity == null)
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
+                !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.LOCKED);
+
+        Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+        String status = body.get("status");
+        supplyProductEntity.setApprovedId(adminId);
+        supplyProductEntity.setApprovedTime(dateFormat.format(date));
+        supplyProductEntity.setStatus(status);
+        supplyProductRepository.save(supplyProductEntity);
+        return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
     }
 
     /**
@@ -179,22 +210,30 @@ public class SupplyProductController {
      * status send in body
      *
      * @param adminId
-     * @param id
-     * @param quantity
-     * @param body
      * @return list supply posts
      **/
 
+    @JsonView(View.ISupplyPostsAdmin.class)
     @GetMapping("admin/{adminId}/supply_posts/page/{id}/limit/{quantity}")
     public ResponseEntity getListSupplyPostsByAdmin(@PathVariable int adminId, @PathVariable int id,
-                                                    @PathVariable int quantity, @RequestBody Map<String, String> body) {
+                                                    @PathVariable int quantity) {
+        AccountEntity accountEntity = accountRepository.findById(adminId);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
+                !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.LOCKED);
+        // number of page with n elements
+        Pageable pageWithElements = PageRequest.of(id, quantity);
+        List<SupplyProductEntity> supplyProductEntities = supplyProductRepository.findAllByOrderByIdDesc(pageWithElements);
+        if (supplyProductEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        return null;
+        return new ResponseEntity(supplyProductEntities, HttpStatus.OK);
     }
 
     //==========================
-    private SupplyProductEntity paramSupplyPostEntityRequest(Map<String, String> body) {
-        SupplyProductEntity supplyProductEntity = new SupplyProductEntity();
+    private SupplyProductEntity paramSupplyPostEntityRequest(Map<String, String> body,
+                                                             SupplyProductEntity supplyProductEntity,
+                                                             BikeEntity bike) {
+//        SupplyProductEntity supplyProductEntity = new SupplyProductEntity();
         String title = body.get("title");
         String description = body.get("description");
         String imgThumbnail = body.get("imgThumbnailUrl");
@@ -206,21 +245,24 @@ public class SupplyProductController {
         supplyProductEntity.setImgThumbnailUrl(imgThumbnail);
         supplyProductEntity.setLocation(location);
         supplyProductEntity.setCategoryId(cateId);
-        BikeEntity bikeEntity = paramBikeEntityRequest(body);
+        supplyProductEntity.setStatus(MainConstants.PENDING);
+        supplyProductEntity.setTypeItem(MainConstants.STATUS_BIKE);
+        supplyProductEntity.setRate("0");
+        BikeEntity bikeEntity = paramBikeEntityRequest(body, bike);
         bikeRepository.save(bikeEntity);
         supplyProductEntity.setItemId(bikeEntity.getId());
 
         return supplyProductEntity;
     }
 
-    private BikeEntity paramBikeEntityRequest(Map<String, String> body) {
-        BikeEntity bikeEntity = new BikeEntity();
+    private BikeEntity paramBikeEntityRequest(Map<String, String> body, BikeEntity bikeEntity) {
+//        BikeEntity bikeEntity = new BikeEntity();
         String name = body.get("name");
         String brand = body.get("brand");
         String price = body.get("price");
         int cateId = Integer.parseInt(body.get("categoryIdBike"));
         String version = body.get("version");
-        String img = body.get("images"); //arrays images
+//        String img = body.get("images"); //arrays images
 
         //set description
         Map<String, String> map = new HashMap<>();
@@ -237,22 +279,23 @@ public class SupplyProductController {
         bikeEntity.setHashBikeCode(bikeEntity.hashCode() + "");
         bikeEntity.setCategoryId(cateId);
         bikeEntity.setVersion(version);
+
         Gson gson = new Gson();
         String desc = gson.toJson(map);
 
         bikeEntity.setDescription(desc);
-        String tmp = img.replace("[", "").replace("]", "").trim();
-        String[] arr = tmp.split(",");
-        List<ImageEntity> list = new ArrayList<>();
-        for (int i = 0; i < arr.length; i++) {
-            ImageEntity imageEntity = new ImageEntity();
-            imageEntity.setUrl(arr[i].trim());
-            imageEntity.setOwnId(bikeEntity.getId());
-            imageEntity.setType(MainConstants.STATUS_BIKE);
-            list.add(imageEntity);
-//                System.out.println("url " + imageEntity.getUrl());
-        }
-        imageRepository.saveAll(list);
+//        String tmp = img.replace("[", "").replace("]", "").trim();
+////        String[] arr = tmp.split(",");
+////        List<ImageEntity> list = new ArrayList<>();
+////        for (int i = 0; i < arr.length; i++) {
+////            ImageEntity imageEntity = new ImageEntity();
+////            imageEntity.setUrl(arr[i].trim());
+////            imageEntity.setOwnId(bikeEntity.getId());
+////            imageEntity.setType(MainConstants.STATUS_BIKE);
+////            list.add(imageEntity);
+//////                System.out.println("url " + imageEntity.getUrl());
+////        }
+////        imageRepository.saveAll(list);
 
         return bikeEntity;
     }

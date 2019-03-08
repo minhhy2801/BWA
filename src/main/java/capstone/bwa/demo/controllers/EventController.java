@@ -70,7 +70,7 @@ public class EventController {
                 !entity.getStatus().equals(MainConstants.EVENT_FINISHED) &&
                 !entity.getStatus().equals(MainConstants.EVENT_CLOSED))
             return new ResponseEntity(HttpStatus.FORBIDDEN);
-        List<ImageEntity> imageEntities = imageRepository.findAllByEventByOwnId_IdAndType(id, MainConstants.STATUS_EVENT);
+        List<ImageEntity> imageEntities = imageRepository.findAllByOwnIdAndType(id, MainConstants.STATUS_EVENT);
 
         Map<String, Object> map = new HashMap<>();
         map.put("event", entity);

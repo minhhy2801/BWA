@@ -3,6 +3,7 @@ package capstone.bwa.demo.views;
 public class View {
     public interface IAccountProfile{};
     public interface ISupplyPosts{};
+    public interface ISupplyPostsAdmin{};
     public interface ISupplyPostDetail{};
     public interface IEventDetail{};
     public interface IEvents{};

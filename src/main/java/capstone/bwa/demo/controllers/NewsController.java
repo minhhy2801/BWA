@@ -94,11 +94,11 @@ public class NewsController {
 //        }
 //        return new ResponseEntity(HttpStatus.NOT_FOUND);
         NewsEntity newsEntity = newsRepository.findById(id);
-        if (newsEntity == null ) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (newsEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         String url = imageRepository.findAllByNewsByOwnId_IdAndType("NEWS", id);
         String[] arrUrl = url.split(",");
         List<String> listUrl = new ArrayList<>();
-        for(String s : arrUrl) {
+        for (String s : arrUrl) {
             listUrl.add(s);
         }
         Map<String, Object> jsonReturn = new HashMap<>();
@@ -236,7 +236,6 @@ public class NewsController {
     }
 
 
-
     /**
      * @param pageId
      * @param quantity
@@ -261,21 +260,5 @@ public class NewsController {
 
         return new ResponseEntity(list, HttpStatus.OK);
     }
-
-//    private JsonObject getJsonObject(String json) {
-//        JsonParser parser = new JsonParser();
-//        JsonObject object = parser.parse(json).getAsJsonObject();
-//        return object;
-//    }
-//
-//    private String getJson(String key, Object object) {
-//        Gson gson = new Gson();
-//        String json;
-//        Map<String, Object> jsonMap = new HashMap<>();
-//        jsonMap.put(key, object);
-//        json = gson.toJson(jsonMap);
-//        return json;
-//    }
-
 }
 
