@@ -28,7 +28,6 @@ public class SupplyProductController {
     @Autowired
     private AccountRepository accountRepository;
     @Autowired
-    @Autowired
     private BikeRepository bikeRepository;
     @Autowired
     private ImageRepository imageRepository;
