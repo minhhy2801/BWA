@@ -28,5 +28,6 @@ public interface EventRepository extends JpaRepository<EventEntity, Integer> {
 
     List<EventEntity> findAllByCategoryId(int categoryId);
 
+    int countAllByCreatorIdAndStatusIn(int id, List<String> status);
 }
 

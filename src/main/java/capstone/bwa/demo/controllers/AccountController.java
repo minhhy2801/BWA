@@ -4,6 +4,8 @@ import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.exceptions.CustomException;
 import capstone.bwa.demo.repositories.AccountRepository;
+import capstone.bwa.demo.repositories.EventRepository;
+import capstone.bwa.demo.repositories.SupplyProductRepository;
 import capstone.bwa.demo.services.SmsSender;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
@@ -18,16 +20,17 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @RestController
 public class AccountController {
 
     @Autowired
     private AccountRepository accountRepository;
+    @Autowired
+    private SupplyProductRepository supplyProductRepository;
+    @Autowired
+    private EventRepository eventRepository;
 
     @PostMapping("send_verify_code")
     public ResponseEntity sendSignUpCode(@RequestBody Map<String, String> body) {
@@ -204,4 +207,30 @@ public class AccountController {
             throw new CustomException("Add accessToken", HttpStatus.BAD_REQUEST);
         }
     }
+
+    @GetMapping("/user/profile/{id}")
+    public ResponseEntity getViewProfile(@PathVariable int id) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        List<String> status = new ArrayList<>();
+        status.add(MainConstants.SUPPLY_POST_CLOSED);
+        status.add(MainConstants.SUPPLY_POST_PUBLIC);
+        Map<String, String> map = new HashMap<>();
+        map.put("id", accountEntity.getId() + "");
+        map.put("name", accountEntity.getName());
+        map.put("url", accountEntity.getAvatarUrl());
+        map.put("createdTime", accountEntity.getCreatedTime());
+        map.put("rate", accountEntity.getRate());
+        map.put("counterSupply", supplyProductRepository.countAllByCreatorIdAndStatusIn(id, status) + "");
+        status.clear();
+        status.add(MainConstants.EVENT_ONGOING);
+        status.add(MainConstants.EVENT_FINISHED);
+        status.add(MainConstants.EVENT_CLOSED);
+        map.put("counterEvent", eventRepository.countAllByCreatorIdAndStatusIn(id, status) + "");
+
+        return new ResponseEntity(map, HttpStatus.OK);
+    }
+
 }

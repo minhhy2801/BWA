@@ -22,4 +22,6 @@ public interface SupplyProductRepository extends JpaRepository<SupplyProductEnti
     List<SupplyProductEntity> findAllByOrderByIdDesc(Pageable pageable);
 
     List<SupplyProductEntity> findAllByCreatorIdOrderByIdDesc(int id);
+
+    int countAllByCreatorIdAndStatusIn(int id, List<String> status);
 }
