@@ -15,13 +15,13 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class CrawlNews {
+    private static final Logger logger = LoggerFactory.getLogger(CrawlNews.class);
+    private final String END_LINE_CHAR = "\n";
+    private final String statusActive = "ACTIVE";
     private String domain;
     private List<String> pages;
     private List<String> newsUrls;
-    private final String END_LINE_CHAR = "\n";
-    private final String statusActive = "ACTIVE";
     private HashMap<NewsEntity, ImageEntity> results;
-    private static final Logger logger = LoggerFactory.getLogger(CrawlNews.class);
 
     public CrawlNews() {
         this.newsUrls = new ArrayList<>();
@@ -59,7 +59,7 @@ public class CrawlNews {
     }
 
     //crawl nội dung của bài viết và hình ảnh
-    public void crawlNewsDetail(Document document){
+    public void crawlNewsDetail(Document document) {
         //tạo image entity
         ImageEntity imageEntity = new ImageEntity();
         String url = crawlImages(document);
@@ -77,7 +77,7 @@ public class CrawlNews {
         NewsEntity newsEntity = new NewsEntity();
 
         newsEntity.setTitle(title);
-        if(newsEntity.getTitle().equals("") || newsEntity.getTitle() == null) return;
+        if (newsEntity.getTitle().equals("") || newsEntity.getTitle() == null) return;
         newsEntity.setDescription(description);
         newsEntity.setImgThumbnailUrl(getFirstImageURL(imageEntity));
         newsEntity.setCreatedTime(dateFormat.format(date));
@@ -113,7 +113,7 @@ public class CrawlNews {
     }
 
     //crawl nội dung chữ của bài viết
-    private String crawlText(Document document){
+    private String crawlText(Document document) {
         //format cua content:
         //cuoi moi doan se ket thuc bang ky tu \n
         //cac noi dung kieu liet ke trong <ul> <li> se co dang - noidung, cuoi moi dong van co ky tu \n
@@ -150,7 +150,7 @@ public class CrawlNews {
     }
 
     //crawl lấy link các hình ảnh trong bài viết, tạo thành chuỗi url cho ImageEntity
-    private String crawlImages(Document document){
+    private String crawlImages(Document document) {
         String selector = "";
         if (domain.equals("https://motoanhquoc.vn/tin-tuc")) {
             selector = ".post-content img[src]";

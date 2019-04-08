@@ -19,4 +19,6 @@ public interface EventRegisteredRepository extends JpaRepository<EventRegistered
 
     //    boolean existsDistinctByAccountByRegisteredId_IdAndEventByEventId_Id(int accountId, int eventId);
     EventRegisteredEntity findDistinctFirstByAccountByRegisteredId_IdAndEventByEventId_Id(int accountId, int eventId);
+
+    boolean existsDistinctByEventIdAndRegisteredId(int eventId, int userId);
 }

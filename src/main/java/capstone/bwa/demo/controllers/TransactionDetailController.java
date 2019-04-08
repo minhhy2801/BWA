@@ -175,27 +175,33 @@ public class TransactionDetailController {
     public ResponseEntity closeSupplyPostTransactions(@PathVariable int userId, @PathVariable int supProId) {
         AccountEntity accountEntity = accountRepository.findById(userId);
         SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(supProId);
-        if (supplyProductEntity == null || accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+        if (supplyProductEntity == null || accountEntity == null
+                || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-
+        if (!supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_PUBLIC))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-
-        if (supplyProductEntity.getCreatorId().equals(userId)) {
+//        System.out.println(supplyProductEntity.getCreatorId().equals(userId));
+//        System.out.println(accountEntity.getRoleByRoleId().getName());
+        if (supplyProductEntity.getCreatorId().equals(userId)
+                || accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN)) {
             supplyProductEntity.setStatus(MainConstants.SUPPLY_POST_CLOSED);
             supplyProductEntity.setClosedTime(dateFormat.format(date));
-            supplyProductRepository.save(supplyProductEntity);
+            supplyProductRepository.saveAndFlush(supplyProductEntity);
 
             List<TransactionDetailEntity> list =
                     transactionDetailRepository.findAllBySupplyProductIdAndStatus(supProId, MainConstants.PENDING);
+            System.out.println(list.size());
             List<TransactionDetailEntity> transactionDetailEntities = new ArrayList<>();
-            for (TransactionDetailEntity item : list) {
-                item.setStatus(MainConstants.TRANSACTION_FAIL);
-                item.setEditedTime(dateFormat.format(date));
-                transactionDetailEntities.add(item);
+            if (list.size() > 0) {
+                for (TransactionDetailEntity item : list) {
+                    item.setStatus(MainConstants.TRANSACTION_FAIL);
+                    item.setEditedTime(dateFormat.format(date));
+                    transactionDetailEntities.add(item);
+                }
+                transactionDetailRepository.saveAll(transactionDetailEntities);
             }
-            transactionDetailRepository.saveAll(transactionDetailEntities);
-
             return new ResponseEntity(HttpStatus.OK);
         }
         return new ResponseEntity(HttpStatus.BAD_REQUEST);

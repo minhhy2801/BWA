@@ -1,19 +1,23 @@
 package capstone.bwa.demo.controllers;
 
 import capstone.bwa.demo.constants.MainConstants;
-import capstone.bwa.demo.entities.AccountEntity;
-import capstone.bwa.demo.entities.BikeEntity;
-import capstone.bwa.demo.entities.ImageEntity;
-import capstone.bwa.demo.entities.SupplyProductEntity;
+import capstone.bwa.demo.entities.*;
 import capstone.bwa.demo.repositories.*;
+import capstone.bwa.demo.services.DistanceMatrixRequestService;
+import capstone.bwa.demo.services.NotificationService;
+import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.google.gson.Gson;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.DateFormat;
@@ -28,9 +32,19 @@ public class SupplyProductController {
     @Autowired
     private AccountRepository accountRepository;
     @Autowired
+    private AccessoryRepository accessoryRepository;
+    @Autowired
     private BikeRepository bikeRepository;
     @Autowired
     private ImageRepository imageRepository;
+    @Autowired
+    private NotificationService notificationService;
+    @Autowired
+    private TransactionDetailRepository transactionDetailRepository;
+    @Autowired
+    private RequestNotificationRepository requestNotificationRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     /**
      * Return list supply posts
@@ -47,25 +61,43 @@ public class SupplyProductController {
     public ResponseEntity getListSupplyPosts(@PathVariable int quantity, @PathVariable int id,
                                              @RequestBody Map<String, String> body) {
         String status = body.get("status");
-
+        String cate = body.get("category");
         if (!status.equals(MainConstants.SUPPLY_POST_PUBLIC) && !status.equals(MainConstants.SUPPLY_POST_CLOSED)
                 && !status.equals(MainConstants.GET_ALL)) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
 
-        List<SupplyProductEntity> list;
+        List<SupplyProductEntity> list = new ArrayList<>();
         // number of page with n elements
         Pageable pageWithElements = PageRequest.of(id, quantity);
-
-        if (status.equals(MainConstants.GET_ALL)) {
+        if (status.equals(MainConstants.GET_ALL) && cate.equals(MainConstants.GET_ALL)) {
             List<String> statusSupplyPost = new ArrayList<>();
             statusSupplyPost.add(MainConstants.SUPPLY_POST_CLOSED);
             statusSupplyPost.add(MainConstants.SUPPLY_POST_PUBLIC);
             list = supplyProductRepository.findAllByStatusInOrderByIdDesc(statusSupplyPost, pageWithElements);
-        } else list = supplyProductRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
+        } else if (!status.equals(MainConstants.GET_ALL) && cate.equals(MainConstants.GET_ALL)) {
+            list = supplyProductRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
+        }
+        if (!cate.equals(MainConstants.GET_ALL)) {
+            CategoryEntity category = categoryRepository.findByNameIgnoreCaseAndType(cate, MainConstants.STATUS_SUPPLY_POST);
+
+            if (category == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+            if (category.getName().equalsIgnoreCase("bán xe")
+                    || category.getName().equalsIgnoreCase("bán phụ kiện")) {
+                if (status.equals(MainConstants.GET_ALL)) {
+                    list = supplyProductRepository.findAllByCategoryIdOrderByIdDesc(category.getId(), pageWithElements);
+                } else if (!status.equals(MainConstants.GET_ALL)) {
+                    list = supplyProductRepository.findAllByStatusAndCategoryIdOrderByIdDesc(status, category.getId(), pageWithElements);
+                }
+            }
+        }
+
         if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
         return new ResponseEntity(list, HttpStatus.OK);
     }
+
 
     /**
      * Return supply post
@@ -78,7 +110,7 @@ public class SupplyProductController {
      * <p>
      * }
      */
-    @JsonView(View.ISupplyPostDetail.class)
+    @JsonView({View.ISupplyPostDetail.class})
     @GetMapping("supply_post/{id}")
     public ResponseEntity getSupplyPost(@PathVariable int id) {
         SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
@@ -86,12 +118,33 @@ public class SupplyProductController {
         if (!supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_PUBLIC) &&
                 !supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED))
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
         List<ImageEntity> imageEntities = imageRepository.findAllBySupplyProductByOwnId_IdAndType(id, MainConstants.STATUS_SUPPLY_POST);
 
         Map<String, Object> map = new HashMap<>();
+
+        //determine category name
+        String cateName = supplyProductEntity.getTypeItem();
+        switch (cateName) {
+            case MainConstants.STATUS_BIKE:
+                int bikeId = supplyProductEntity.getItemId();
+                BikeEntity bikeEntity = bikeRepository.findById(bikeId);
+                map.put("bike", bikeEntity);
+                break;
+            case MainConstants.STATUS_ACCESSORY:
+                int accessoryId = supplyProductEntity.getItemId();
+                AccessoryEntity accessoryEntity = accessoryRepository.findById(accessoryId);
+                map.put("accessory", accessoryEntity);
+                break;
+        }
         map.put("supply_post", supplyProductEntity);
         map.put("images", imageEntities);
-
+        if (supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED)) {
+            TransactionDetailEntity successTrans = transactionDetailRepository.findBySupplyProductIdAndStatus(id, MainConstants.TRANSACTION_SUCCESS);
+            if (successTrans == null)
+                map.put("success_account", null);
+            else map.put("success_account", successTrans.getInteractiveId());
+        }
         return new ResponseEntity(map, HttpStatus.OK);
     }
 
@@ -105,22 +158,82 @@ public class SupplyProductController {
      */
     @JsonView(View.ISupplyPostDetail.class)
     @PostMapping("user/{id}/supply_post_bike")
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
     public ResponseEntity createSupplyPostBike(@PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(id);
+
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
         if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
                 !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER))
             return new ResponseEntity(HttpStatus.LOCKED);
+
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+
         SupplyProductEntity supplyProductEntity = new SupplyProductEntity();
+
         BikeEntity bikeEntity = new BikeEntity();
-        supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, bikeEntity);
+        supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, bikeEntity, null, MainConstants.STATUS_BIKE);
         supplyProductEntity.setCreatorId(id);
         supplyProductEntity.setCreatedTime(dateFormat.format(date));
 //        supplyProductEntity.setStatus(MainConstants.PENDING);
         supplyProductRepository.save(supplyProductEntity);
+
         return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
+    }
+
+    @JsonView(View.ISupplyPostDetail.class)
+    @PostMapping("user/{id}/supply_post_accessory")
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+    public ResponseEntity createSupplyPostAccessory(@PathVariable int id, @RequestBody Map<String, String> body) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+        SupplyProductEntity supplyProductEntity = new SupplyProductEntity();
+        AccessoryEntity accessoryEntity = new AccessoryEntity();
+        supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, null,
+                accessoryEntity, MainConstants.STATUS_ACCESSORY);
+        supplyProductEntity.setCreatorId(id);
+        supplyProductEntity.setCreatedTime(dateFormat.format(date));
+        supplyProductRepository.save(supplyProductEntity);
+
+        return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
+    }
+
+    @JsonView(View.ISupplyPostDetail.class)
+    @PutMapping("user/{userId}/supply_post_accessory/{id}")
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+    public ResponseEntity updateSupplyPostAccessoryByUser(@PathVariable int id, @PathVariable int userId,
+                                                          @RequestBody Map<String, String> body) {
+
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
+
+        if (accountEntity == null || supplyProductEntity == null)
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
+                !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) ||
+                supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED)
+                || !supplyProductEntity.getTypeItem().equals(MainConstants.STATUS_ACCESSORY))
+            return new ResponseEntity(HttpStatus.LOCKED);
+        if (supplyProductEntity.getCreatorId().equals(userId)) {
+            int accessoryId = supplyProductEntity.getItemId();
+            AccessoryEntity accessoryEntity = accessoryRepository.findById(accessoryId);
+            supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, null, accessoryEntity,
+                    MainConstants.STATUS_ACCESSORY);
+            supplyProductRepository.save(supplyProductEntity);
+
+            //make all transaction to be forzen when users update supply post
+
+            frozenAllTransactionBySupplyProductId(id);
+
+            return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -136,25 +249,36 @@ public class SupplyProductController {
      */
     @JsonView(View.ISupplyPostDetail.class)
     @PutMapping("user/{userId}/supply_post_bike/{id}")
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
     public ResponseEntity updateSupplyPostBikeByUser(@PathVariable int id, @PathVariable int userId,
                                                      @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(userId);
         SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
 
-        if (accountEntity == null || supplyProductEntity == null)
+        if (accountEntity == null || supplyProductEntity == null) {
+            // System.out.println(accountEntity);
+            // System.out.println(supplyProductEntity);
             return new ResponseEntity(HttpStatus.NOT_FOUND);
+        }
 
         if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
                 !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) ||
-                supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED))
+                supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED)
+                || !supplyProductEntity.getTypeItem().equals(MainConstants.STATUS_BIKE))
             return new ResponseEntity(HttpStatus.LOCKED);
+
         if (supplyProductEntity.getCreatorId().equals(userId)) {
 
             int bikeId = supplyProductEntity.getItemId();
             BikeEntity bikeEntity = bikeRepository.findById(bikeId);
-            supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, bikeEntity);
+            supplyProductEntity = paramSupplyPostEntityRequest(body, supplyProductEntity, bikeEntity,
+                    null, MainConstants.STATUS_BIKE);
 //        supplyProductEntity.setStatus(MainConstants.PENDING);
             supplyProductRepository.save(supplyProductEntity);
+
+            //make all transaction to be forzen when users update supply post
+            frozenAllTransactionBySupplyProductId(id);
+
             return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
         }
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
@@ -177,14 +301,22 @@ public class SupplyProductController {
                 !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
             return new ResponseEntity(HttpStatus.LOCKED);
 
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         String status = body.get("status");
         supplyProductEntity.setApprovedId(adminId);
-        supplyProductEntity.setApprovedTime(dateFormat.format(date));
+        supplyProductEntity.setApprovedTime(DateTimeUtils.getCurrentTime());
         supplyProductEntity.setStatus(status);
         supplyProductRepository.save(supplyProductEntity);
-        return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
+
+        //process for notification
+        if (status.equalsIgnoreCase(MainConstants.SUPPLY_POST_PUBLIC)) {
+            //process for notification
+            startSearchingForNotification(supplyProductEntity);
+
+            //send noti to FORZEN transaction when admin approve
+            if (transactionDetailRepository.existsDistinctBySupplyProductId(supplyProductEntity.getId()))
+                sendNotiToFrozenTransaction(supplyProductEntity.getId());
+        }
+        return new ResponseEntity(HttpStatus.OK);
     }
 
     /**
@@ -228,11 +360,198 @@ public class SupplyProductController {
         return new ResponseEntity(supplyProductEntities, HttpStatus.OK);
     }
 
+    @JsonView({View.ISupplyPostDetail.class})
+    @GetMapping("user/{userId}/supply_post/{id}")
+    public ResponseEntity getSupplyPostPreview(@PathVariable int id, @PathVariable int userId) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
+        if (accountEntity == null || supplyProductEntity == null)
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
+                !supplyProductEntity.getCreatorId().equals(userId))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        Map<String, Object> map = new HashMap<>();
+        String typeItem = supplyProductEntity.getTypeItem();
+        List<ImageEntity> imageEntities = imageRepository.findAllBySupplyProductByOwnId_IdAndType(id, MainConstants.STATUS_SUPPLY_POST);
+        switch (typeItem) {
+            case MainConstants.STATUS_BIKE:
+                int bikeId = supplyProductEntity.getItemId();
+                BikeEntity bikeEntity = bikeRepository.findById(bikeId);
+                map.put("bike", bikeEntity);
+                break;
+            case MainConstants.STATUS_ACCESSORY:
+                int accessoryId = supplyProductEntity.getItemId();
+                AccessoryEntity accessoryEntity = accessoryRepository.findById(accessoryId);
+//                System.out.println(accessoryEntity.getName());
+                map.put("accessory", accessoryEntity);
+        }
+        map.put("supply_post", supplyProductEntity);
+        map.put("images", imageEntities);
+        return new ResponseEntity(map, HttpStatus.OK);
+    }
+
+    @PutMapping("user/{userId}/supply_post/{id}/close")
+    public ResponseEntity closeSupplyPostByUser(@PathVariable int userId, @PathVariable int id) {
+
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
+        if (accountEntity == null || supplyProductEntity == null)
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
+                !supplyProductEntity.getCreatorId().equals(userId))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        supplyProductEntity.setStatus(MainConstants.SUPPLY_POST_CLOSED);
+        supplyProductRepository.save(supplyProductEntity);
+
+        return new ResponseEntity((HttpStatus.OK));
+    }
+
+    @JsonView(View.ISupplyPosts.class)
+    @PostMapping("supply_post/search_distance")
+    public ResponseEntity searchDistance5km(@RequestBody Map<String, String> body) {
+        double lat = Double.parseDouble(body.get("lat"));
+        double lng = Double.parseDouble(body.get("lng"));
+        List<SupplyProductEntity> productEntities = supplyProductRepository.findAllByStatusOrderByIdDesc(MainConstants.SUPPLY_POST_PUBLIC);
+        if (productEntities.size() < 1) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        List<Map<String, Object>> supplyMatching = new ArrayList<>();
+        double distance = 0;
+
+        DistanceMatrixRequestService request = new DistanceMatrixRequestService();
+        for (SupplyProductEntity item : productEntities) {
+            try {
+                double x2 = Double.parseDouble(item.getLocation().split("~")[1]);
+                double y2 = Double.parseDouble(item.getLocation().split("~")[2]);
+                distance = request.calculateDistanceBetweenPoints(lat, lng, x2, y2);
+
+
+                if (distance <= MainConstants.COMPARISON_DISTANCE) {//5km
+                    Map<String, Object> map = new HashMap<>();
+
+                    String json = request.googleMatrix(lat, lng, x2, y2);
+                    JSONObject object = new JSONObject(json);
+                    JSONArray dist = (JSONArray) object.get("rows");
+                    JSONObject obj = (JSONObject) dist.get(0);
+                    dist = (JSONArray) obj.get("elements");
+                    obj = (JSONObject) dist.get(0);
+                    obj = (JSONObject) obj.get("distance");
+                    String tmp = (String) obj.get("text").toString()
+                            .replace("km", "")
+                            .replace(",", ".");
+                    double km = Float.parseFloat(tmp);
+                    if ((km / 100) < MainConstants.COMPARISON_DISTANCE) {
+                        map.put("supply_post", item);
+                        map.put("distance", new JSONObject(json).toMap());
+                        supplyMatching.add(map);
+                    }
+                }
+            } catch (Exception e) {
+            }
+        }
+
+        return new ResponseEntity(supplyMatching, HttpStatus.OK);
+    }
+
+    @JsonView(View.ISupplyPostsFilter.class)
+    @GetMapping("supply_posts/search_filter")
+    public ResponseEntity searchFilterSupplyPosts() {
+        List<String> status = new ArrayList<>();
+        status.add(MainConstants.SUPPLY_POST_CLOSED);
+        status.add(MainConstants.SUPPLY_POST_PUBLIC);
+
+        List<SupplyProductEntity> list = supplyProductRepository.findTop200ByStatusInOrderByIdDesc(status);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok(list);
+    }
+
+    @PostMapping("supply_posts/record")
+    public ResponseEntity countTotalPage(@RequestBody Map<String, String> body) {
+        String status = body.get("status");
+        String cate = body.get("category");
+        if (!status.equals(MainConstants.SUPPLY_POST_PUBLIC) && !status.equals(MainConstants.SUPPLY_POST_CLOSED)
+                && !status.equals(MainConstants.GET_ALL))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        int totalRecord = 0;
+        if (status.equals(MainConstants.GET_ALL) && cate.equals(MainConstants.GET_ALL)) {
+            List<String> listStatus = new ArrayList<>();
+            listStatus.add(MainConstants.SUPPLY_POST_CLOSED);
+            listStatus.add(MainConstants.SUPPLY_POST_PUBLIC);
+            totalRecord = supplyProductRepository.countAllByStatusIn(listStatus);
+        } else if (!status.equals(MainConstants.GET_ALL) && cate.equals(MainConstants.GET_ALL)) {
+            totalRecord = supplyProductRepository.countAllByStatus(status);
+        }
+        if (!cate.equals(MainConstants.GET_ALL)) {
+            CategoryEntity category = categoryRepository.findByNameIgnoreCaseAndType(cate, MainConstants.STATUS_SUPPLY_POST);
+
+            if (category == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+            if (category.getName().equalsIgnoreCase("bán xe")
+                    || category.getName().equalsIgnoreCase("bán phụ kiện")) {
+                if (status.equals(MainConstants.GET_ALL))
+                    totalRecord = supplyProductRepository.countAllByCategoryId(category.getId());
+                else
+                    totalRecord = supplyProductRepository.countAllByCategoryIdAndStatus(category.getId(), status);
+            }
+        }
+
+
+        return new ResponseEntity(totalRecord, HttpStatus.OK);
+    }
+
+    @JsonView(View.ISupplyPosts.class)
+    @PostMapping("supply_posts/search")
+    public ResponseEntity searchTitleNews(@RequestBody Map<String, String> body) {
+        String text = body.get("search").trim();
+        if (text.isEmpty() || text == "") return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        List<String> status = new ArrayList<>();
+        status.add(MainConstants.SUPPLY_POST_CLOSED);
+        status.add(MainConstants.SUPPLY_POST_PUBLIC);
+        List<SupplyProductEntity> list = supplyProductRepository.findAllByStatusInAndTitleContainingIgnoreCase(status, text);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok(list);
+    }
+
+    @JsonView(View.ISupplyPostDetail.class)
+    @GetMapping("admin/{adminId}/supply_post/{supProId}/preview")
+    public ResponseEntity previewSupplyPostByAdmin(@PathVariable int adminId, @PathVariable int supProId) {
+        AccountEntity accountEntity = accountRepository.findById(adminId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(supProId);
+        if (accountEntity == null || supplyProductEntity == null
+                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        String typeItem = supplyProductEntity.getTypeItem();
+
+        Map<String, Object> map = new HashMap<>();
+        List<ImageEntity> imageEntities = imageRepository.findAllBySupplyProductByOwnId_IdAndType(supProId, MainConstants.STATUS_SUPPLY_POST);
+        switch (typeItem) {
+            case MainConstants.STATUS_BIKE:
+                int bikeId = supplyProductEntity.getItemId();
+                BikeEntity bikeEntity = bikeRepository.findById(bikeId);
+                map.put("bike", bikeEntity);
+                break;
+            case MainConstants.STATUS_ACCESSORY:
+                int accessoryId = supplyProductEntity.getItemId();
+                AccessoryEntity accessoryEntity = accessoryRepository.findById(accessoryId);
+//                System.out.println(accessoryEntity.getName());
+                map.put("accessory", accessoryEntity);
+        }
+        map.put("supply_post", supplyProductEntity);
+        map.put("images", imageEntities);
+
+        return ResponseEntity.ok(map);
+    }
     //==========================
+
+
     private SupplyProductEntity paramSupplyPostEntityRequest(Map<String, String> body,
                                                              SupplyProductEntity supplyProductEntity,
-                                                             BikeEntity bike) {
-//        SupplyProductEntity supplyProductEntity = new SupplyProductEntity();
+                                                             BikeEntity bike, AccessoryEntity accessory,
+                                                             String type) {
         String title = body.get("title");
         String description = body.get("description");
         String imgThumbnail = body.get("imgThumbnailUrl");
@@ -245,30 +564,34 @@ public class SupplyProductController {
         supplyProductEntity.setLocation(location);
         supplyProductEntity.setCategoryId(cateId);
         supplyProductEntity.setStatus(MainConstants.PENDING);
-        supplyProductEntity.setTypeItem(MainConstants.STATUS_BIKE);
         supplyProductEntity.setRate("0");
-        BikeEntity bikeEntity = paramBikeEntityRequest(body, bike);
-        bikeRepository.save(bikeEntity);
-        supplyProductEntity.setItemId(bikeEntity.getId());
+        supplyProductEntity.setTypeItem(type);
+        if (type.equals(MainConstants.STATUS_BIKE)) {
+            BikeEntity bikeEntity = paramBikeEntityRequest(body, bike);
+            bikeRepository.save(bikeEntity);
+            supplyProductEntity.setItemId(bikeEntity.getId());
+        } else if (type.equals(MainConstants.STATUS_ACCESSORY)) {
+            AccessoryEntity accessoryEntity = paramAccessoryEntityRequest(body, accessory);
+            accessoryRepository.save(accessoryEntity);
+            supplyProductEntity.setItemId(accessoryEntity.getId());
+        }
 
         return supplyProductEntity;
     }
 
     private BikeEntity paramBikeEntityRequest(Map<String, String> body, BikeEntity bikeEntity) {
-//        BikeEntity bikeEntity = new BikeEntity();
         String name = body.get("name");
         String brand = body.get("brand");
         String price = body.get("price");
         int cateId = Integer.parseInt(body.get("categoryIdBike"));
         String version = body.get("version");
-//        String img = body.get("images"); //arrays images
 
         //set description
         Map<String, String> map = new HashMap<>();
         map.put("numOfKms", body.get("numOfKms"));
         map.put("stateVehicle", body.get("stateVehicle"));
         map.put("color", body.get("color"));
-        map.put("yearOfBike", body.get("yearOfBike"));
+//        map.put("yearOfBike", body.get("yearOfBike"));
         map.put("state", body.get("state"));
         //----
         bikeEntity.setName(name);
@@ -278,25 +601,85 @@ public class SupplyProductController {
         bikeEntity.setHashBikeCode(bikeEntity.hashCode() + "");
         bikeEntity.setCategoryId(cateId);
         bikeEntity.setVersion(version);
-
         Gson gson = new Gson();
         String desc = gson.toJson(map);
-
         bikeEntity.setDescription(desc);
-//        String tmp = img.replace("[", "").replace("]", "").trim();
-////        String[] arr = tmp.split(",");
-////        List<ImageEntity> list = new ArrayList<>();
-////        for (int i = 0; i < arr.length; i++) {
-////            ImageEntity imageEntity = new ImageEntity();
-////            imageEntity.setUrl(arr[i].trim());
-////            imageEntity.setOwnId(bikeEntity.getId());
-////            imageEntity.setType(MainConstants.STATUS_BIKE);
-////            list.add(imageEntity);
-//////                System.out.println("url " + imageEntity.getUrl());
-////        }
-////        imageRepository.saveAll(list);
 
         return bikeEntity;
     }
+
+
+    private AccessoryEntity paramAccessoryEntityRequest(Map<String, String> body, AccessoryEntity accessoryEntity) {
+        String name = body.get("name");
+        String brand = body.get("brand");
+        String price = body.get("price");
+        int cateId = Integer.parseInt(body.get("categoryIdAccessory"));
+
+        Map<String, String> map = new HashMap<>();
+        map.put("feature", body.get("feature"));
+        map.put("bikeCompatible", body.get("bikeCompatible"));
+        map.put("state", body.get("state"));
+        //----
+        accessoryEntity.setName(name);
+        accessoryEntity.setBrand(brand);
+        accessoryEntity.setPrice(price);
+        accessoryEntity.setStatus(MainConstants.STATUS_SUPPLY_POST);
+        accessoryEntity.setHashAccessoryCode(accessoryEntity.hashCode() + "");
+        accessoryEntity.setCategoryId(cateId);
+        Gson gson = new Gson();
+        String desc = gson.toJson(map);
+        accessoryEntity.setDescription(desc);
+
+        return accessoryEntity;
+    }
+
+
+    //=========================
+
+    private void frozenAllTransactionBySupplyProductId(int supplyProductId) {
+
+        List<TransactionDetailEntity> transactions = transactionDetailRepository.
+                findAllBySupplyProductId((supplyProductId));
+        if (transactions.size() > 0) {
+            transactions.forEach(t -> t.setStatus(MainConstants.TRANSACTION_FROZEN));
+            transactionDetailRepository.saveAll(transactions);
+        }
+    }
+
+    private void startSearchingForNotification(SupplyProductEntity supplyProductEntity) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                notificationService.searchRequestAfterActionSupplyPost(supplyProductEntity);
+                Thread.currentThread().interrupted();
+            }
+        }).start();
+    }
+
+
+    private void sendNotiToFrozenTransaction(int supplyPostId) {
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                List<TransactionDetailEntity> transactions = transactionDetailRepository.findAllBySupplyProductId(supplyPostId);
+                List<RequestNotificationEntity> notis = new ArrayList<>();
+                System.out.println("TRANS " + transactions.size());
+                for (TransactionDetailEntity item : transactions) {
+                    RequestNotificationEntity noti = new RequestNotificationEntity();
+                    noti.setStatus(MainConstants.NOTI_NEW);
+                    noti.setSupplyProductId(item.getSupplyProductId());
+                    noti.setTransactionId(item.getId());
+                    System.out.println("TRANSID " + item.getId());
+                    noti.setType(MainConstants.STATUS_TRANS);
+                    notis.add(noti);
+                }
+                System.out.println("NOTI======== " + notis.size());
+                requestNotificationRepository.saveAll(notis);
+                Thread.currentThread().interrupted();
+            }
+        }).start();
+    }
+
 }
 

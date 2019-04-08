@@ -1,8 +1,11 @@
 package capstone.bwa.demo.services;
 
 import capstone.bwa.demo.constants.MainConstants;
+import capstone.bwa.demo.crawldata.AccessoryCrawler;
+import capstone.bwa.demo.crawldata.BikeCrawler;
+import capstone.bwa.demo.crawldata.NewsCrawler;
 import capstone.bwa.demo.entities.EventEntity;
-import capstone.bwa.demo.repositories.EventRepository;
+import capstone.bwa.demo.repositories.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,18 +22,50 @@ import java.util.List;
 //tạo 1 class là container để chứa đựng các công việc cần lên lịch trình
 @Component
 public class ScheduledTasks {
+    private static final Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
     @Autowired
     private EventRepository eventRepository;
-    private static final Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
+    @Autowired
+    private BikeRepository bikeRepository;
+    @Autowired
+    private ImageRepository imageRepository;
+    @Autowired
+    private AccessoryRepository accessoryRepository;
+    @Autowired
+    private CategoryRepository categoryRepository;
+    @Autowired
+    private NewsRepository newsRepository;
+    @Autowired
+    private ReferencesLinkRepository referencesLinkRepository;
 
     //Cron chạy method
+    //[[second, minute, hour, day of month, month, day(s) of week]]
     //1 day run
-//    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(cron = "0 0 0 * * *")
     //1 min run
-    @Scheduled(cron = "0 * * ? * *")
-    public void scheduleTaskWithCronExpression() {
+//    @Scheduled(cron = "0 * * * * ?")
+    public void scheduleTaskEventState() {
         updateEventStatus();
-        logger.info("Update db");
+        logger.info("Update event state");
+    }
+
+    //weekly
+    @Scheduled(cron = "0 0 0 ? * MON")
+//    @Scheduled(cron = "0 * * * * ?")
+    public void scheduleTaskCrawlData() {
+        try {
+            BikeCrawler bikeCrawler = new BikeCrawler(categoryRepository, bikeRepository, imageRepository, referencesLinkRepository);
+            bikeCrawler.crawlAndInsertDB();
+            logger.info("Crawl bike done");
+            AccessoryCrawler accessoryCrawler = new AccessoryCrawler(categoryRepository, accessoryRepository, imageRepository, referencesLinkRepository);
+            accessoryCrawler.crawAndInsertDB();
+            logger.info("Crawl accessory done");
+            NewsCrawler newsCrawler = new NewsCrawler(referencesLinkRepository, newsRepository, imageRepository);
+            newsCrawler.crawNewsJsoup();
+            logger.info("Crawl news done");
+        } catch (Exception e) {
+            logger.error("Error scheduler" + e.getMessage());
+        }
     }
 
     private void updateEventStatus() {

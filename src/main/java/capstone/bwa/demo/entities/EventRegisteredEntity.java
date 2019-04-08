@@ -105,7 +105,7 @@ public class EventRegisteredEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "eventId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "eventId", referencedColumnName = "id", insertable = false, updatable = false)
     public EventEntity getEventByEventId() {
         return eventByEventId;
     }
@@ -115,7 +115,7 @@ public class EventRegisteredEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "registeredId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "registeredId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByRegisteredId() {
         return accountByRegisteredId;
     }

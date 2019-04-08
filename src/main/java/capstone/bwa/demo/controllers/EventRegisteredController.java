@@ -11,7 +11,6 @@ import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,7 +29,6 @@ public class EventRegisteredController {
     private AccountRepository accountRepository;
     @Autowired
     private EventRepository eventRepository;
-
 
     /**
      * Return list users registered event sort latest time with status PAID
@@ -105,5 +103,22 @@ public class EventRegisteredController {
 
         return new ResponseEntity(eventRegisteredEntities, HttpStatus.OK);
     }
+
+    @GetMapping("user/{id}/event/{eventId}/registered")
+    public ResponseEntity isRegistered(@PathVariable int id, @PathVariable int eventId) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        EventEntity eventEntity = eventRepository.findById(eventId);
+        if (accountEntity == null || eventEntity == null
+                || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
+                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER)
+                || !eventEntity.getStatus().equals(MainConstants.EVENT_FINISHED))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        boolean check = eventRegisteredRepository.existsDistinctByEventIdAndRegisteredId(eventId, id);
+        if (check)
+            return new ResponseEntity(HttpStatus.OK);
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
+    }
+
 }
 

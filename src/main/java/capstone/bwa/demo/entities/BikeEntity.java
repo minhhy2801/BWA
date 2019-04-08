@@ -10,21 +10,24 @@ import java.util.Objects;
 @Entity
 @Table(name = "Bike", schema = "dbo", catalog = "BikeWorldDB")
 public class BikeEntity {
+    @JsonView(View.ISupplyPostDetail.class)
     private int id;
-    @JsonView(View.IBike.class)
+    @JsonView({View.IBike.class, View.ISupplyPostDetail.class})
     private String name;
+    @JsonView(View.ISupplyPostDetail.class)
     private String url;
-    @JsonView(View.IBike.class)
+    @JsonView({View.IBike.class, View.ISupplyPostDetail.class})
     private String brand;
-    @JsonView(View.IBike.class)
+    @JsonView({View.IBike.class, View.ISupplyPostDetail.class})
     private String price;
     private Integer categoryId;
-    @JsonView(View.IBike.class)
+    @JsonView({View.IBike.class, View.ISupplyPostDetail.class})
     private String description;
     private String hashBikeCode;
     private String status;
-    @JsonView(View.IBike.class)
+    @JsonView({View.IBike.class, View.ISupplyPostDetail.class})
     private String version;
+    @JsonView(View.ISupplyPostDetail.class)
     private CategoryEntity categoryByCategoryId;
     private Collection<ImageEntity> imagesById;
 

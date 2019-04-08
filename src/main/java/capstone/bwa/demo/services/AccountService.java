@@ -29,7 +29,7 @@ public class AccountService implements UserDetailsService {
         List<GrantedAuthority> grantedAuthorityList = new ArrayList<>();
         GrantedAuthority role = new SimpleGrantedAuthority(accountEntity.getRoleByRoleId().getName());
         grantedAuthorityList.add(role);
-        return new User(accountEntity.getId() + ";" + accountEntity.getPhone(),  accountEntity.getPassword(), grantedAuthorityList);
+        return new User(accountEntity.getId() + ";" + accountEntity.getPhone(), accountEntity.getPassword(), grantedAuthorityList);
     }
 
 }

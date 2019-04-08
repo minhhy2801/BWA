@@ -1,21 +1,32 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
 @Table(name = "Comment", schema = "dbo", catalog = "BikeWorldDB")
 public class CommentEntity {
+    @JsonView(View.IComments.class)
     private int id;
+    @JsonView(View.IComments.class)
     private Integer newsId;
     private Integer creatorId;
+    @JsonView(View.IComments.class)
     private String createdTime;
+    @JsonView(View.IComments.class)
     private String editedTime;
     private Integer editorId;
+    @JsonView(View.IComments.class)
     private String description;
+    @JsonView(View.IComments.class)
     private String status;
     private NewsEntity newsByNewsId;
     private AccountEntity accountByEditorId;
+    @JsonView(View.IComments.class)
+    private AccountEntity accountByCreatorId;
 
     @Id
     @Column(name = "id")
@@ -136,5 +147,15 @@ public class CommentEntity {
 
     public void setAccountByEditorId(AccountEntity accountByEditorId) {
         this.accountByEditorId = accountByEditorId;
+    }
+
+    @ManyToOne
+    @JoinColumn(name = "creatorId", referencedColumnName = "id", insertable = false, updatable = false)
+    public AccountEntity getAccountByCreatorId() {
+        return accountByCreatorId;
+    }
+
+    public void setAccountByCreatorId(AccountEntity accountByCreatorId) {
+        this.accountByCreatorId = accountByCreatorId;
     }
 }

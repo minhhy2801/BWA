@@ -3,6 +3,7 @@ package capstone.bwa.demo.controllers;
 import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.*;
 import capstone.bwa.demo.repositories.*;
+import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import javax.ws.rs.Path;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -69,7 +69,7 @@ public class FeedbackController {
      * @param userId
      * @param id
      * @return 400 if can not create
-     * 403 if not user or user not registered event
+     * 403 if not user or user not registered event || over 1 week
      * 200 if OK
      */
     @JsonView(View.IFeedback.class)
@@ -80,11 +80,17 @@ public class FeedbackController {
         if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         EventRegisteredEntity eventRegisteredEntity = eventRegisteredRepository.findDistinctFirstByAccountByRegisteredId_IdAndEventByEventId_Id(userId, id);
 
-//        System.out.println(eventRegisteredEntity);
-
+        System.out.println(eventRegisteredEntity);
+        System.out.println(feedbackRepository.existsByOwnIdAndStatus(eventRegisteredEntity.getId(), MainConstants.STATUS_EVENT));
         if (eventRegisteredEntity == null ||
+                !eventEntity.getStatus().equals(MainConstants.EVENT_FINISHED) ||
                 feedbackRepository.existsByOwnIdAndStatus(eventRegisteredEntity.getId(), MainConstants.STATUS_EVENT))
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        if (DateTimeUtils.compareWithRejectFeedbackEvent(eventEntity.getEndTime(), Calendar.DATE,
+                MainConstants.NUM_OF_DATE_REJECT_FEEDBACK)) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
 
         FeedbackEntity feedbackEntity = new FeedbackEntity();
 
@@ -101,7 +107,7 @@ public class FeedbackController {
         feedbackEntity.setStatus(MainConstants.STATUS_EVENT);
         feedbackRepository.save(feedbackEntity);
         float numRate = Float.parseFloat(rate) + Float.parseFloat(eventEntity.getTotalRate());
-        System.out.println("Rate: " + numRate);
+//        System.out.println("Rate: " + numRate);
         eventEntity.setTotalRate(numRate + "");
         eventEntity.setTotalFeedback(eventEntity.getTotalFeedback() + 1);
         eventRepository.save(eventEntity);
@@ -210,14 +216,19 @@ public class FeedbackController {
      */
     @JsonView(View.IFeedback.class)
     @PostMapping("user/{userId}/supply_post/{id}/feedback")
-    public ResponseEntity createFeedbackSupplyPost(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> body) {
+    public ResponseEntity createFeedbackSupplyPost(@PathVariable int userId, @PathVariable int id, @RequestBody Map<String, String> body) throws ParseException {
         AccountEntity accountEntity = accountRepository.findById(userId);
         SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
         if (accountEntity == null || supplyProductEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (DateTimeUtils.compareWithRejectFeedbackSupplyPost(supplyProductEntity.getClosedTime(), Calendar.DATE,
+                MainConstants.NUM_OF_DATE_REJECT_FEEDBACK)) {
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
+
         if (supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED) &&
                 accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
-
-            TransactionDetailEntity transactionDetailEntity = transactionDetailRepository.findBySupplyProductIdAndStatus(id, MainConstants.TRANSACTION_SUCCESS);
+            TransactionDetailEntity transactionDetailEntity =
+                    transactionDetailRepository.findBySupplyProductIdAndStatus(id, MainConstants.TRANSACTION_SUCCESS);
             if (transactionDetailEntity.getInteractiveId().equals(userId)) {
                 if (!feedbackRepository.existsByOwnIdAndStatus(transactionDetailEntity.getId(), MainConstants.STATUS_TRANS)) {
                     FeedbackEntity feedbackEntity = new FeedbackEntity();
@@ -236,6 +247,7 @@ public class FeedbackController {
                     feedbackRepository.save(feedbackEntity);
                     supplyProductEntity.setRate(rate);
                     supplyProductRepository.save(supplyProductEntity);
+                    return new ResponseEntity(feedbackEntity, HttpStatus.OK);
                 }
             }
         }
@@ -293,7 +305,7 @@ public class FeedbackController {
     }
 
     @JsonView(View.IFeedback.class)
-        @GetMapping("user/profile/{userId}/success_feedback")
+    @GetMapping("user/profile/{userId}/success_feedback")
     public ResponseEntity getListFeedbackInViewProfile(@PathVariable int userId) {
         AccountEntity accountEntity = accountRepository.findById(userId);
         if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))

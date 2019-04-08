@@ -21,7 +21,7 @@ public class TransactionDetailEntity {
     private Integer supplyProductId;
     private Integer interactiveId;
     private Collection<FeedbackEntity> feedbacksById;
-    @JsonView(View.ITransactions.class)
+    @JsonView({View.ITransactions.class, View.ITransactionDetail.class})
     private SupplyProductEntity supplyProductBySupplyProductId;
     @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
     private AccountEntity accountByInteractiveId;
@@ -115,7 +115,7 @@ public class TransactionDetailEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "supplyProductId", referencedColumnName = "id",insertable = false, updatable = false)
+    @JoinColumn(name = "supplyProductId", referencedColumnName = "id", insertable = false, updatable = false)
     public SupplyProductEntity getSupplyProductBySupplyProductId() {
         return supplyProductBySupplyProductId;
     }

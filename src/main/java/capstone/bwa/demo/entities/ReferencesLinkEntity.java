@@ -10,7 +10,7 @@ public class ReferencesLinkEntity {
     private String url;
     private Integer categoryId;
     private String status;
-    private CategoryEntity categoryByCategoryId;
+//    private CategoryEntity categoryByCategoryId;
 
     @Id
     @Column(name = "id")
@@ -33,15 +33,15 @@ public class ReferencesLinkEntity {
         this.url = url;
     }
 
-    @Basic
-    @Column(name = "categoryId")
-    public Integer getCategoryId() {
-        return categoryId;
-    }
-
-    public void setCategoryId(Integer categoryId) {
-        this.categoryId = categoryId;
-    }
+//    @Basic
+//    @Column(name = "categoryId")
+//    public Integer getCategoryId() {
+//        return categoryId;
+//    }
+//
+//    public void setCategoryId(Integer categoryId) {
+//        this.categoryId = categoryId;
+//    }
 
     @Basic
     @Column(name = "status")
@@ -68,14 +68,14 @@ public class ReferencesLinkEntity {
     public int hashCode() {
         return Objects.hash(id, url, categoryId, status);
     }
-
-    @ManyToOne
-    @JoinColumn(name = "categoryId", referencedColumnName = "id", insertable = false, updatable = false)
-    public CategoryEntity getCategoryByCategoryId() {
-        return categoryByCategoryId;
-    }
-
-    public void setCategoryByCategoryId(CategoryEntity categoryByCategoryId) {
-        this.categoryByCategoryId = categoryByCategoryId;
-    }
+//
+//    @ManyToOne
+//    @JoinColumn(name = "categoryId", referencedColumnName = "id", insertable = false, updatable = false)
+//    public CategoryEntity getCategoryByCategoryId() {
+//        return categoryByCategoryId;
+//    }
+//
+//    public void setCategoryByCategoryId(CategoryEntity categoryByCategoryId) {
+//        this.categoryByCategoryId = categoryByCategoryId;
+//    }
 }

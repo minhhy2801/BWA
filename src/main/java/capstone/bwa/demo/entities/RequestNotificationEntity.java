@@ -1,20 +1,46 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
 @Table(name = "RequestNotification", schema = "dbo", catalog = "BikeWorldDB")
 public class RequestNotificationEntity {
+    @JsonView({View.INotification.class})
     private int id;
+    @JsonView({View.INotification.class})
     private Integer supplyProductId;
+
+    @JsonView({View.INotification.class})
     private Integer requestProductId;
+
+    @JsonView({View.INotification.class})
     private String description;
+
+    @JsonView({View.INotification.class})
     private String status;
+
+    @JsonView({View.INotification.class})
     private Integer categoryId;
+
+    @JsonView({View.INotification.class})
+
     private SupplyProductEntity supplyProductBySupplyProductId;
+
+    @JsonView({View.INotification.class})
     private RequestProductEntity requestProductByRequestProductId;
+
     private CategoryEntity categoryByCategoryId;
+
+    private String type;
+
+    private Integer transactionId;
+
+    private TransactionDetailEntity transactionEntityByTransactionId;
+
 
     @Id
     @Column(name = "id")
@@ -77,6 +103,26 @@ public class RequestNotificationEntity {
         this.categoryId = categoryId;
     }
 
+    @Basic
+    @Column(name = "transactionId")
+    public Integer getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(Integer transactionId) {
+        this.transactionId = transactionId;
+    }
+
+    @Basic
+    @Column(name = "type")
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -87,12 +133,14 @@ public class RequestNotificationEntity {
                 Objects.equals(requestProductId, that.requestProductId) &&
                 Objects.equals(description, that.description) &&
                 Objects.equals(status, that.status) &&
-                Objects.equals(categoryId, that.categoryId);
+                Objects.equals(categoryId, that.categoryId) &&
+                Objects.equals(transactionId, that.transactionId) &&
+                Objects.equals(type, that.type);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, supplyProductId, requestProductId, description, status, categoryId);
+        return Objects.hash(id, supplyProductId, requestProductId, description, status, categoryId, type, transactionId);
     }
 
     @ManyToOne
@@ -123,5 +171,15 @@ public class RequestNotificationEntity {
 
     public void setCategoryByCategoryId(CategoryEntity categoryByCategoryId) {
         this.categoryByCategoryId = categoryByCategoryId;
+    }
+
+    @ManyToOne
+    @JoinColumn(name = "transactionId", referencedColumnName = "id", insertable = false, updatable = false)
+    public TransactionDetailEntity getTransactionByTransactionId() {
+        return transactionEntityByTransactionId;
+    }
+
+    public void setTransactionByTransactionId(TransactionDetailEntity transactionDetailEntity) {
+        this.transactionEntityByTransactionId = transactionDetailEntity;
     }
 }

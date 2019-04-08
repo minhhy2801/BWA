@@ -10,8 +10,12 @@ import capstone.bwa.demo.repositories.AccountRepository;
 import capstone.bwa.demo.repositories.CategoryRepository;
 import capstone.bwa.demo.repositories.EventRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
+import capstone.bwa.demo.services.DistanceMatrixRequestService;
+import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -75,7 +80,6 @@ public class EventController {
         Map<String, Object> map = new HashMap<>();
         map.put("event", entity);
         map.put("images", imageEntities);
-        
         return new ResponseEntity(map, HttpStatus.OK);
     }
 
@@ -84,14 +88,15 @@ public class EventController {
      *
      * @return
      */
-    @GetMapping("events/title")
-    public ResponseEntity searchListEventsName() {
+    @JsonView(View.IEventsFilter.class)
+    @GetMapping("events/filter")
+    public ResponseEntity searchFilterEvents() {
         List<String> statusEventShow = new ArrayList<>();
         statusEventShow.add(MainConstants.EVENT_ONGOING);
         statusEventShow.add(MainConstants.EVENT_CLOSED);
         statusEventShow.add(MainConstants.EVENT_FINISHED);
-        List<EventEntity> list = eventRepository.findAllTitle(statusEventShow);
-//        System.out.println("search title " + statusEventShow);
+        List<EventEntity> list = eventRepository.findTop200ByStatusInOrderByIdDesc(statusEventShow);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
         return new ResponseEntity(list, HttpStatus.OK);
     }
 
@@ -194,16 +199,23 @@ public class EventController {
         EventEntity eventEntity = eventRepository.findById(id);
         AccountEntity accountEntity = accountRepository.findById(userId);
 
-        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
         if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!eventEntity.getCreatorId().equals(userId)) return new ResponseEntity(HttpStatus.FORBIDDEN);
+        if (!eventEntity.getCreatorId().equals(userId) ||
+                !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER))
+            return new ResponseEntity(HttpStatus.FORBIDDEN);
+//        System.out.println(eventEntity.getStatus());
 
-        if (accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) &&
-                accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
-            eventEntity = paramEventEntityRequest(body, eventEntity);
-            eventRepository.save(eventEntity);
+        if (eventEntity.getStatus().equals(MainConstants.PENDING) ||
+                eventEntity.getStatus().equals(MainConstants.EVENT_WAITING) ||
+                eventEntity.getStatus().equals(MainConstants.REJECT)) {
+            if (accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
+                eventEntity = paramEventEntityRequest(body, eventEntity);
+                eventRepository.save(eventEntity);
+            }
+            return new ResponseEntity(eventEntity, HttpStatus.OK);
+
         }
-        return new ResponseEntity(eventEntity, HttpStatus.OK);
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
     /**
@@ -228,10 +240,12 @@ public class EventController {
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (body == null || body.isEmpty()) return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        Date date = new Date(System.currentTimeMillis());
+
         String status = body.get("status");
-        eventEntity.setApprovedId(adminId);
-        eventEntity.setApprovedTime(date.toString());
+        if (!status.equals(MainConstants.EVENT_WAITING)) {
+            eventEntity.setApprovedId(adminId);
+            eventEntity.setApprovedTime(DateTimeUtils.getCurrentTime());
+        }
         eventEntity.setStatus(status);
         eventRepository.save(eventEntity);
 
@@ -262,8 +276,7 @@ public class EventController {
         if (body == null || body.isEmpty()) return new ResponseEntity((HttpStatus.BAD_REQUEST));
 
         AccountEntity accountEntity = accountRepository.findById(id);
-        if (accountEntity == null || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER)
-                || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         Pageable pageWithElements = PageRequest.of(pageId, quantity);
@@ -275,6 +288,12 @@ public class EventController {
             list = eventRepository.findAllByCreatorIdAndStatusOrderByIdDesc(id, pageWithElements, status);
         }
         if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        //remove longtitude and latitude
+        list.forEach(e -> {
+            String location = e.getLocation().split("~")[0];
+            e.setLocation(location);
+        });
 
         return new ResponseEntity(list, HttpStatus.OK);
     }
@@ -304,6 +323,7 @@ public class EventController {
     }
 
     //------------------
+    @JsonView(View.IEventDetail.class)
     @PostMapping("admin/{adminId}/event")
     public ResponseEntity createEventByAdmin(@RequestBody Map<String, String> body, @PathVariable int adminId) {
         AccountEntity accountAdminEntity = accountRepository.findById(adminId);
@@ -312,16 +332,20 @@ public class EventController {
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         EventEntity eventEntity = paramEventEntityRequest(body, new EventEntity());
 
-        eventEntity.setCreatedTime(date.toString());
+        eventEntity.setCreatedTime(dateFormat.format(date));
         eventEntity.setStatus(MainConstants.EVENT_WAITING);
         eventEntity.setTotalFeedback(0);
         eventEntity.setTotalSoldTicket(0);
+
+        eventEntity.setTotalRate("0");
         eventEntity.setCreatorId(adminId);
         eventEntity.setApprovedId(adminId);
+        eventEntity.setApprovedTime(dateFormat.format(date));
         eventRepository.save(eventEntity);
-        return new ResponseEntity(HttpStatus.OK);
+        return new ResponseEntity(eventEntity, HttpStatus.OK);
     }
 
     @JsonView(View.IEventDetail.class)
@@ -331,31 +355,171 @@ public class EventController {
         AccountEntity accountAdminEntity = accountRepository.findById(adminId);
         EventEntity eventEntity = eventRepository.findById(id);
 
-        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
-        if (eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (accountAdminEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (accountAdminEntity == null || eventEntity == null ||
+                !eventEntity.getCreatorId().equals(adminId) ||
+                !accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        System.out.println(eventEntity.getStatus());
+        if (!eventEntity.getStatus().equals(MainConstants.PENDING) &&
+                !eventEntity.getStatus().equals(MainConstants.REJECT) &&
+                !eventEntity.getStatus().equals(MainConstants.EVENT_WAITING))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         eventEntity = paramEventEntityRequest(body, eventEntity);
+        eventEntity.setStatus(MainConstants.EVENT_WAITING);
         eventRepository.save(eventEntity);
         return new ResponseEntity(eventEntity, HttpStatus.OK);
     }
 
-    //sửa cái này
     @JsonView(View.IEvents.class)
-    @PostMapping("events/category/{cateId}")
+    @GetMapping("events/category/{cateId}")
     public ResponseEntity searchListEventsName(@PathVariable int cateId) {
         CategoryEntity categoryEntity = categoryRepository.findById(cateId);
 
         if (categoryEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        List<EventEntity> list = eventRepository.findAllByCategoryId(cateId);
-        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
-        //check status category
-        return new ResponseEntity(list, HttpStatus.OK);
+        List<EventEntity> events = categoryEntity.getEventsById().stream().collect(Collectors.toList());
+
+        if (events.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        return new ResponseEntity(events, HttpStatus.OK);
+    }
+
+    @JsonView(View.IEventDetail.class)
+    @GetMapping("user/{userId}/event/{id}")
+    public ResponseEntity getEventPreview(@PathVariable int userId, @PathVariable int id) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        EventEntity eventEntity = eventRepository.findById(id);
+
+        if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE) ||
+                !eventEntity.getCreatorId().equals(userId))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        Map<String, Object> map = new HashMap<>();
+        List<ImageEntity> imageEntities = imageRepository.findAllByOwnIdAndType(id, MainConstants.STATUS_EVENT);
+
+        map.put("event", eventEntity);
+        map.put("images", imageEntities);
+        return new ResponseEntity(map, HttpStatus.OK);
     }
 
 
+    @JsonView(View.IEventsAdmin.class)
+    @GetMapping("admin/{id}/events/page/{pageId}/limit/{quantity}")
+    public ResponseEntity getListEventsOfAdmin(@PathVariable int id, @PathVariable int quantity,
+                                               @PathVariable int pageId) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
+                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        Pageable pageWithElements = PageRequest.of(pageId, quantity);
+        List<EventEntity> list = eventRepository.findAllByOrderById(pageWithElements);
+
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        return new ResponseEntity(list, HttpStatus.OK);
+    }
+
+    @JsonView(View.IEvents.class)
+    @PostMapping("events/search_distance")
+    public ResponseEntity searchDistance5km(@RequestBody Map<String, String> body) {
+        double lat = Double.parseDouble(body.get("lat"));
+        double lng = Double.parseDouble(body.get("lng"));
+        List<EventEntity> eventEntities = eventRepository.findAllByStatusOrderByIdDesc(MainConstants.EVENT_ONGOING);
+        if (eventEntities.size() < 1) return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        List<Map<String, Object>> eventsMatching = new ArrayList<>();
+        double distance = 0;
+
+        DistanceMatrixRequestService request = new DistanceMatrixRequestService();
+        for (EventEntity item : eventEntities) {
+            try {
+                double x2 = Double.parseDouble(item.getLocation().split("~")[1]);
+                double y2 = Double.parseDouble(item.getLocation().split("~")[2]);
+                distance = request.calculateDistanceBetweenPoints(lat, lng, x2, y2);
+
+                if (distance <= MainConstants.COMPARISON_DISTANCE) {//5km
+                    Map<String, Object> map = new HashMap<>();
+
+                    String json = request.googleMatrix(lat, lng, x2, y2);
+                    JSONObject object = new JSONObject(json);
+                    JSONArray dist = (JSONArray) object.get("rows");
+                    JSONObject obj = (JSONObject) dist.get(0);
+                    dist = (JSONArray) obj.get("elements");
+                    obj = (JSONObject) dist.get(0);
+                    obj = (JSONObject) obj.get("distance");
+                    String tmp = (String) obj.get("text").toString()
+                            .replace("km", "")
+                            .replace(",", ".");
+
+                    double km = Float.parseFloat(tmp);
+                    if ((km / 100) <= MainConstants.COMPARISON_DISTANCE) {
+                        map.put("distance", new JSONObject(json).toMap());
+                        map.put("event", item);
+                        eventsMatching.add(map);
+                    }
+                }
+            } catch (Exception e) {
+            }
+        }
+//        System.out.println("size " + eventsMatching.size());
+        return new ResponseEntity(eventsMatching, HttpStatus.OK);
+    }
+
+    @PostMapping("events/record")
+    public ResponseEntity countTotalPage(@RequestBody Map<String, String> body) {
+        String status = body.get("status");
+        if (status.isEmpty() || status == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
+        List<String> statusEventShow = new ArrayList<>();
+        statusEventShow.add(MainConstants.EVENT_ONGOING);
+        statusEventShow.add(MainConstants.EVENT_CLOSED);
+        statusEventShow.add(MainConstants.EVENT_FINISHED);
+        int totalRecord = 0;
+        if (status.equals(MainConstants.GET_ALL))
+            totalRecord = eventRepository.countAllByStatusIn(statusEventShow);
+        else totalRecord = eventRepository.countAllByStatus(status);
+
+        return new ResponseEntity(totalRecord, HttpStatus.OK);
+    }
+
+    @JsonView(View.IEvents.class)
+    @PostMapping("events/search")
+    public ResponseEntity searchTitleEvents(@RequestBody Map<String, String> body) {
+        String text = body.get("search").trim();
+        if (text.isEmpty() || text == "") return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        List<String> statusEventShow = new ArrayList<>();
+        statusEventShow.add(MainConstants.EVENT_ONGOING);
+        statusEventShow.add(MainConstants.EVENT_CLOSED);
+        statusEventShow.add(MainConstants.EVENT_FINISHED);
+
+        List<EventEntity> list = eventRepository.findAllByStatusInAndTitleContainingIgnoreCase(statusEventShow, text);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok(list);
+    }
+
+    @JsonView(View.IEventDetail.class)
+    @GetMapping("admin/{adminId}/event/{eventId}/preview")
+    public ResponseEntity previewEventByAdmin(@PathVariable int adminId, @PathVariable int eventId) {
+        AccountEntity accountEntity = accountRepository.findById(adminId);
+        EventEntity eventEntity = eventRepository.findById(eventId);
+        if (accountEntity == null || eventEntity == null
+                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        Map<String, Object> map = new HashMap<>();
+        List<ImageEntity> imageEntities = imageRepository.findAllByOwnIdAndType(eventId, MainConstants.STATUS_EVENT);
+
+        map.put("event", eventEntity);
+        map.put("images", imageEntities);
+
+        return ResponseEntity.ok(map);
+    }
     //==========================
+
+
     private EventEntity paramEventEntityRequest(Map<String, String> body, EventEntity eventEntity) {
         int cateId = Integer.parseInt(body.get("categoryId"));
         String imgThumbnail = body.get("imgThumbnailUrl");

@@ -1,5 +1,8 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Collection;
 import java.util.Objects;
@@ -7,14 +10,23 @@ import java.util.Objects;
 @Entity
 @Table(name = "RequestProduct", schema = "dbo", catalog = "BikeWorldDB")
 public class RequestProductEntity {
+    @JsonView(View.IRequestProduct.class)
     private int id;
+
+    @JsonView({View.INotification.class})
     private Integer creatorId;
+    @JsonView(View.IRequestProduct.class)
     private String createdTime;
+    @JsonView(View.IRequestProduct.class)
     private String editedTime;
+    @JsonView({View.INotification.class, View.IRequestProduct.class})
     private String title;
+    @JsonView({View.INotification.class})
     private String description;
+    @JsonView({View.INotification.class, View.IRequestProduct.class})
     private String status;
     private Collection<RequestNotificationEntity> requestNotificationsById;
+    @JsonView(View.IRequestProduct.class)
     private AccountEntity accountByCreatorId;
 
     @Id
@@ -117,7 +129,7 @@ public class RequestProductEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "creatorId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "creatorId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByCreatorId() {
         return accountByCreatorId;
     }

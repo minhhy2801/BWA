@@ -8,7 +8,8 @@ import java.util.List;
 public interface CategoryRepository extends JpaRepository<CategoryEntity, Integer> {
     CategoryEntity findById(int id);
 
-    CategoryEntity findByName(String name);
+    CategoryEntity findByNameIgnoreCaseAndType(String name, String type);
 
     List<CategoryEntity> findAllByTypeAndStatus(String type, String status);
+
 }

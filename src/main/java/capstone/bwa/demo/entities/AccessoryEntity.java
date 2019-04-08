@@ -10,20 +10,21 @@ import java.util.Objects;
 @Entity
 @Table(name = "Accessory", schema = "dbo", catalog = "BikeWorldDB")
 public class AccessoryEntity {
-    @JsonView({View.IAccessory.class, View.IAccessories.class})
+    @JsonView({View.IAccessory.class, View.IAccessories.class, View.ISupplyPostDetail.class})
     private int id;
-    @JsonView({View.IAccessory.class, View.IAccessories.class})
+    @JsonView({View.IAccessory.class, View.IAccessories.class, View.ISupplyPostDetail.class})
     private String name;
     private String url;
+    @JsonView(View.ISupplyPostDetail.class)
     private String brand;
-    @JsonView({View.IAccessory.class, View.IAccessories.class})
+    @JsonView({View.IAccessory.class, View.IAccessories.class, View.ISupplyPostDetail.class})
     private String price;
     private Integer categoryId;
-    @JsonView({View.IAccessory.class, View.IAccessories.class})
+    @JsonView({View.IAccessory.class, View.IAccessories.class, View.ISupplyPostDetail.class})
     private String description;
     private String hashAccessoryCode;
     private String status;
-    @JsonView({View.IAccessory.class, View.IAccessories.class})
+    @JsonView({View.IAccessory.class, View.IAccessories.class, View.ISupplyPostDetail.class})
     private CategoryEntity categoryByCategoryId;
     @JsonView({View.IAccessory.class, View.IAccessories.class})
     private Collection<ImageEntity> imagesById;
@@ -134,10 +135,11 @@ public class AccessoryEntity {
                 Objects.equals(hashAccessoryCode, that.hashAccessoryCode) &&
                 Objects.equals(status, that.status);
     }
+
     //change hashCode
     @Override
     public int hashCode() {
-        return Objects.hash(url, name, brand, categoryId);
+        return Objects.hash(url, name, brand);
     }
 
     @ManyToOne

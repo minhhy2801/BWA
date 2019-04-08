@@ -8,6 +8,7 @@ public class View {
     public interface IEventDetail{};
     public interface IEvents{};
     public interface IEventsUser{};
+    public interface IEventsAdmin{};
     public interface ICategories{};
     public interface IEventRegistered{};
     public interface IAccessory{};
@@ -17,5 +18,15 @@ public class View {
     public interface ITransactionDetail{};
     public interface INews{};
     public interface IFeedback{};
+    public interface IComment{};
+    public interface IComments{};
+    public interface INotification{};
+    public interface INewsDetail{};
+    public interface IRequestProduct{};
+    public interface IReport{};
+    public interface IAccounts{};
+    public interface IEventsFilter{};
+    public interface ISupplyPostsFilter{};
+    public interface INewsFilter{};
 
 }

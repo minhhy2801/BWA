@@ -2,25 +2,26 @@ package capstone.bwa.demo.controllers;
 
 import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
+import capstone.bwa.demo.entities.EventEntity;
+import capstone.bwa.demo.entities.SupplyProductEntity;
 import capstone.bwa.demo.exceptions.CustomException;
-import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.EventRepository;
-import capstone.bwa.demo.repositories.SupplyProductRepository;
+import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.services.SmsSender;
+import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public class AccountController {
@@ -31,6 +32,10 @@ public class AccountController {
     private SupplyProductRepository supplyProductRepository;
     @Autowired
     private EventRepository eventRepository;
+    @Autowired
+    private CommentRepository commentRepository;
+    @Autowired
+    private NewsRepository newsRepository;
 
     @PostMapping("send_verify_code")
     public ResponseEntity sendSignUpCode(@RequestBody Map<String, String> body) {
@@ -71,7 +76,6 @@ public class AccountController {
         String newPassword = body.get("newPassword");
 
         AccountEntity accountEntity = accountRepository.findByPhone(phone);
-//        System.out.println(accountEntity);
 
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
@@ -89,34 +93,23 @@ public class AccountController {
         String phone = body.get("phone");
         String name = body.get("name");
         String password = body.get("password");
-
-        AccountEntity accountEntity = new AccountEntity();
-        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(); //bcrypt pass
         if (accountRepository.findByPhone(phone) != null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
-
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-        accountEntity.setName(name);
-        accountEntity.setCreatedTime(dateFormat.format(date));
-        accountEntity.setPhone(phone);
+        AccountEntity accountEntity = paramAccountEntityCreateRequest(name, phone, password);
         accountEntity.setRoleId(1);
-        accountEntity.setPassword(bCryptPasswordEncoder.encode(password));
-        accountEntity.setStatus(MainConstants.ACCOUNT_ACTIVE);
-        accountEntity.setRate("0");
-        accountRepository.saveAndFlush(accountEntity);
+        accountRepository.save(accountEntity);
         return new ResponseEntity(HttpStatus.CREATED);
     }
 
     //view user profile
     @JsonView(View.IAccountProfile.class)
     @GetMapping("user/{id}/profile")
-    @PostAuthorize("returnObject.body.phone == authentication.name")
+//    @PostAuthorize("returnObject.body.phone == authentication.name")
     public ResponseEntity getProfile(@PathVariable int id) {
         AccountEntity accountEntity = accountRepository.findById(id);
         if (accountEntity == null)
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
-            return new ResponseEntity(HttpStatus.LOCKED);
+        // if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+        //     return new ResponseEntity(HttpStatus.LOCKED);
 
         return new ResponseEntity(accountEntity, HttpStatus.OK);
     }
@@ -131,8 +124,6 @@ public class AccountController {
         if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         String name = body.get("name");
         String gender = body.get("gender");
         String address = body.get("address");
@@ -141,7 +132,7 @@ public class AccountController {
         accountEntity.setName(name);
         accountEntity.setGender(gender);
         accountEntity.setAddress(address);
-        accountEntity.setEditedTime(dateFormat.format(date));
+        accountEntity.setEditedTime(DateTimeUtils.getCurrentTime());
         accountEntity.setAvatarUrl(avatarUrl);
 
         accountRepository.save(accountEntity);
@@ -163,10 +154,8 @@ public class AccountController {
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         String status = body.get("status");
-        accountUserEntity.setEditedTime(dateFormat.format(date));
+        accountUserEntity.setEditedTime(DateTimeUtils.getCurrentTime());
         accountUserEntity.setStatus(status);
         accountRepository.save(accountUserEntity);
         return new ResponseEntity(HttpStatus.OK);
@@ -194,25 +183,16 @@ public class AccountController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    private Map<String, Object> sendSMSAPI(String code, String hashVerifyCode, String phone) {
-        SmsSender sender = new SmsSender("");   //add accessToken
-        try {
-            String sms = sender.sendSmsToCreateAccount(phone, "Verify Code BWA: " + code, 2, "BWA");
-            Map<String, Object> result = new HashMap<>();
-            JSONObject jsonObj = new JSONObject(sms);
-            result.put("verify", hashVerifyCode);
-            result.put("result", jsonObj.toMap());
-            return result;
-        } catch (IOException e) {
-            throw new CustomException("Add accessToken", HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @GetMapping("/user/profile/{id}")
+    @GetMapping("user/profile/{id}")
     public ResponseEntity getViewProfile(@PathVariable int id) {
         AccountEntity accountEntity = accountRepository.findById(id);
         if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
+
+        //compute rate
+        if (accountEntity.getRoleByRoleId().getName().equalsIgnoreCase(MainConstants.ROLE_USER)) {
+            calculateAndUpdateRatingPoint(accountEntity);
+        }
 
         List<String> status = new ArrayList<>();
         status.add(MainConstants.SUPPLY_POST_CLOSED);
@@ -231,6 +211,107 @@ public class AccountController {
         map.put("counterEvent", eventRepository.countAllByCreatorIdAndStatusIn(id, status) + "");
 
         return new ResponseEntity(map, HttpStatus.OK);
+    }
+
+    @JsonView(View.IAccounts.class)
+    @GetMapping("admin/{id}/accounts/page/{pageId}/limit/{quantity}")
+    public ResponseEntity getAccounts(@PathVariable int id, @PathVariable int pageId, @PathVariable int quantity) {
+
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
+                || !accountEntity.getRoleByRoleId().getName().equalsIgnoreCase(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        Pageable pageWithElements = PageRequest.of(pageId, quantity);
+        List<AccountEntity> accounts = accountRepository.findAllByOrderByIdDesc(pageWithElements);
+        List<Object> objects = new ArrayList<>();
+        for (AccountEntity e : accounts) {
+            Map<String, Object> map = new HashMap<>();
+            map.put("account", e);
+            map.put("countComts", commentRepository.countAllByCreatorId(e.getId()));
+            map.put("countPosts", eventRepository.countAllByCreatorId(e.getId())
+                    + supplyProductRepository.countAllByCreatorId(e.getId())
+                    + newsRepository.countAllByCreatorId(e.getId()));
+            objects.add(map);
+        }
+        if (objects.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        return new ResponseEntity(objects, HttpStatus.OK);
+    }
+
+
+    @JsonView(View.IAccountProfile.class)
+    @PostMapping("admin/{id}/new_admin")
+    public ResponseEntity createAccount(@PathVariable int id,
+                                        @RequestBody Map<String, String> body) {
+        String phone = body.get("phone");
+        String name = body.get("name");
+        String password = body.get("password");
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountRepository.findByPhone(phone) != null
+                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN)
+                || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
+            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        AccountEntity entity = paramAccountEntityCreateRequest(name, phone, password);
+        entity.setRoleId(2);
+        accountRepository.save(entity);
+        return new ResponseEntity(HttpStatus.CREATED);
+    }
+
+    private void calculateAndUpdateRatingPoint(AccountEntity account) {
+        //compute event rate
+        List<EventEntity> events = account.getEventsById().stream()
+                .filter(e -> e.getStatus().equalsIgnoreCase(MainConstants.EVENT_FINISHED))
+                .collect(Collectors.toList());
+        double eventTotalRatePointFinished = events.stream().map(e -> Double.parseDouble(e.getTotalRate()))
+                .mapToDouble(Double::doubleValue).sum();
+        long totalEventFinished = events.stream().count();
+        double eventRate = totalEventFinished == 0 ? 0 : eventTotalRatePointFinished / totalEventFinished;
+
+        //compute supply post rate
+        List<SupplyProductEntity> products = account.getSupplyProductsById().stream()
+                .filter(p -> p.getStatus().equalsIgnoreCase(MainConstants.SUPPLY_POST_CLOSED))
+                .collect(Collectors.toList());
+        double closedProduct = products.stream().map(p -> Double.parseDouble(p.getRate()))
+                .mapToDouble(Double::doubleValue).sum();
+
+        double totalSupplyPostClosed = products.stream().count();
+        double supplyPostRate = totalSupplyPostClosed == 0 ? 0 : closedProduct / totalSupplyPostClosed;
+
+        //compute rate
+        double rate = (eventRate + supplyPostRate) / 2;
+
+        account.setRate(rate + "");
+
+        accountRepository.save(account);
+    }
+
+
+    private AccountEntity paramAccountEntityCreateRequest(String name, String phone, String password) {
+        AccountEntity accountEntity = new AccountEntity();
+        BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(); //bcrypt pass
+
+        accountEntity.setName(name);
+        accountEntity.setCreatedTime(DateTimeUtils.getCurrentTime());
+        accountEntity.setPhone(phone);
+        accountEntity.setPassword(bCryptPasswordEncoder.encode(password));
+        accountEntity.setStatus(MainConstants.ACCOUNT_ACTIVE);
+        accountEntity.setRate("0");
+        return accountEntity;
+    }
+
+
+    private Map<String, Object> sendSMSAPI(String code, String hashVerifyCode, String phone) {
+        SmsSender sender = new SmsSender("ij1ZWqR2ai2PeTPhJ3UWxlPa027caHCs");   //add accessToken
+        try {
+            String sms = sender.sendSmsToCreateAccount(phone, "Verify Code BWA: " + code, 2, "BWA");
+            Map<String, Object> result = new HashMap<>();
+            JSONObject jsonObj = new JSONObject(sms);
+            result.put("verify", hashVerifyCode);
+            result.put("result", jsonObj.toMap());
+            return result;
+        } catch (IOException e) {
+            throw new CustomException("Add accessToken", HttpStatus.BAD_REQUEST);
+        }
     }
 
 }

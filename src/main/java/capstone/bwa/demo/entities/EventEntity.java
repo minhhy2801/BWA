@@ -10,14 +10,18 @@ import java.util.Objects;
 @Entity
 @Table(name = "Event", schema = "dbo", catalog = "BikeWorldDB")
 public class EventEntity {
-    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class, View.IEventRegistered.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class,
+            View.IEventsUser.class, View.IEventsAdmin.class,
+            View.IEventRegistered.class, View.IEventsFilter.class})
     private int id;
     private Integer creatorId;
     private Integer approvedId;
     private Integer categoryId;
-    @JsonView({View.IEventDetail.class, View.IEvents.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class, View.IEventsFilter.class})
     private String imgThumbnailUrl;
-    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class, View.IEventRegistered.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class,
+            View.IEventsUser.class, View.IEventsAdmin.class, View.IEventsFilter.class,
+            View.IEventRegistered.class})
     private String title;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String description;
@@ -29,29 +33,29 @@ public class EventEntity {
     private Integer minTicket;
     @JsonView(View.IEventDetail.class)
     private Integer maxTicket;
-    @JsonView({View.IEventDetail.class})
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private String createdTime;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private String approvedTime;
-    @JsonView({View.IEventDetail.class, View.IEventsUser.class})
+    @JsonView({View.IEventDetail.class, View.IEventsUser.class, View.IEventsAdmin.class})
     private String startTime;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private String endTime;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private String publicTime;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private String startRegisterTime;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private String endRegisterTime;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private Integer totalSoldTicket;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private Integer totalFeedback;
     @JsonView({View.IEventDetail.class, View.IEvents.class})
     private String totalRate;
-    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class})
+    @JsonView({View.IEventDetail.class, View.IEvents.class, View.IEventsUser.class, View.IEventsAdmin.class})
     private String status;
-    @JsonView(View.IEventDetail.class)
+    @JsonView({View.IEventDetail.class, View.IEventsAdmin.class})
     private AccountEntity accountByCreatorId;
     private AccountEntity accountByApprovedId;
     @JsonView({View.IEventDetail.class, View.IEvents.class})

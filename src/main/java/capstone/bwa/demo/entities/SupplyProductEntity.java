@@ -11,22 +11,24 @@ import java.util.Objects;
 @Table(name = "SupplyProduct", schema = "dbo", catalog = "BikeWorldDB")
 public class SupplyProductEntity {
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ITransactions.class,
-            View.ISupplyPostsAdmin.class})
+            View.ISupplyPostsAdmin.class, View.ITransactionDetail.class, View.INotification.class,
+            View.ISupplyPostsFilter.class})
     private int id;
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ITransactions.class,
-            View.ISupplyPostsAdmin.class})
+            View.ISupplyPostsAdmin.class, View.ITransactionDetail.class, View.INotification.class,
+            View.ISupplyPostsFilter.class})
     private String title;
     @JsonView(View.ISupplyPostDetail.class)
     private String description;
     private Integer creatorId;
     private Integer approvedId;
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ISupplyPostsFilter.class})
     private String imgThumbnailUrl;
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class})
     private String createdTime;
     @JsonView(View.ISupplyPostsAdmin.class)
     private String approvedTime;
-    @JsonView({View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class})
+    @JsonView({View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class, View.ITransactionDetail.class})
     private String closedTime;
     @JsonView(View.ISupplyPostDetail.class)
     private String location;
@@ -34,14 +36,16 @@ public class SupplyProductEntity {
     private String rate;
     private Integer categoryId;
     private Integer itemId;
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class,
+            View.ITransactionDetail.class})
     private String status;
+    @JsonView(View.ISupplyPostsAdmin.class)
     private String typeItem;
     private Collection<ImageEntity> imagesById;
     private Collection<RequestNotificationEntity> requestNotificationsById;
-    @JsonView({View.ISupplyPosts.class, View.ISupplyPostsAdmin.class})
+    @JsonView({View.ISupplyPosts.class, View.ISupplyPostsAdmin.class, View.ISupplyPostDetail.class})
     private AccountEntity accountByCreatorId;
-    @JsonView(View.ISupplyPostsAdmin.class)
+    @JsonView({View.ISupplyPostsAdmin.class, View.ISupplyPostDetail.class})
     private AccountEntity accountByApprovedId;
     @JsonView({View.ISupplyPosts.class, View.ISupplyPostDetail.class})
     private CategoryEntity categoryByCategoryId;

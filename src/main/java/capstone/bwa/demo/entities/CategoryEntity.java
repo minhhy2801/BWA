@@ -10,9 +10,11 @@ import java.util.Objects;
 @Entity
 @Table(name = "Category", schema = "dbo", catalog = "BikeWorldDB")
 public class CategoryEntity {
-    @JsonView(View.ICategories.class)
+    @JsonView({View.ICategories.class, View.IEventDetail.class,
+            View.IEvents.class, View.ISupplyPostDetail.class, View.INews.class})
     private int id;
     @JsonView({View.IEventDetail.class, View.IEvents.class, View.ISupplyPostDetail.class,
+            View.INews.class,
             View.IAccessory.class, View.IAccessories.class, View.ISupplyPosts.class, View.INews.class,
             View.ICategories.class})
     private String name;
@@ -23,7 +25,7 @@ public class CategoryEntity {
     private Collection<BikeEntity> bikesById;
     private Collection<EventEntity> eventsById;
     private Collection<NewsEntity> newsById;
-    private Collection<ReferencesLinkEntity> referencesLinksById;
+    //    private Collection<ReferencesLinkEntity> referencesLinksById;
     private Collection<RequestNotificationEntity> requestNotificationsById;
     private Collection<SupplyProductEntity> supplyProductsById;
 
@@ -120,14 +122,14 @@ public class CategoryEntity {
         this.newsById = newsById;
     }
 
-    @OneToMany(mappedBy = "categoryByCategoryId")
-    public Collection<ReferencesLinkEntity> getReferencesLinksById() {
-        return referencesLinksById;
-    }
-
-    public void setReferencesLinksById(Collection<ReferencesLinkEntity> referencesLinksById) {
-        this.referencesLinksById = referencesLinksById;
-    }
+//    @OneToMany(mappedBy = "categoryByCategoryId")
+//    public Collection<ReferencesLinkEntity> getReferencesLinksById() {
+//        return referencesLinksById;
+//    }
+//
+//    public void setReferencesLinksById(Collection<ReferencesLinkEntity> referencesLinksById) {
+//        this.referencesLinksById = referencesLinksById;
+//    }
 
     @OneToMany(mappedBy = "categoryByCategoryId")
     public Collection<RequestNotificationEntity> getRequestNotificationsById() {

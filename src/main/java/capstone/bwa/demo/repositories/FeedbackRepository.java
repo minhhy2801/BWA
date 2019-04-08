@@ -15,8 +15,5 @@ public interface FeedbackRepository extends JpaRepository<FeedbackEntity, Intege
 
     FeedbackEntity findByTransactionDetailByOwnId_IdAndStatus(int id, String type);
 
-    @Query("SELECT e.id FROM FeedbackEntity e WHERE e.status = :status AND e.ownId IN :id")
-    List<FeedbackEntity> findAllByStatusAnAndTransactionIdIn(@Param("status") String status, @Param("id") List<Integer> id);
-
     boolean existsByOwnIdAndStatus(int id, String status);
 }

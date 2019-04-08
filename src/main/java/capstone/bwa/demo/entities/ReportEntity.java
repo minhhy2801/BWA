@@ -1,18 +1,31 @@
 package capstone.bwa.demo.entities;
 
+import capstone.bwa.demo.views.View;
+import com.fasterxml.jackson.annotation.JsonView;
+
 import javax.persistence.*;
 import java.util.Objects;
 
 @Entity
 @Table(name = "Report", schema = "dbo", catalog = "BikeWorldDB")
 public class ReportEntity {
+    @JsonView(View.IReport.class)
     private int id;
+    @JsonView(View.IReport.class)
     private Integer creatorId;
+    @JsonView(View.IReport.class)
     private String createdTime;
     private String reason;
+    @JsonView(View.IReport.class)
     private Integer accusedId;
+    @JsonView(View.IReport.class)
     private String status;
+    @JsonView(View.IReport.class)
+    private String editedTime;
+    @JsonView(View.IReport.class)
     private AccountEntity accountByCreatorId;
+
+    @JsonView(View.IReport.class)
     private AccountEntity accountByAccusedId;
 
     @Id
@@ -44,6 +57,16 @@ public class ReportEntity {
 
     public void setCreatedTime(String createdTime) {
         this.createdTime = createdTime;
+    }
+
+    @Basic
+    @Column(name = "editedTime")
+    public String getEditedTime() {
+        return editedTime;
+    }
+
+    public void setEditedTime(String editedTime) {
+        this.editedTime = editedTime;
     }
 
     @Basic
@@ -84,6 +107,7 @@ public class ReportEntity {
         return id == that.id &&
                 Objects.equals(creatorId, that.creatorId) &&
                 Objects.equals(createdTime, that.createdTime) &&
+                Objects.equals(editedTime, that.editedTime) &&
                 Objects.equals(reason, that.reason) &&
                 Objects.equals(accusedId, that.accusedId) &&
                 Objects.equals(status, that.status);
@@ -91,11 +115,11 @@ public class ReportEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, creatorId, createdTime, reason, accusedId, status);
+        return Objects.hash(id, creatorId, createdTime, editedTime, reason, accusedId, status);
     }
 
     @ManyToOne
-    @JoinColumn(name = "creatorId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "creatorId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByCreatorId() {
         return accountByCreatorId;
     }
@@ -105,12 +129,13 @@ public class ReportEntity {
     }
 
     @ManyToOne
-    @JoinColumn(name = "accusedId", referencedColumnName = "id",insertable = false,updatable = false)
+    @JoinColumn(name = "accusedId", referencedColumnName = "id", insertable = false, updatable = false)
     public AccountEntity getAccountByAccusedId() {
         return accountByAccusedId;
     }
 
-    public void setAccountByAccusedId(AccountEntity acco44untByAccusedId) {
+    public void setAccountByAccusedId(AccountEntity accountByAccusedId) {
         this.accountByAccusedId = accountByAccusedId;
     }
+
 }

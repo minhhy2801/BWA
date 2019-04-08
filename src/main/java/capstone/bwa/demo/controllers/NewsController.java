@@ -1,34 +1,26 @@
 package capstone.bwa.demo.controllers;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import capstone.bwa.demo.entities.CategoryEntity;
-import capstone.bwa.demo.entities.ImageEntity;
 import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.entities.NewsEntity;
 import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.CategoryRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import capstone.bwa.demo.repositories.NewsRepository;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
-
-
-/*******************************************************************************
- * ::STATUS::
- * ACTIVE
- * HIDDEN
- *******************************************************************************/
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 public class NewsController {
@@ -39,9 +31,6 @@ public class NewsController {
     private ImageRepository imageRepository;
     @Autowired
     private AccountRepository accountRepository;
-    @Autowired
-    private CategoryRepository categoryRepository;
-
 
     /**
      * Returns News object with status ACTIVE
@@ -51,98 +40,35 @@ public class NewsController {
      * @return 404 if not found in db
      * 200 if found
      */
-    @JsonView(View.INews.class)
-    @PostMapping("news/{id}")
+    @JsonView(View.INewsDetail.class)
+    @GetMapping("news/{id}")
     public ResponseEntity getANews(@PathVariable int id) {
-//        NewsEntity newsEntity = newsRepository.findById(id);
-//        if (newsEntity != null) {
-//            Gson gson = new Gson();
-//            try {
-//                JsonObject objectReturn = new JsonObject();
-//                objectReturn.addProperty("title", newsEntity.getTitle());
-//                objectReturn.addProperty("description", newsEntity.getDescription());
-//                objectReturn.addProperty("imageThumnail", newsEntity.getImgThumbnailUrl());
-//                CategoryEntity categoryEntity = newsEntity.getCategoryByCategoryId();
-//                String json = getJson("name", categoryEntity.getName());
-//                objectReturn.add("category", getJsonObject(json));
-//
-//                Collection<ImageEntity> listImageEntities = newsEntity.getImagesById();
-//                List<ImageEntity> listImage = new ArrayList<>();
-//                for (ImageEntity imageEntity : listImageEntities) {
-//                    if (imageEntity.getType().equals("NEWS")) {
-//                        listImage.add(imageEntity);
-//                    }
-//                }
-//                List<Map<String, String>> jsonMap = new ArrayList<>();
-//                for (ImageEntity imageEntity : listImage) {
-//                    Map<String, String> mapUrl = new HashMap<>();
-//                    if (imageEntity.getType().equals("NEWS")) {
-//                        mapUrl.put("url", imageEntity.getUrl());
-//                        jsonMap.add(mapUrl);
-//                    }
-//                }
-//                Map<String, Object> data = new HashMap<>();
-//                data.put("image", jsonMap);
-//                json = gson.toJson(data);
-//                objectReturn.add("image", getJsonObject(json));
-//
-//                String jsonReturn = gson.toJson(objectReturn);
-//                return new ResponseEntity(jsonReturn, HttpStatus.OK);
-//            } catch (Exception e) {
-//                return new ResponseEntity(HttpStatus.BAD_REQUEST);
-//            }
-//        }
-//        return new ResponseEntity(HttpStatus.NOT_FOUND);
         NewsEntity newsEntity = newsRepository.findById(id);
-        if (newsEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        String url = imageRepository.findAllByNewsByOwnId_IdAndType("NEWS", id);
-        String[] arrUrl = url.split(",");
-        List<String> listUrl = new ArrayList<>();
-        for (String s : arrUrl) {
-            listUrl.add(s);
-        }
-        Map<String, Object> jsonReturn = new HashMap<>();
-        jsonReturn.put("news", newsEntity);
-        jsonReturn.put("url", listUrl);
+        if (newsEntity == null || !newsEntity.getStatus().equals(MainConstants.NEWS_PUBLIC))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
 
-        return new ResponseEntity(jsonReturn, HttpStatus.OK);
+        List<String> img = imageRepository.findAllByOwnIdAndType(MainConstants.STATUS_NEWS, id);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("news", newsEntity);
+        map.put("images", img);
+        return new ResponseEntity(map, HttpStatus.OK);
     }
 
     /**
      * @param quantity
      * @param id
-     * @param body
      * @return list news sort latest with status in body
      */
     @JsonView(View.INews.class)
-    @PostMapping("news/page/{id}/limit/{quantity}")
-    public ResponseEntity getListNews(@PathVariable int quantity, @PathVariable int id,
-                                      @RequestBody Map<String, String> body) {
-        String status = body.get("status");
-        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
-
-        if (!status.equals(MainConstants.NEWS_HIDDEN) && !status.equals(MainConstants.NEWS_PUBLIC)
-                && !status.equals(MainConstants.NEWS_ACTIVE) && !status.equals(MainConstants.GET_ALL))
-            return new ResponseEntity(HttpStatus.FORBIDDEN);
-
-        List<NewsEntity> list;
-
+    @GetMapping("news/page/{id}/limit/{quantity}")
+    public ResponseEntity getListNews(@PathVariable int quantity, @PathVariable int id) {
         Pageable pageWithElements = PageRequest.of(id, quantity);
+        List<NewsEntity> list = newsRepository.findAllByStatusOrderByIdDesc(MainConstants.NEWS_PUBLIC, pageWithElements);
 
-        if (status.equals(MainConstants.GET_ALL)) {
-            List<String> statusNewsShow = new ArrayList<>();
-            statusNewsShow.add(MainConstants.NEWS_PUBLIC);
-            statusNewsShow.add(MainConstants.NEWS_HIDDEN);
-            statusNewsShow.add(MainConstants.NEWS_ACTIVE);
-
-            list = newsRepository.findAllByStatusInOrderByIdDesc(statusNewsShow, pageWithElements);
-        } else list = newsRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
-
-        if (list.size() < 1)
-            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
         return new ResponseEntity(list, HttpStatus.OK);
-
     }
 
     /**
@@ -150,16 +76,24 @@ public class NewsController {
      *
      * @param id
      * @param quantity
-     * @param body     (status)
      * @return 404 if not found in db
      * 403 if not admin
      * 200 if found
      */
-    @PostMapping("admin/{id}/news/page/{pageId}/limit/{quantity}")
+    @JsonView(View.INews.class)
+    @GetMapping("admin/{id}/news/page/{pageId}/limit/{quantity}")
     public ResponseEntity getListNewsByAdmin(@PathVariable int id, @PathVariable int quantity,
-                                             @RequestBody Map<String, String> body, @PathVariable int pageId) {
+                                             @PathVariable int pageId) {
+        AccountEntity accountEntity = accountRepository.findById(id);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
+                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        Pageable pageWithElements = PageRequest.of(pageId, quantity);
+        List<NewsEntity> newsEntities = newsRepository.findAllByOrderByIdDesc(pageWithElements);
 
-        return null;
+        if (newsEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
+        return new ResponseEntity(newsEntities, HttpStatus.OK);
     }
 
     /**
@@ -175,28 +109,26 @@ public class NewsController {
     @PostMapping("admin/{id}/news")
     public ResponseEntity createNews(@PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountAdminEntity = accountRepository.findById(id);
-        NewsEntity newsEntity = new NewsEntity();
-        if (accountAdminEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
-            return new ResponseEntity(HttpStatus.LOCKED);
-        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        if (accountAdminEntity == null ||
+                !accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         int cateId = Integer.parseInt(body.get("categoryId"));
-        String status = body.get("status");
         String title = body.get("title");
         String description = body.get("description");
-        String imgThumnailUrl = body.get("imgThumnailUrl");
+        String imgThumbnailUrl = body.get("imgThumbnailUrl");
 
-
-        newsEntity.setCreatedTime(date.toString());
-        newsEntity.setStatus(status);
+        NewsEntity newsEntity = new NewsEntity();
+        newsEntity.setTitle(title);
+        newsEntity.setImgThumbnailUrl(imgThumbnailUrl);
+        newsEntity.setCreatedTime(dateFormat.format(date));
+        newsEntity.setStatus(MainConstants.NEWS_PUBLIC);
         newsEntity.setCreatorId(id);
         newsEntity.setDescription(description);
-        newsEntity.setTitle(title);
-        newsEntity.setImgThumbnailUrl(imgThumnailUrl);
         newsEntity.setCategoryId(cateId);
-        newsRepository.saveAndFlush(newsEntity);
+        newsRepository.save(newsEntity);
         return new ResponseEntity(newsEntity, HttpStatus.OK);
     }
 
@@ -212,53 +144,72 @@ public class NewsController {
                                      @RequestBody Map<String, String> body) {
         AccountEntity accountAdminEntity = accountRepository.findById(adminId);
         NewsEntity newsEntity = newsRepository.findById(id);
-        if (accountAdminEntity == null || newsEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-        if (!accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
-            return new ResponseEntity(HttpStatus.LOCKED);
-        if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
-        Date date = new Date(System.currentTimeMillis());
+        if (accountAdminEntity == null || newsEntity == null
+                || !accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+
         int cateId = Integer.parseInt(body.get("categoryId"));
-        String status = body.get("status");
         String title = body.get("title");
         String description = body.get("description");
-        String imgThumnailUrl = body.get("imgThumnailUrl");
+        String imgThumbnailUrl = body.get("imgThumbnailUrl");
 
+        Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
 
-        newsEntity.setEditedTime(date.toString());
-        newsEntity.setStatus(status);
-        newsEntity.setCreatorId(id);
+        newsEntity.setEditedTime(dateFormat.format(date));
+        newsEntity.setEditorId(adminId);
         newsEntity.setDescription(description);
         newsEntity.setTitle(title);
-        newsEntity.setImgThumbnailUrl(imgThumnailUrl);
+        newsEntity.setImgThumbnailUrl(imgThumbnailUrl);
         newsEntity.setCategoryId(cateId);
         newsRepository.saveAndFlush(newsEntity);
         return new ResponseEntity(newsEntity, HttpStatus.OK);
     }
 
-
-    /**
-     * @param pageId
-     * @param quantity
-     * @param cateId
-     * @return list news by categoryId (status ACTIVE)
-     */
-    @GetMapping("news/page/{pageId}/limit/{quantity}/category/{cateId}")
-    public ResponseEntity getListNewsByCategory(@PathVariable int pageId, @PathVariable int quantity,
-                                                @PathVariable int cateId) {
-        CategoryEntity categoryEntity = categoryRepository.findById(cateId);
-        if (categoryEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
-
-        List<NewsEntity> list;
-
-        Pageable pageWithElements = PageRequest.of(pageId, quantity);
-
-        list = newsRepository.findAllByCategoryIdInOrderByIdDesc(cateId, pageWithElements);
-
-
-        if (list.size() < 1)
+    @JsonView(View.INews.class)
+    @PutMapping("admin/{id}/news/{newsId}/status")
+    public ResponseEntity changeStatusByAdmin(@PathVariable int id, @PathVariable int newsId,
+                                              @RequestBody Map<String, String> body) {
+        AccountEntity accountAdminEntity = accountRepository.findById(id);
+        NewsEntity newsEntity = newsRepository.findById(newsId);
+        if (accountAdminEntity == null || newsEntity == null
+                || !accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
+        String status = body.get("status");
+        Date date = new Date(System.currentTimeMillis());
+        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
 
-        return new ResponseEntity(list, HttpStatus.OK);
+        newsEntity.setEditedTime(dateFormat.format(date));
+        newsEntity.setEditorId(id);
+        newsEntity.setStatus(status);
+        newsRepository.save(newsEntity);
+        return new ResponseEntity(newsEntity, HttpStatus.OK);
+    }
+
+    @JsonView(View.INewsFilter.class)
+    @GetMapping("news/search_filter")
+    public ResponseEntity searchFilterNews() {
+        List<NewsEntity> list = newsRepository.findTop200ByStatusOrderByIdDesc(MainConstants.NEWS_PUBLIC);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok(list);
+    }
+
+    @GetMapping("news/record")
+    public ResponseEntity countTotalPage() {
+
+        int totalRecord = newsRepository.countAllByStatus(MainConstants.NEWS_PUBLIC);
+
+        return new ResponseEntity(totalRecord, HttpStatus.OK);
+    }
+
+    @JsonView(View.INews.class)
+    @PostMapping("news/search")
+    public ResponseEntity searchTitleNews(@RequestBody Map<String, String> body) {
+        String text = body.get("search").trim();
+        if (text.isEmpty() || text == "") return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        List<NewsEntity> list = newsRepository.findAllByStatusAndTitleContainingIgnoreCase(MainConstants.NEWS_PUBLIC, text);
+        if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
+        return ResponseEntity.ok(list);
     }
 }
 

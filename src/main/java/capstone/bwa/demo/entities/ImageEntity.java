@@ -11,9 +11,9 @@ import java.util.Objects;
 @Entity
 @Table(name = "Image", schema = "dbo", catalog = "BikeWorldDB")
 public class ImageEntity {
-    @JsonView({View.ISupplyPostDetail.class, View.IEventDetail.class})
+    @JsonView({View.ISupplyPostDetail.class, View.IEventDetail.class, View.INewsDetail.class})
     private int id;
-    @JsonView({View.IAccessory.class, View.IAccessories.class, View.IBike.class,
+    @JsonView({View.IAccessory.class, View.IAccessories.class, View.IBike.class, View.INewsDetail.class,
             View.ISupplyPostDetail.class, View.IEventDetail.class})
     private String url;
     private String type;

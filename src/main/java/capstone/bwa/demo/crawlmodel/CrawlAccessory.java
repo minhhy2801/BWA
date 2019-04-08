@@ -10,18 +10,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 public class CrawlAccessory {
-    private List<Map<String, String>> listAccessories;
     private final String statusActive = "ACTIVE";
-
-    public List<Map<String, String>> getListAccessories() {
-        return listAccessories;
-    }
+    private List<Map<String, String>> listAccessories;
 
     public CrawlAccessory() {
         listAccessories = new ArrayList<>();
+    }
+
+    public List<Map<String, String>> getListAccessories() {
+        return listAccessories;
     }
 
     public void crawlAccessoryFromHonda(String url) {
@@ -135,9 +134,9 @@ public class CrawlAccessory {
         for (String url : listLink) {
             //chỉ map nếu url có chứa http
             if (url.contains("http")) {
-                try{
+                try {
                     mapDocument.put(url, Jsoup.connect(url).get());
-                }catch (IOException e){
+                } catch (IOException e) {
                     System.out.println("loi... " + e.getMessage());
                 }
             }
