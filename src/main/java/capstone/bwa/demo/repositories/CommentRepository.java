@@ -7,8 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface CommentRepository extends JpaRepository<CommentEntity, Integer> {
-    List<CommentEntity> findAllByNewsIdAndStatusOrderByIdDesc(int newsId, String status, Pageable pageable);
-
+    List<CommentEntity> findAllByNewsByNewsId_Id(int newsId, Pageable pageable);
     CommentEntity findById(int id);
 
     int countAllByCreatorId(int id);
