@@ -4,10 +4,7 @@ import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccessoryEntity;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.entities.RequestNotificationEntity;
-import capstone.bwa.demo.repositories.AccessoryRepository;
-import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.BikeRepository;
-import capstone.bwa.demo.repositories.RequestNotificationRepository;
+import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.viewmodels.Notification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,6 +33,8 @@ public class NotificationController {
     @Autowired
     private BikeRepository bikeRepository;
 
+    @Autowired
+    private RequestProductRepository requestProductRepository;
 
     //    @Async
     @Transactional
@@ -48,8 +47,10 @@ public class NotificationController {
         if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return null;
         Stream<Notification> stream = Stream.generate(() -> {
-            List<RequestNotificationEntity> notis =
-                    requestNotificationRepository.findAllByRequestProductByRequestProductId_CreatorIdAndStatus(uid, MainConstants.NOTI_NEW);
+//            List<RequestNotificationEntity> notis =requestNotificationRepository.findAllByRequestProductByRequestProductId_CreatorIdAndStatus(uid, MainConstants.NOTI_NEW);
+            List<Integer> ids = requestProductRepository.findAllIdsByCreatorIdAndStatus(MainConstants.REQUEST_FIND, uid);
+            System.out.println(uid + "     aa   " + ids);
+            List<RequestNotificationEntity> notis = requestNotificationRepository.findAllByRequestProductIdInAndStatus(ids, MainConstants.NOTI_NEW);
             List<Map<String, Object>> listNoti = new ArrayList<>();
             if (notis.size() > 0) {
                 for (RequestNotificationEntity noti : notis) {

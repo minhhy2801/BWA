@@ -8,9 +8,8 @@ import java.util.List;
 
 public interface CommentRepository extends JpaRepository<CommentEntity, Integer> {
     List<CommentEntity> findAllByNewsIdOrderByIdDesc(int newsId, Pageable pageable);
+
     CommentEntity findById(int id);
 
     int countAllByCreatorId(int id);
-
-    int countAllByNewsIdAndStatus(int id, String status);
 }

@@ -11,7 +11,7 @@ public class MainConstants {
     public static final double COMPARISON_DISTANCE = 0.05; //km
     public static final int NUM_OF_DATE_REJECT_FEEDBACK = 7; //days
     public static final String API_KEY = "AIzaSyCAexFho6F20d-FQN9-8oEDB1GF4a3yvCU";
-    public static final long TIME_SSE_NOTI = 10; //sec
+    public static final long TIME_SSE_NOTI = 3000; //sec
     //ACCOUNT
     public static String ACCOUNT_ACTIVE = "ACTIVE";
     public static String ROLE_USER = "USER";

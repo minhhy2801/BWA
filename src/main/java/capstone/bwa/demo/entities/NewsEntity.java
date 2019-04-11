@@ -32,7 +32,7 @@ public class NewsEntity {
     private Collection<ImageEntity> imagesById;
     @JsonView({View.INewsDetail.class})
     private AccountEntity accountByCreatorId;
-    @JsonView(View.INews.class)
+    @JsonView({View.INews.class, View.INewsDetail.class})
     private CategoryEntity categoryByCategoryId;
     private AccountEntity accountByEditorId;
 
