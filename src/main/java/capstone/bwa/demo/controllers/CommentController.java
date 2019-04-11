@@ -71,7 +71,7 @@ public class CommentController {
         NewsEntity newsEntity = newsRepository.findById(id);
         if (newsEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         Pageable pageWithElements = PageRequest.of(pageId, quantity);
-        List<CommentEntity> list = commentRepository.findAllByNewsByNewsId_Id(id, pageWithElements);
+        List<CommentEntity> list = commentRepository.findAllByNewsIdOrderByIdDesc(id, pageWithElements);
         if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
         return new ResponseEntity(list, HttpStatus.OK);
