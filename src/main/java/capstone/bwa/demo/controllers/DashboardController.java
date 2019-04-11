@@ -25,8 +25,6 @@ public class DashboardController {
     @Autowired
     private EventRepository eventRepository;
     @Autowired
-    private CommentRepository commentRepository;
-    @Autowired
     private NewsRepository newsRepository;
     @Autowired
     private ReportRepository reportRepository;

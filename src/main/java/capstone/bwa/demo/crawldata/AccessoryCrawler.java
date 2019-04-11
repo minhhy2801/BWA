@@ -3,7 +3,6 @@ package capstone.bwa.demo.crawldata;
 import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccessoryEntity;
 import capstone.bwa.demo.entities.CategoryEntity;
-import capstone.bwa.demo.entities.ImageEntity;
 import capstone.bwa.demo.entities.ReferencesLinkEntity;
 import capstone.bwa.demo.repositories.AccessoryRepository;
 import capstone.bwa.demo.repositories.CategoryRepository;

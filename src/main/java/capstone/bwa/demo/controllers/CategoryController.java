@@ -21,13 +21,6 @@ public class CategoryController {
     @Autowired
     private CategoryRepository categoryRepository;
 
-    /**
-     * Return categories by type
-     *
-     * @param body (type)
-     * @return 404 if not found
-     */
-
     @JsonView(View.ICategories.class)
     @PostMapping("categories/type")
     public ResponseEntity getListCategoriesByType(@RequestBody Map<String, String> body) {

@@ -110,7 +110,6 @@ public class EventRegisteredController {
         EventEntity eventEntity = eventRepository.findById(eventId);
         if (accountEntity == null || eventEntity == null
                 || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
-                || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER)
                 || !eventEntity.getStatus().equals(MainConstants.EVENT_FINISHED))
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
 

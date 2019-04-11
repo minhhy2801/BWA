@@ -33,7 +33,6 @@ public class ImageController {
     @Autowired
     private NewsRepository newsRepository;
 
-    @Transactional
     @PostMapping("event/{id}/images")
     public ResponseEntity setEventListImages(@PathVariable int id, @RequestBody Map<String, List<String>> body) {
         EventEntity entity = eventRepository.findById(id);
@@ -49,7 +48,6 @@ public class ImageController {
         return new ResponseEntity(HttpStatus.OK);
     }
 
-    @Transactional
     @PostMapping("news/{id}/images")
     public ResponseEntity setNewsListImages(@PathVariable int id, @RequestBody Map<String, List<String>> body) {
         NewsEntity newsEntity = newsRepository.findById(id);
@@ -63,15 +61,23 @@ public class ImageController {
     }
 
 
-    @Transactional
     @PostMapping("supply_post/{id}/images")
     public ResponseEntity setSupplyListImages(@PathVariable int id, @RequestBody Map<String, List<String>> body) {
         SupplyProductEntity entity = supplyProductRepository.findById(id);
         if (entity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         List<ImageEntity> list = imageRepository.findAllByOwnIdAndType(id, MainConstants.STATUS_SUPPLY_POST);
-
         if (list.size() > 0) imageRepository.deleteAll(list);
+
         List<ImageEntity> tmp = setImagesForObj(body.get("images"), id, MainConstants.STATUS_SUPPLY_POST);
+//        List<ImageEntity> tmp = new ArrayList<>();
+//        List<String> imgs = body.get("images");
+//        for (String item : imgs) {
+//            ImageEntity imageEntity = new ImageEntity();
+//            imageEntity.setUrl(item);
+//            imageEntity.setOwnId(id);
+//            imageEntity.setType(MainConstants.STATUS_SUPPLY_POST);
+//            tmp.add(imageEntity);
+//        }
         imageRepository.saveAll(tmp);
 
         return new ResponseEntity(HttpStatus.OK);

@@ -80,8 +80,6 @@ public class FeedbackController {
         if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         EventRegisteredEntity eventRegisteredEntity = eventRegisteredRepository.findDistinctFirstByAccountByRegisteredId_IdAndEventByEventId_Id(userId, id);
 
-        System.out.println(eventRegisteredEntity);
-        System.out.println(feedbackRepository.existsByOwnIdAndStatus(eventRegisteredEntity.getId(), MainConstants.STATUS_EVENT));
         if (eventRegisteredEntity == null ||
                 !eventEntity.getStatus().equals(MainConstants.EVENT_FINISHED) ||
                 feedbackRepository.existsByOwnIdAndStatus(eventRegisteredEntity.getId(), MainConstants.STATUS_EVENT))
@@ -96,11 +94,7 @@ public class FeedbackController {
 
         String description = body.get("description");
         String rate = body.get("rate");
-
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-        feedbackEntity.setCreatedTime(dateFormat.format(date));
-
+        feedbackEntity.setCreatedTime(DateTimeUtils.getCurrentTime());
         feedbackEntity.setDescription(description);
         feedbackEntity.setRate(rate);
         feedbackEntity.setOwnId(eventRegisteredEntity.getId());

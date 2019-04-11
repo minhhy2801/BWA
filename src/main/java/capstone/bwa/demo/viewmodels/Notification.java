@@ -10,10 +10,6 @@ public class Notification {
     private Date when;
     private List<Map<String, Object>> notifications;
 
-    public Notification() {
-    }
-
-
     public Notification(int uid, Date when, List<Map<String, Object>> notifications) {
         this.uid = uid;
         this.when = when;

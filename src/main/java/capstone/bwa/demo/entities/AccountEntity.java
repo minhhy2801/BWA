@@ -33,7 +33,7 @@ public class AccountEntity {
     private String gender;
     @JsonView(View.IAccountProfile.class)
     private String address;
-    @JsonView({View.IAccountProfile.class, View.IFeedback.class, View.IComments.class,
+    @JsonView({View.IAccountProfile.class, View.IFeedback.class, View.IComments.class, View.IEventDetail.class,
             View.ISupplyPostDetail.class, View.ITransactions.class})
     private String avatarUrl;
     private Integer roleId;

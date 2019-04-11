@@ -4,7 +4,6 @@ public class MainConstants {
     public static final String TRANSACTION_FROZEN = "FROZEN";
     public static final String REQUEST_FIND = "FIND";
     public static final String REQUEST_CLOSE = "CLOSED";
-    public static final String STATUS_REPORT_READ = "READ";
     public static final String STATUS_BIKE = "BIKE";
     public static final String STATUS_ACCESSORY = "ACCESSORY";
     //comparation point
@@ -13,7 +12,6 @@ public class MainConstants {
     public static final int NUM_OF_DATE_REJECT_FEEDBACK = 7; //days
     public static final String API_KEY = "AIzaSyCAexFho6F20d-FQN9-8oEDB1GF4a3yvCU";
     public static final long TIME_SSE_NOTI = 10; //sec
-    public static final String STATUS_REPORT_PENDING = "PENDING";
     //ACCOUNT
     public static String ACCOUNT_ACTIVE = "ACTIVE";
     public static String ROLE_USER = "USER";
@@ -43,7 +41,6 @@ public class MainConstants {
     public static String STATUS_SUPPLY_POST = "SUPPLY_POST";
     public static String STATUS_TRANS = "TRANS";
     public static String COMMENT_PUBLIC = "PUBLIC";
-    public static String COMMENT_BAN = "BAN";
     //Category
     public static String CATEGORY_ACTIVE = "ACTIVE";
 

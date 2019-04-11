@@ -34,8 +34,6 @@ public class RequestNotificationController {
 
     @Autowired
     private BikeRepository bikeRepository;
-    @Autowired
-    private TransactionDetailRepository transactionDetailRepository;
 
     @JsonView({View.INotification.class})
     @PutMapping("user/{userId}/notification/{notiId}")

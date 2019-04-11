@@ -44,7 +44,7 @@ public class NewsController {
     @GetMapping("news/{id}")
     public ResponseEntity getANews(@PathVariable int id) {
         NewsEntity newsEntity = newsRepository.findById(id);
-        if (newsEntity == null || !newsEntity.getStatus().equals(MainConstants.NEWS_PUBLIC))
+        if (newsEntity == null)
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         List<String> img = imageRepository.findAllByOwnIdAndType(MainConstants.STATUS_NEWS, id);
