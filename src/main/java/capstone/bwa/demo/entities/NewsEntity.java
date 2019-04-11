@@ -25,6 +25,7 @@ public class NewsEntity {
     private String createdTime;
     @JsonView(View.INewsDetail.class)
     private String editedTime;
+    @JsonView({View.INews.class, View.INewsDetail.class})
     private String status;
     private Collection<CommentEntity> commentsById;
     //	@JsonView(View.INews.class)
