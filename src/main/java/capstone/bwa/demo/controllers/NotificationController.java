@@ -37,11 +37,9 @@ public class NotificationController {
     private RequestProductRepository requestProductRepository;
 
     //    @Async
-    @Transactional
     @GetMapping(produces = "text/event-stream", value = "{uid}")
     public Flux<Notification> getNotification(@PathVariable int uid) {
         // Flux<Long> interval = Flux.interval(Duration.ofSeconds(MainConstants.TIME_SSE_NOTI));
-
         AccountEntity accountEntity = accountRepository.findById(uid);
 
         if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
@@ -49,8 +47,8 @@ public class NotificationController {
         Stream<Notification> stream = Stream.generate(() -> {
 //            List<RequestNotificationEntity> notis =requestNotificationRepository.findAllByRequestProductByRequestProductId_CreatorIdAndStatus(uid, MainConstants.NOTI_NEW);
             List<Integer> ids = requestProductRepository.findAllIdsByCreatorIdAndStatus(MainConstants.REQUEST_FIND, uid);
-            System.out.println(uid + "     aa   " + ids);
             List<RequestNotificationEntity> notis = requestNotificationRepository.findAllByRequestProductIdInAndStatus(ids, MainConstants.NOTI_NEW);
+            System.out.println("noti size " + notis);
             List<Map<String, Object>> listNoti = new ArrayList<>();
             if (notis.size() > 0) {
                 for (RequestNotificationEntity noti : notis) {

@@ -37,7 +37,7 @@ public class AccountEntity {
             View.ISupplyPostDetail.class, View.ITransactions.class})
     private String avatarUrl;
     private Integer roleId;
-    @JsonView({View.IAccountProfile.class, View.IAccounts.class, View.ISupplyPostDetail.class})
+    @JsonView({View.IAccountProfile.class, View.IAccounts.class, View.ISupplyPostDetail.class, View.IEventDetail.class})
     private String rate;
     @JsonView({View.IAccountProfile.class, View.IAccounts.class})
     private String status;

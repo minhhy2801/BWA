@@ -313,7 +313,11 @@ public class EventController {
         List<EventEntity> list;
         String status = body.get("status");
         if (status.equals(MainConstants.GET_ALL)) {
-            list = eventRepository.findAllByCreatorIdOrderByIdDesc(id, pageWithElements);
+            List<String> statusEventShow = new ArrayList<>();
+            statusEventShow.add(MainConstants.EVENT_ONGOING);
+            statusEventShow.add(MainConstants.EVENT_CLOSED);
+            statusEventShow.add(MainConstants.EVENT_FINISHED);
+            list = eventRepository.findAllByCreatorIdAndStatusInOrderByIdDesc(id, pageWithElements, statusEventShow);
         } else {
             list = eventRepository.findAllByCreatorIdAndStatusOrderByIdDesc(id, pageWithElements, status);
         }
@@ -511,7 +515,6 @@ public class EventController {
             return new ResponseEntity(HttpStatus.NOT_FOUND);
         Map<String, Object> map = new HashMap<>();
         List<ImageEntity> imageEntities = imageRepository.findAllByOwnIdAndType(eventId, MainConstants.STATUS_EVENT);
-
         map.put("event", eventEntity);
         map.put("images", imageEntities);
 
