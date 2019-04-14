@@ -18,6 +18,7 @@ public class View {
     public interface ITransactionDetail{};
     public interface INews{};
     public interface IFeedback{};
+    public interface IFeedbackSupplyPost{};
     public interface IComment{};
     public interface IComments{};
     public interface INotification{};

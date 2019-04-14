@@ -182,7 +182,7 @@ public class FeedbackController {
      * userName, createTime, avatar, description, rate
      * }
      */
-    @JsonView(View.IFeedback.class)
+    @JsonView(View.IFeedbackSupplyPost.class)
     @GetMapping("supply_post/{id}/feedback")
     public ResponseEntity getFeedbackSupplyPost(@PathVariable int id) {
         SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(id);
@@ -298,7 +298,7 @@ public class FeedbackController {
         return new ResponseEntity(HttpStatus.BAD_REQUEST);
     }
 
-    @JsonView(View.IFeedback.class)
+    @JsonView(View.IFeedbackSupplyPost.class)
     @GetMapping("user/profile/{userId}/success_feedback")
     public ResponseEntity getListFeedbackInViewProfile(@PathVariable int userId) {
         AccountEntity accountEntity = accountRepository.findById(userId);

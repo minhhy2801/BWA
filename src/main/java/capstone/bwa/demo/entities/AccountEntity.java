@@ -11,6 +11,7 @@ import java.util.Objects;
 @Table(name = "Account", schema = "dbo", catalog = "BikeWorldDB")
 public class AccountEntity {
     @JsonView({View.IAccountProfile.class, View.IAccounts.class, View.ITransactions.class,
+            View.IFeedbackSupplyPost.class,
             View.IEventDetail.class, View.ITransactionDetail.class, View.IFeedback.class,
             View.ISupplyPostDetail.class, View.IReport.class, View.IAccounts.class,
             View.ISupplyPosts.class, View.ISupplyPostsAdmin.class, View.IEventRegistered.class,
@@ -18,7 +19,8 @@ public class AccountEntity {
             View.IRequestProduct.class
     })
     private int id;
-    @JsonView({View.IAccountProfile.class, View.IEventDetail.class, View.ISupplyPostDetail.class, View.IAccounts.class,
+    @JsonView({View.IAccountProfile.class, View.IEventDetail.class, View.ISupplyPostDetail.class,
+            View.IAccounts.class,View.IFeedbackSupplyPost.class,
             View.ITransactions.class, View.ITransactionDetail.class, View.ISupplyPostsAdmin.class,
             View.IEventRegistered.class, View.IFeedback.class, View.ISupplyPosts.class, View.IReport.class,
             View.IEventsAdmin.class,
@@ -26,7 +28,7 @@ public class AccountEntity {
             View.IRequestProduct.class
     })
     private String name;
-    @JsonView({View.IAccountProfile.class, View.ISupplyPostDetail.class})
+    @JsonView({View.IAccountProfile.class, View.ISupplyPostDetail.class, View.ITransactions.class})
     private String phone;
     private String password;
     @JsonView(View.IAccountProfile.class)
@@ -34,7 +36,7 @@ public class AccountEntity {
     @JsonView(View.IAccountProfile.class)
     private String address;
     @JsonView({View.IAccountProfile.class, View.IFeedback.class, View.IComments.class, View.IEventDetail.class,
-            View.ISupplyPostDetail.class, View.ITransactions.class})
+            View.ISupplyPostDetail.class, View.ITransactions.class, View.IFeedbackSupplyPost.class})
     private String avatarUrl;
     private Integer roleId;
     @JsonView({View.IAccountProfile.class, View.IAccounts.class, View.ISupplyPostDetail.class, View.IEventDetail.class})

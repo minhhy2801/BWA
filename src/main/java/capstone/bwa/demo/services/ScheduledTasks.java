@@ -107,7 +107,7 @@ public class ScheduledTasks {
                         }
                         eventRepository.save(eventEntity);
                     }
-                    if (date.compareTo(endEvent) > 0) {
+                    if (date.compareTo(endEvent) > 0 && !eventEntity.getStatus().equals(MainConstants.HIDDEN)) {
                         eventEntity.setStatus(MainConstants.EVENT_FINISHED);
                         eventRepository.save(eventEntity);
                     }

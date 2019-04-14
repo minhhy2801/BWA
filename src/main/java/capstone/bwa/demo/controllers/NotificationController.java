@@ -9,7 +9,6 @@ import capstone.bwa.demo.viewmodels.Notification;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
@@ -46,9 +45,10 @@ public class NotificationController {
             return null;
         Stream<Notification> stream = Stream.generate(() -> {
 //            List<RequestNotificationEntity> notis =requestNotificationRepository.findAllByRequestProductByRequestProductId_CreatorIdAndStatus(uid, MainConstants.NOTI_NEW);
+            System.out.println("id " + uid);
             List<Integer> ids = requestProductRepository.findAllIdsByCreatorIdAndStatus(MainConstants.REQUEST_FIND, uid);
             List<RequestNotificationEntity> notis = requestNotificationRepository.findAllByRequestProductIdInAndStatus(ids, MainConstants.NOTI_NEW);
-            System.out.println("noti size " + notis);
+//            System.out.println("noti size " + notis);
             List<Map<String, Object>> listNoti = new ArrayList<>();
             if (notis.size() > 0) {
                 for (RequestNotificationEntity noti : notis) {

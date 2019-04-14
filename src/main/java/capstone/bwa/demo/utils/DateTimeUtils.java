@@ -4,12 +4,25 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.TimeZone;
 
 public class DateTimeUtils {
+//    public static String getCurrentTime() {
+//        //setup date format
+//        Date date = new Date(System.currentTimeMillis());
+//        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+//        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+//        dateFormat.format(date);
+//        System.out.println(dateFormat.format(date));
+//        return dateFormat.format(date);
+//    }
+
     public static String getCurrentTime() {
         //setup date format
         Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
+//        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        dateFormat.format(date);
         return dateFormat.format(date);
     }
 

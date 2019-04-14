@@ -11,18 +11,19 @@ import java.util.Objects;
 @Entity
 @Table(name = "Feedback", schema = "dbo", catalog = "BikeWorldDB")
 public class FeedbackEntity {
-    @JsonView(View.IFeedback.class)
+    @JsonView({View.IFeedback.class, View.IFeedbackSupplyPost.class})
     private int id;
     private Integer ownId;
-    @JsonView(View.IFeedback.class)
+    @JsonView({View.IFeedback.class, View.IFeedbackSupplyPost.class})
     private String createdTime;
-    @JsonView(View.IFeedback.class)
+    @JsonView({View.IFeedback.class, View.IFeedbackSupplyPost.class})
     private String description;
-    @JsonView(View.IFeedback.class)
+    @JsonView({View.IFeedback.class, View.IFeedbackSupplyPost.class})
     private String rate;
     private String status;
     @JsonView(View.IFeedback.class)
     private EventRegisteredEntity eventRegisteredByOwnId;
+    @JsonView(View.IFeedbackSupplyPost.class)
     private TransactionDetailEntity transactionDetailByOwnId;
 
     @Id

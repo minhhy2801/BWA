@@ -23,7 +23,7 @@ public class TransactionDetailEntity {
     private Collection<FeedbackEntity> feedbacksById;
     @JsonView({View.ITransactions.class, View.ITransactionDetail.class})
     private SupplyProductEntity supplyProductBySupplyProductId;
-    @JsonView({View.ITransactionDetail.class, View.ITransactions.class})
+    @JsonView({View.ITransactionDetail.class, View.ITransactions.class, View.IFeedbackSupplyPost.class})
     private AccountEntity accountByInteractiveId;
 
     @Id

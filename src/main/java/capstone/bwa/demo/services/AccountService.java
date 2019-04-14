@@ -1,5 +1,6 @@
 package capstone.bwa.demo.services;
 
+import capstone.bwa.demo.constants.MainConstants;
 import capstone.bwa.demo.entities.AccountEntity;
 import capstone.bwa.demo.repositories.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,7 @@ public class AccountService implements UserDetailsService {
     public UserDetails loadUserByUsername(String phone) throws UsernameNotFoundException {
         AccountEntity accountEntity = accountRepository.findByPhone(phone);
 //        System.out.println("phone: " + phone);
-
-        if (accountEntity == null) throw new UsernameNotFoundException(phone);
+        if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) throw new UsernameNotFoundException(phone);
         List<GrantedAuthority> grantedAuthorityList = new ArrayList<>();
         GrantedAuthority role = new SimpleGrantedAuthority(accountEntity.getRoleByRoleId().getName());
         grantedAuthorityList.add(role);

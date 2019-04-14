@@ -6,6 +6,7 @@ import capstone.bwa.demo.entities.NewsEntity;
 import capstone.bwa.demo.repositories.AccountRepository;
 import capstone.bwa.demo.repositories.ImageRepository;
 import capstone.bwa.demo.repositories.NewsRepository;
+import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,7 +106,7 @@ public class NewsController {
      * @return 403 if not admin
      * 200 if create success
      */
-    @JsonView(View.INews.class)
+    @JsonView(View.INewsDetail.class)
     @PostMapping("admin/{id}/news")
     public ResponseEntity createNews(@PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountAdminEntity = accountRepository.findById(id);
@@ -138,7 +139,7 @@ public class NewsController {
      * @param body
      * @return
      */
-    @JsonView(View.INews.class)
+    @JsonView(View.INewsDetail.class)
     @PutMapping("admin/{adminId}/news/{id}")
     public ResponseEntity updateNews(@PathVariable int id, @PathVariable int adminId,
                                      @RequestBody Map<String, String> body) {
@@ -153,15 +154,17 @@ public class NewsController {
         String description = body.get("description");
         String imgThumbnailUrl = body.get("imgThumbnailUrl");
 
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-
-        newsEntity.setEditedTime(dateFormat.format(date));
+        if (newsEntity.getCreatorId() == null) {
+            newsEntity.setCreatorId(adminId);
+            newsEntity.setCreatedTime(DateTimeUtils.getCurrentTime());
+        }
+        newsEntity.setEditedTime(DateTimeUtils.getCurrentTime());
         newsEntity.setEditorId(adminId);
         newsEntity.setDescription(description);
         newsEntity.setTitle(title);
         newsEntity.setImgThumbnailUrl(imgThumbnailUrl);
         newsEntity.setCategoryId(cateId);
+        newsEntity.setStatus(MainConstants.NEWS_PUBLIC);
         newsRepository.saveAndFlush(newsEntity);
         return new ResponseEntity(newsEntity, HttpStatus.OK);
     }

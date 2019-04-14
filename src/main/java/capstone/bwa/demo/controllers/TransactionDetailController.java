@@ -8,6 +8,7 @@ import capstone.bwa.demo.entities.TransactionDetailEntity;
 import capstone.bwa.demo.repositories.AccountRepository;
 import capstone.bwa.demo.repositories.SupplyProductRepository;
 import capstone.bwa.demo.repositories.TransactionDetailRepository;
+import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,8 +122,6 @@ public class TransactionDetailController {
         if (transactionDetailRepository.existsByInteractiveIdAndSupplyProductId(userId, supProId))
             return new ResponseEntity(HttpStatus.LOCKED);
 
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         if (accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
                 && !supplyProductEntity.getCreatorId().equals(accountEntity.getId())
                 && supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_PUBLIC)) {
@@ -130,7 +129,7 @@ public class TransactionDetailController {
             transactionDetailEntity.setInteractiveId(userId);
             transactionDetailEntity.setStatus(MainConstants.PENDING);
             transactionDetailEntity.setSupplyProductId(supProId);
-            transactionDetailEntity.setCreatedTime(dateFormat.format(date));
+            transactionDetailEntity.setCreatedTime(DateTimeUtils.getCurrentTime());
             transactionDetailRepository.save(transactionDetailEntity);
             return new ResponseEntity(transactionDetailEntity, HttpStatus.OK);
         }
