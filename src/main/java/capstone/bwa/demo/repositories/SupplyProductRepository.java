@@ -26,7 +26,7 @@ public interface SupplyProductRepository extends JpaRepository<SupplyProductEnti
 
     List<SupplyProductEntity> findAllByOrderByIdDesc(Pageable pageable);
 
-    List<SupplyProductEntity> findAllByCategoryIdOrderByIdDesc(int id, Pageable pageable);
+    List<SupplyProductEntity> findAllByCategoryIdAndStatusInOrderByIdDesc(int id, Pageable pageable, List<String> status);
 
     List<SupplyProductEntity> findAllByStatusAndCategoryIdOrderByIdDesc(String status, int id, Pageable pageable);
 

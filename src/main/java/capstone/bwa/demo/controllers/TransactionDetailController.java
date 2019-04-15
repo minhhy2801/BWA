@@ -137,6 +137,31 @@ public class TransactionDetailController {
     }
 
 
+    @GetMapping("user/{userId}/supply_post/{supProId}/transaction/{id}/edit")
+    public ResponseEntity openTransAfterFrozen(@PathVariable int userId, @PathVariable int supProId, @PathVariable int id) {
+        AccountEntity accountEntity = accountRepository.findById(userId);
+        SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(supProId);
+        TransactionDetailEntity transactionDetailEntity = transactionDetailRepository.findById(id);
+
+        if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
+
+                || accountEntity == null || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_USER) ||
+                supplyProductEntity == null || transactionDetailEntity == null ||
+                !supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_PUBLIC))
+            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        System.out.println(transactionDetailEntity.getInteractiveId() + " " + transactionDetailEntity.getSupplyProductId()
+                + " " + transactionDetailEntity.getStatus());
+        if (transactionDetailEntity.getInteractiveId().equals(userId) &&
+                transactionDetailEntity.getSupplyProductId().equals(supProId) &&
+                transactionDetailEntity.getStatus().equals(MainConstants.TRANSACTION_FROZEN)) {
+            transactionDetailEntity.setEditedTime(DateTimeUtils.getCurrentTime());
+            transactionDetailEntity.setStatus(MainConstants.PENDING);
+            transactionDetailRepository.save(transactionDetailEntity);
+            return new ResponseEntity(HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.BAD_REQUEST);
+    }
+
     /**
      * Return list transactions when click close supply post. Update all transactions, update status
      *
@@ -219,4 +244,6 @@ public class TransactionDetailController {
         if (transactionDetailEntities.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
         return new ResponseEntity(transactionDetailEntities, HttpStatus.OK);
     }
+
+
 }

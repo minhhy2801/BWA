@@ -45,7 +45,7 @@ public class NotificationController {
             return null;
         Stream<Notification> stream = Stream.generate(() -> {
 //            List<RequestNotificationEntity> notis =requestNotificationRepository.findAllByRequestProductByRequestProductId_CreatorIdAndStatus(uid, MainConstants.NOTI_NEW);
-            System.out.println("id " + uid);
+//            System.out.println("id " + uid);
             List<Integer> ids = requestProductRepository.findAllIdsByCreatorIdAndStatus(MainConstants.REQUEST_FIND, uid);
             List<RequestNotificationEntity> notis = requestNotificationRepository.findAllByRequestProductIdInAndStatus(ids, MainConstants.NOTI_NEW);
 //            System.out.println("noti size " + notis);

@@ -66,14 +66,14 @@ public class SupplyProductController {
                 && !status.equals(MainConstants.GET_ALL)) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
         }
-
+        List<String> statusSupplyPost = new ArrayList<>();
+        statusSupplyPost.add(MainConstants.SUPPLY_POST_CLOSED);
+        statusSupplyPost.add(MainConstants.SUPPLY_POST_PUBLIC);
         List<SupplyProductEntity> list = new ArrayList<>();
         // number of page with n elements
         Pageable pageWithElements = PageRequest.of(id, quantity);
         if (status.equals(MainConstants.GET_ALL) && cate.equals(MainConstants.GET_ALL)) {
-            List<String> statusSupplyPost = new ArrayList<>();
-            statusSupplyPost.add(MainConstants.SUPPLY_POST_CLOSED);
-            statusSupplyPost.add(MainConstants.SUPPLY_POST_PUBLIC);
+
             list = supplyProductRepository.findAllByStatusInOrderByIdDesc(statusSupplyPost, pageWithElements);
         } else if (!status.equals(MainConstants.GET_ALL) && cate.equals(MainConstants.GET_ALL)) {
             list = supplyProductRepository.findAllByStatusOrderByIdDesc(status, pageWithElements);
@@ -86,7 +86,7 @@ public class SupplyProductController {
             if (category.getName().equalsIgnoreCase("bán xe")
                     || category.getName().equalsIgnoreCase("bán phụ kiện")) {
                 if (status.equals(MainConstants.GET_ALL)) {
-                    list = supplyProductRepository.findAllByCategoryIdOrderByIdDesc(category.getId(), pageWithElements);
+                    list = supplyProductRepository.findAllByCategoryIdAndStatusInOrderByIdDesc(category.getId(), pageWithElements, statusSupplyPost);
                 } else if (!status.equals(MainConstants.GET_ALL)) {
                     list = supplyProductRepository.findAllByStatusAndCategoryIdOrderByIdDesc(status, category.getId(), pageWithElements);
                 }
@@ -427,11 +427,8 @@ public class SupplyProductController {
                 double x2 = Double.parseDouble(item.getLocation().split("~")[1]);
                 double y2 = Double.parseDouble(item.getLocation().split("~")[2]);
                 distance = request.calculateDistanceBetweenPoints(lat, lng, x2, y2);
-
-
                 if (distance <= MainConstants.COMPARISON_DISTANCE) {//5km
                     Map<String, Object> map = new HashMap<>();
-
                     String json = request.googleMatrix(lat, lng, x2, y2);
                     JSONObject object = new JSONObject(json);
                     JSONArray dist = (JSONArray) object.get("rows");
@@ -439,15 +436,22 @@ public class SupplyProductController {
                     dist = (JSONArray) obj.get("elements");
                     obj = (JSONObject) dist.get(0);
                     obj = (JSONObject) obj.get("distance");
-                    String tmp = (String) obj.get("text").toString()
-                            .replace("km", "")
-                            .replace(",", ".");
-                    double km = Float.parseFloat(tmp);
-                    if ((km / 100) < MainConstants.COMPARISON_DISTANCE) {
+                    String tmp = (String) obj.get("text");
+                    if (tmp.contains(" km")) {
+                        tmp = tmp.replace("km", "")
+                                .replace(",", ".");
+                        double km = Double.parseDouble(tmp);
+                        if ((km / 100) <= MainConstants.COMPARISON_DISTANCE) {
+                            map.put("supply_post", item);
+                            map.put("distance", new JSONObject(json).toMap());
+                            supplyMatching.add(map);
+                        }
+                    } else if (tmp.contains(" m")) {
                         map.put("supply_post", item);
                         map.put("distance", new JSONObject(json).toMap());
                         supplyMatching.add(map);
                     }
+
                 }
             } catch (Exception e) {
             }

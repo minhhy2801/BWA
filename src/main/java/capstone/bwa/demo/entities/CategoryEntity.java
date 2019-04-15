@@ -10,12 +10,12 @@ import java.util.Objects;
 @Entity
 @Table(name = "Category", schema = "dbo", catalog = "BikeWorldDB")
 public class CategoryEntity {
-    @JsonView({View.ICategories.class, View.IEventDetail.class,View.INewsDetail.class,
+    @JsonView({View.ICategories.class, View.IEventDetail.class, View.INewsDetail.class, View.ISupplyPosts.class,
             View.IEvents.class, View.ISupplyPostDetail.class, View.INews.class})
     private int id;
-    @JsonView({View.IEventDetail.class, View.IEvents.class, View.ISupplyPostDetail.class,View.INewsDetail.class,
-            View.INews.class,
-            View.IAccessory.class, View.IAccessories.class, View.ISupplyPosts.class, View.INews.class,
+    @JsonView({View.IEventDetail.class, View.IEvents.class, View.ISupplyPostDetail.class, View.INewsDetail.class,
+            View.INews.class, View.ISupplyPosts.class,
+            View.IAccessory.class, View.IAccessories.class, View.INews.class,
             View.ICategories.class})
     private String name;
     @JsonView({View.IAccessory.class, View.IAccessories.class})

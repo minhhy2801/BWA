@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -41,9 +42,10 @@ public class ScheduledTasks {
     //Cron chạy method
     //[[second, minute, hour, day of month, month, day(s) of week]]
     //1 day run
-    @Scheduled(cron = "0 0 0 * * *")
+//    @Scheduled(cron = "0 0 0 * * *")
     //1 min run
 //    @Scheduled(cron = "0 * * * * ?")
+    @PostConstruct
     public void scheduleTaskEventState() {
         updateEventStatus();
         logger.info("Update event state");
@@ -52,6 +54,7 @@ public class ScheduledTasks {
     //weekly
     @Scheduled(cron = "0 0 0 ? * MON")
 //    @Scheduled(cron = "0 * * * * ?")
+//    @PostConstruct
     public void scheduleTaskCrawlData() {
         try {
             BikeCrawler bikeCrawler = new BikeCrawler(categoryRepository, bikeRepository, imageRepository, referencesLinkRepository);
