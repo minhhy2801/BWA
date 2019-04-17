@@ -13,9 +13,6 @@ public interface SupplyProductRepository extends JpaRepository<SupplyProductEnti
 
     SupplyProductEntity findByItemId(int id);
 
-    @Query("SELECT e.id FROM SupplyProductEntity e WHERE e.status = :status AND e.creatorId = :id")
-    List<Integer> findAllIdsByStatusAnAndCreatorId(@Param("status") String status, @Param("id") int id);
-
     List<SupplyProductEntity> findAllByStatusInOrderByIdDesc(List<String> status, Pageable pageable);
 
     List<SupplyProductEntity> findTop200ByStatusInOrderByIdDesc(List<String> status);
@@ -24,13 +21,18 @@ public interface SupplyProductRepository extends JpaRepository<SupplyProductEnti
 
     List<SupplyProductEntity> findAllByStatusOrderByIdDesc(String status);
 
-    List<SupplyProductEntity> findAllByOrderByIdDesc(Pageable pageable);
+    List<SupplyProductEntity> findAllByOrderByIdDesc();
 
     List<SupplyProductEntity> findAllByCategoryIdAndStatusInOrderByIdDesc(int id, Pageable pageable, List<String> status);
 
     List<SupplyProductEntity> findAllByStatusAndCategoryIdOrderByIdDesc(String status, int id, Pageable pageable);
 
     List<SupplyProductEntity> findAllByCreatorIdOrderByIdDesc(int id);
+
+    List<SupplyProductEntity> findAllByStatusInAndTitleContainingIgnoreCase(List<String> status, String value);
+
+    @Query("SELECT e.id FROM SupplyProductEntity e WHERE e.status = :status AND e.creatorId = :id")
+    List<Integer> findAllIdsByStatusAnAndCreatorId(@Param("status") String status, @Param("id") int id);
 
     int countAllByCreatorIdAndStatusIn(int id, List<String> status);
 
@@ -44,6 +46,5 @@ public interface SupplyProductRepository extends JpaRepository<SupplyProductEnti
 
     int countAllByCategoryIdAndStatus(int id, String status);
 
-    List<SupplyProductEntity> findAllByStatusInAndTitleContainingIgnoreCase(List<String> status, String value);
 
 }

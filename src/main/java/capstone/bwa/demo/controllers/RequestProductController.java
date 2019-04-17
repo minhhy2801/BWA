@@ -56,8 +56,6 @@ public class RequestProductController {
             map.put("version", body.get("version"));
         }
         map.put("desc", body.get("description"));
-//        map.put("priceMax", body.get("priceMax"));
-//        map.put("priceMin", body.get("priceMin"));
 
         RequestProductEntity requestProductEntity = new RequestProductEntity();
         requestProductEntity.setCreatedTime(DateTimeUtils.getCurrentTime());

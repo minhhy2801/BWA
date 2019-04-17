@@ -23,15 +23,12 @@ import java.util.Map;
 public class RequestNotificationController {
     @Autowired
     private RequestNotificationRepository requestNotificationRepository;
-
     @Autowired
     private AccountRepository accountRepository;
     @Autowired
     private RequestProductRepository requestProductRepository;
-
     @Autowired
     private AccessoryRepository accessoryRepository;
-
     @Autowired
     private BikeRepository bikeRepository;
 

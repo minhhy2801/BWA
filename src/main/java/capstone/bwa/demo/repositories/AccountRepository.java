@@ -16,7 +16,4 @@ public interface AccountRepository extends JpaRepository<AccountEntity, Integer>
     List<AccountEntity> findAllByOrderByIdDesc(Pageable pageable);
 
     List<AccountEntity> findAllByStatusOrderByRateDesc(String status);
-
-//    @Query("select top 4 a from Account a where a.roleId != :adminRoleId ")
-//    List<AccountEntity> findAllWithHighestRate(@Param("top") int top, @Param("adminRoleId") int adminRoleId);
 }

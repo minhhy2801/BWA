@@ -14,11 +14,10 @@ public interface EventRegisteredRepository extends JpaRepository<EventRegistered
 
     List<EventRegisteredEntity> findAllByAccountByRegisteredId_Id(int id);
 
+    EventRegisteredEntity findDistinctFirstByAccountByRegisteredId_IdAndEventByEventId_Id(int accountId, int eventId);
+
     @Query("SELECT e.id FROM EventRegisteredEntity e WHERE e.status = :status AND e.eventId = :eventId")
     List<Integer> findAllIdByEventId(String status, int eventId);
-
-    //    boolean existsDistinctByAccountByRegisteredId_IdAndEventByEventId_Id(int accountId, int eventId);
-    EventRegisteredEntity findDistinctFirstByAccountByRegisteredId_IdAndEventByEventId_Id(int accountId, int eventId);
 
     boolean existsDistinctByEventIdAndRegisteredId(int eventId, int userId);
 }

@@ -42,15 +42,14 @@ public class AccountController {
         String phone = body.get("phone").trim();
         //create random number verify code
         String code = new Random().nextInt(9999 - 1000) + 1000 + "";
+
         BCryptPasswordEncoder bCrypt = new BCryptPasswordEncoder();
         String hashVerifyCode = bCrypt.encode(code);
-//        System.out.println(code);
-//        System.out.println(hashVerifyCode);
-        //check Phone in db
-        if (accountRepository.findByPhone(phone) != null)
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
+        if (accountRepository.findByPhone(phone) != null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         Map<String, Object> result = sendSMSAPI(code, hashVerifyCode, phone);
+
         return new ResponseEntity(result, HttpStatus.OK);
     }
 
@@ -61,6 +60,7 @@ public class AccountController {
         //create random number verify code
         String code = new Random().nextInt(9999 - 1000) + 1000 + "";
         String hashVerifyCode = bCrypt.encode(code);
+
         //send SMS API
         if (accountRepository.findByPhone(phone) != null) {
             Map<String, Object> result = sendSMSAPI(code, hashVerifyCode, phone);
@@ -84,6 +84,7 @@ public class AccountController {
 
         accountEntity.setPassword(bCryptPasswordEncoder.encode(newPassword));
         accountRepository.save(accountEntity);
+
         return new ResponseEntity(HttpStatus.OK);
     }
 
@@ -93,10 +94,13 @@ public class AccountController {
         String phone = body.get("phone");
         String name = body.get("name");
         String password = body.get("password");
+
         if (accountRepository.findByPhone(phone) != null) return new ResponseEntity(HttpStatus.BAD_REQUEST);
+
         AccountEntity accountEntity = paramAccountEntityCreateRequest(name, phone, password);
         accountEntity.setRoleId(1);
         accountRepository.save(accountEntity);
+
         return new ResponseEntity(HttpStatus.CREATED);
     }
 
@@ -106,8 +110,7 @@ public class AccountController {
 //    @PostAuthorize("returnObject.body.phone == authentication.name")
     public ResponseEntity getProfile(@PathVariable int id) {
         AccountEntity accountEntity = accountRepository.findById(id);
-        if (accountEntity == null)
-            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (accountEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         // if (!accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
         //     return new ResponseEntity(HttpStatus.LOCKED);
 
@@ -150,10 +153,10 @@ public class AccountController {
         if (!accountAdminEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
             return new ResponseEntity(HttpStatus.LOCKED);
 
-        if (accountAdminEntity == null || accountUserEntity == null)
-            return new ResponseEntity(HttpStatus.NOT_FOUND);
+        if (accountAdminEntity == null || accountUserEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (body.isEmpty() || body == null) return new ResponseEntity(HttpStatus.NO_CONTENT);
+
         String status = body.get("status");
         accountUserEntity.setEditedTime(DateTimeUtils.getCurrentTime());
         accountUserEntity.setStatus(status);
@@ -190,13 +193,13 @@ public class AccountController {
             return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         //compute rate
-        if (accountEntity.getRoleByRoleId().getName().equalsIgnoreCase(MainConstants.ROLE_USER)) {
+        if (accountEntity.getRoleByRoleId().getName().equalsIgnoreCase(MainConstants.ROLE_USER))
             calculateAndUpdateRatingPoint(accountEntity);
-        }
 
         List<String> status = new ArrayList<>();
         status.add(MainConstants.SUPPLY_POST_CLOSED);
         status.add(MainConstants.SUPPLY_POST_PUBLIC);
+
         Map<String, String> map = new HashMap<>();
         map.put("id", accountEntity.getId() + "");
         map.put("name", accountEntity.getName());
@@ -216,12 +219,13 @@ public class AccountController {
     @JsonView(View.IAccounts.class)
     @GetMapping("admin/{id}/accounts/page/{pageId}/limit/{quantity}")
     public ResponseEntity getAccounts(@PathVariable int id, @PathVariable int pageId, @PathVariable int quantity) {
+        Pageable pageWithElements = PageRequest.of(pageId, quantity);
 
         AccountEntity accountEntity = accountRepository.findById(id);
         if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
                 || !accountEntity.getRoleByRoleId().getName().equalsIgnoreCase(MainConstants.ROLE_ADMIN))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-        Pageable pageWithElements = PageRequest.of(pageId, quantity);
+
         List<AccountEntity> accounts = accountRepository.findAllByOrderByIdDesc(pageWithElements);
         List<Object> objects = new ArrayList<>();
         for (AccountEntity e : accounts) {

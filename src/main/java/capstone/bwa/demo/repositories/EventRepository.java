@@ -30,6 +30,10 @@ public interface EventRepository extends JpaRepository<EventEntity, Integer> {
 
     List<EventEntity> findAllByOrderById(Pageable pageable);
 
+    List<EventEntity> findAllByOrderByTotalSoldTicketDesc();
+
+    List<EventEntity> findAllByStatusInAndTitleContainingIgnoreCase(List<String> status, String value);
+
     int countAllByCreatorIdAndStatusIn(int id, List<String> status);
 
     int countAllByCreatorId(int id);
@@ -37,10 +41,5 @@ public interface EventRepository extends JpaRepository<EventEntity, Integer> {
     int countAllByStatusIn(List<String> status);
 
     int countAllByStatus(String status);
-
-    List<EventEntity> findAllByOrderByTotalSoldTicketDesc();
-
-    List<EventEntity> findAllByStatusInAndTitleContainingIgnoreCase(List<String> status, String value);
-
 }
 

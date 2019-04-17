@@ -22,16 +22,12 @@ public class NotificationController {
 
     @Autowired
     private RequestNotificationRepository requestNotificationRepository;
-
     @Autowired
     private AccountRepository accountRepository;
-
     @Autowired
     private AccessoryRepository accessoryRepository;
-
     @Autowired
     private BikeRepository bikeRepository;
-
     @Autowired
     private RequestProductRepository requestProductRepository;
 
@@ -48,7 +44,6 @@ public class NotificationController {
 //            System.out.println("id " + uid);
             List<Integer> ids = requestProductRepository.findAllIdsByCreatorIdAndStatus(MainConstants.REQUEST_FIND, uid);
             List<RequestNotificationEntity> notis = requestNotificationRepository.findAllByRequestProductIdInAndStatus(ids, MainConstants.NOTI_NEW);
-//            System.out.println("noti size " + notis);
             List<Map<String, Object>> listNoti = new ArrayList<>();
             if (notis.size() > 0) {
                 for (RequestNotificationEntity noti : notis) {
@@ -84,11 +79,9 @@ public class NotificationController {
             List<RequestNotificationEntity> listNotiTran = requestNotificationRepository
                     .findAllByTypeAndStatusAndTransactionByTransactionId_InteractiveId(
                             MainConstants.STATUS_TRANS, MainConstants.NOTI_NEW, uid);
-//            System.out.println("size" + listNotiTran.size());
             if (listNotiTran.size() > 0) {
                 for (RequestNotificationEntity noti : listNotiTran) {
                     Map<String, Object> resObj = new HashMap<>();
-//                    System.out.println("1111111111");
                     resObj.put("id", noti.getId());
                     resObj.put("supId", noti.getSupplyProductId());
                     resObj.put("type", MainConstants.STATUS_TRANS);

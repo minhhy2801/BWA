@@ -12,8 +12,6 @@ public interface RequestNotificationRepository extends JpaRepository<RequestNoti
     @Query("select n from RequestNotificationEntity n join RequestProductEntity r on n.requestProductId = r.id where r.id = :requestProductId")
     List<RequestNotificationEntity> findAllByRequestProductId(@Param("requestProductId") int requestProductId);
 
-//    List<RequestNotificationEntity> findAllByRequestProductByRequestProductId_CreatorIdAndStatus(Integer id, String status);
-
     List<RequestNotificationEntity> findAllByRequestProductIdInAndStatus(List<Integer> ids, String status);
 
     List<RequestNotificationEntity> findAllByTypeAndStatusAndTransactionByTransactionId_InteractiveId(String type, String status, int id);

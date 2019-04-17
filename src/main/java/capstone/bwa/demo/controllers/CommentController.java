@@ -104,13 +104,13 @@ public class CommentController {
         Date date = new Date(System.currentTimeMillis());
         DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
         Date createTime = null;
+
         try {
             createTime = dateFormat.parse(commentEntity.getCreatedTime());
             Calendar calendar = Calendar.getInstance();
             calendar.setTime(createTime);
             calendar.add(Calendar.MINUTE, 15);
             Date afterAdding15Mins = calendar.getTime();
-            System.out.println(afterAdding15Mins);
             if (date.compareTo(afterAdding15Mins) < 0) {
                 commentEntity.setEditedTime(DateTimeUtils.getCurrentTime());
                 commentEntity.setDescription(description);

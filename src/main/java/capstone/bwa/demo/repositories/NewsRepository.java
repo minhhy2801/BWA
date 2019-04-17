@@ -19,7 +19,9 @@ public interface NewsRepository extends JpaRepository<NewsEntity, Integer> {
 
     List<NewsEntity> findTop200ByStatusOrderByIdDesc(String status);
 
-    List<NewsEntity> findAllByOrderByIdDesc(Pageable pageable);
+    List<NewsEntity> findAllByOrderByIdDesc();
+
+    List<NewsEntity> findAllByStatusAndTitleContainingIgnoreCase(String status, String value);
 
     int countAllByCreatorId(int id);
 
@@ -29,6 +31,5 @@ public interface NewsRepository extends JpaRepository<NewsEntity, Integer> {
             nativeQuery = true)
     List<Map<String, Object>> getTop5NewsHavingManyComments();
 
-    List<NewsEntity> findAllByStatusAndTitleContainingIgnoreCase(String status, String value);
 
 }

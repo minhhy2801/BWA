@@ -11,5 +11,4 @@ public interface CategoryRepository extends JpaRepository<CategoryEntity, Intege
     CategoryEntity findByNameIgnoreCaseAndType(String name, String type);
 
     List<CategoryEntity> findAllByTypeAndStatus(String type, String status);
-
 }

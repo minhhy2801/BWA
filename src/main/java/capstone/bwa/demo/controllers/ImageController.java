@@ -41,8 +41,6 @@ public class ImageController {
         List<ImageEntity> list = imageRepository.findAllByOwnIdAndType(id, MainConstants.STATUS_EVENT);
         if (list.size() > 0) imageRepository.deleteAll(list);
         List<ImageEntity> tmp = setImagesForObj(body.get("images"), id, MainConstants.STATUS_EVENT);
-        System.out.println("size " + tmp.size());
-        System.out.println("list " + body.get("images"));
         imageRepository.saveAll(tmp);
 
         return new ResponseEntity(HttpStatus.OK);
@@ -66,18 +64,10 @@ public class ImageController {
         SupplyProductEntity entity = supplyProductRepository.findById(id);
         if (entity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         List<ImageEntity> list = imageRepository.findAllByOwnIdAndType(id, MainConstants.STATUS_SUPPLY_POST);
+
         if (list.size() > 0) imageRepository.deleteAll(list);
 
         List<ImageEntity> tmp = setImagesForObj(body.get("images"), id, MainConstants.STATUS_SUPPLY_POST);
-//        List<ImageEntity> tmp = new ArrayList<>();
-//        List<String> imgs = body.get("images");
-//        for (String item : imgs) {
-//            ImageEntity imageEntity = new ImageEntity();
-//            imageEntity.setUrl(item);
-//            imageEntity.setOwnId(id);
-//            imageEntity.setType(MainConstants.STATUS_SUPPLY_POST);
-//            tmp.add(imageEntity);
-//        }
         imageRepository.saveAll(tmp);
 
         return new ResponseEntity(HttpStatus.OK);

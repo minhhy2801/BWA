@@ -12,6 +12,8 @@ public interface AccessoryRepository extends JpaRepository<AccessoryEntity, Inte
 
     AccessoryEntity findByHashAccessoryCode(String code);
 
+    List<AccessoryEntity> findAllByUrlIsNotNull();
+
     @Query("SELECT a " +
             "FROM SupplyProductEntity p join AccessoryEntity a on p.itemId = a.id " +
             "WHERE p.status = :status")
@@ -20,5 +22,5 @@ public interface AccessoryRepository extends JpaRepository<AccessoryEntity, Inte
     @Query(value = "SELECT distinct a.brand FROM AccessoryEntity a")
     List<Object> getAllBrands();
 
-    List<AccessoryEntity> findAllByUrlIsNotNull();
+
 }

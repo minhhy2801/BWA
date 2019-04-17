@@ -35,15 +35,14 @@ public class ReportController {
     @PostMapping("user/{userId}/report")
     public ResponseEntity createReport(@PathVariable int userId,
                                        @RequestBody Map<String, String> body) {
-        String reason = body.get("desc");
 
-        String accusedId = body.get("accusedId");
 
         AccountEntity accountEntity = accountRepository.findById(userId);
 
         if (accountEntity == null || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-
+        String reason = body.get("desc");
+        String accusedId = body.get("accusedId");
         Map<String, String> desc = new HashMap<>();
         desc.put("desc", reason);
 
@@ -53,6 +52,7 @@ public class ReportController {
         reportEntity.setStatus(MainConstants.PENDING);
         reportEntity.setAccusedId(Integer.parseInt(accusedId));
         reportEntity.setReason(new Gson().toJson(desc));
+
         reportRepository.save(reportEntity);
 
         return new ResponseEntity(HttpStatus.OK);
@@ -74,29 +74,27 @@ public class ReportController {
 
     @JsonView(View.IReport.class)
     @PutMapping("admin/{adminId}/report/{reportId}")
-    public ResponseEntity updateStatusReport(
-            @PathVariable int adminId, @PathVariable int reportId,
-            @RequestBody Map<String, String> body) {
+    public ResponseEntity updateStatusReport(@PathVariable int adminId, @PathVariable int reportId,
+                                             @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(adminId);
         ReportEntity reportEntity = reportRepository.findById(reportId);
 
-        String status = body.get("status");
-        String reply = body.get("reply");
         if (accountEntity == null || reportEntity == null
                 || !accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)
                 || !accountEntity.getRoleByRoleId().getName().equals(MainConstants.ROLE_ADMIN))
             return new ResponseEntity(HttpStatus.NOT_FOUND);
-        Date date = new Date(System.currentTimeMillis());
-        DateFormat dateFormat = new SimpleDateFormat("HH:mm dd-MM-yyyy");
-        Map<String, String> map = new HashMap<>();
+
+        String status = body.get("status");
+        String reply = body.get("reply");
         String desc = new JSONObject(reportEntity.getReason()).getString("desc");
+
+        Map<String, String> map = new HashMap<>();
         map.put("desc", desc);
-        System.out.println("reason " + desc);
         map.put("adminId", adminId + "");
         map.put("reply", reply);
         reportEntity.setReason(new Gson().toJson(map));
         reportEntity.setStatus(status);
-        reportEntity.setEditedTime(dateFormat.format(date));
+        reportEntity.setEditedTime(DateTimeUtils.getCurrentTime());
 
         reportRepository.save(reportEntity);
 

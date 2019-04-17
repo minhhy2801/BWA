@@ -10,21 +10,28 @@ import java.util.Objects;
 @Entity
 @Table(name = "Account", schema = "dbo", catalog = "BikeWorldDB")
 public class AccountEntity {
-    @JsonView({View.IAccountProfile.class, View.IAccounts.class, View.ITransactions.class,
-            View.IFeedbackSupplyPost.class,
-            View.IEventDetail.class, View.ITransactionDetail.class, View.IFeedback.class,
-            View.ISupplyPostDetail.class, View.IReport.class, View.IAccounts.class,
-            View.ISupplyPosts.class, View.ISupplyPostsAdmin.class, View.IEventRegistered.class,
-            View.IEventsAdmin.class, View.INewsDetail.class, View.IComments.class, View.IReport.class,
+    @JsonView({View.IAccountProfile.class, View.IAccounts.class,
+            View.ITransactions.class, View.ITransactionDetail.class,
+            View.ISupplyPosts.class, View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class,
+            View.IEventDetail.class, View.IEventsAdmin.class,
+            View.IEventRegistered.class,
+            View.IFeedback.class, View.IFeedbackSupplyPost.class,
+            View.IReport.class,
+            View.INewsDetail.class,
+            View.IComments.class,
             View.IRequestProduct.class
     })
     private int id;
-    @JsonView({View.IAccountProfile.class, View.IEventDetail.class, View.ISupplyPostDetail.class,
-            View.IAccounts.class,View.IFeedbackSupplyPost.class,
-            View.ITransactions.class, View.ITransactionDetail.class, View.ISupplyPostsAdmin.class,
-            View.IEventRegistered.class, View.IFeedback.class, View.ISupplyPosts.class, View.IReport.class,
-            View.IEventsAdmin.class,
-            View.INewsDetail.class, View.IComments.class, View.IReport.class,
+
+    @JsonView({View.IAccountProfile.class, View.IAccounts.class,
+            View.IEventDetail.class, View.IEventsAdmin.class,
+            View.ISupplyPostDetail.class, View.ISupplyPostsAdmin.class, View.ISupplyPosts.class,
+            View.IFeedbackSupplyPost.class, View.IFeedback.class,
+            View.ITransactions.class, View.ITransactionDetail.class,
+            View.IEventRegistered.class,
+            View.IReport.class,
+            View.INewsDetail.class,
+            View.IComments.class,
             View.IRequestProduct.class
     })
     private String name;
@@ -35,8 +42,12 @@ public class AccountEntity {
     private String gender;
     @JsonView(View.IAccountProfile.class)
     private String address;
-    @JsonView({View.IAccountProfile.class, View.IFeedback.class, View.IComments.class, View.IEventDetail.class,
-            View.ISupplyPostDetail.class, View.ITransactions.class, View.IFeedbackSupplyPost.class})
+    @JsonView({View.IAccountProfile.class,
+            View.IFeedback.class, View.IFeedbackSupplyPost.class,
+            View.IComments.class,
+            View.IEventDetail.class,
+            View.ISupplyPostDetail.class,
+            View.ITransactions.class})
     private String avatarUrl;
     private Integer roleId;
     @JsonView({View.IAccountProfile.class, View.IAccounts.class, View.ISupplyPostDetail.class, View.IEventDetail.class})

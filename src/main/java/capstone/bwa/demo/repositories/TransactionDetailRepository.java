@@ -10,11 +10,6 @@ import java.util.List;
 public interface TransactionDetailRepository extends JpaRepository<TransactionDetailEntity, Integer> {
     TransactionDetailEntity findById(int id);
 
-    @Query("SELECT e.id FROM TransactionDetailEntity e WHERE e.status = :status AND e.supplyProductId IN :id")
-    List<Integer> findAllIdsByStatusAnAndSupplyPostIdIn(@Param("status") String status, @Param("id") List<Integer> id);
-
-    boolean existsByInteractiveIdAndSupplyProductId(int userId, int supId);
-
     TransactionDetailEntity findBySupplyProductIdAndStatus(int id, String status);
 
     List<TransactionDetailEntity> findAllBySupplyProductIdAndStatus(int id, String status);
@@ -22,6 +17,11 @@ public interface TransactionDetailRepository extends JpaRepository<TransactionDe
     List<TransactionDetailEntity> findAllBySupplyProductId(int supProId);
 
     List<TransactionDetailEntity> findAllByInteractiveId(int id);
+
+    @Query("SELECT e.id FROM TransactionDetailEntity e WHERE e.status = :status AND e.supplyProductId IN :id")
+    List<Integer> findAllIdsByStatusAnAndSupplyPostIdIn(@Param("status") String status, @Param("id") List<Integer> id);
+
+    boolean existsByInteractiveIdAndSupplyProductId(int userId, int supId);
 
     boolean existsDistinctBySupplyProductId(int id);
 }
