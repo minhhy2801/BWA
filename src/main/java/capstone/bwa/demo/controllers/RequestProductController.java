@@ -2,12 +2,8 @@ package capstone.bwa.demo.controllers;
 
 
 import capstone.bwa.demo.constants.MainConstants;
-import capstone.bwa.demo.entities.AccountEntity;
-import capstone.bwa.demo.entities.RequestNotificationEntity;
-import capstone.bwa.demo.entities.RequestProductEntity;
-import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.RequestNotificationRepository;
-import capstone.bwa.demo.repositories.RequestProductRepository;
+import capstone.bwa.demo.entities.*;
+import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.services.NotificationService;
 import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
@@ -34,9 +30,13 @@ public class RequestProductController {
     private RequestNotificationRepository requestNotificationRepository;
     @Autowired
     private NotificationService notificationService;
+    @Autowired
+    private AccessoryRepository accessoryRepository;
+    @Autowired
+    private BikeRepository bikeRepository;
 
 
-    @JsonView(View.ISupplyPosts.class)
+    @JsonView(View.INotification.class)
     @PostMapping("user/{id}/request")
     public ResponseEntity createRequest(@PathVariable int id, @RequestBody Map<String, String> body) {
         AccountEntity accountEntity = accountRepository.findById(id);
@@ -65,21 +65,55 @@ public class RequestProductController {
         requestProductEntity.setStatus(MainConstants.REQUEST_FIND);
 
         //save request
-        requestProductRepository.save(requestProductEntity);
+        requestProductRepository.saveAndFlush(requestProductEntity);
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    notificationService.searchAfterActionRequest(requestProductEntity, map);
-                    Thread.currentThread().interrupted();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+        //Run mapping data
+        notificationService.searchAfterActionRequest(requestProductEntity, map);
+
+        List<RequestNotificationEntity> listNotis = requestNotificationRepository.findAllByRequestProductId(requestProductEntity.getId());
+        if (listNotis.size() > 0) {
+            List<Map<String, Object>> result = new ArrayList<>();
+
+            for (RequestNotificationEntity noti : listNotis) {
+                Map<String, Object> resObj = new HashMap<>();
+                resObj.put("id", noti.getId());
+                if (noti.getType().equals(MainConstants.STATUS_SUPPLY_POST)) {
+                    //CREATE/UPDATE Request & Supply post
+                    resObj.put("supId", noti.getSupplyProductId());
+                    resObj.put("supStatus", noti.getSupplyProductBySupplyProductId().getStatus());
+                    resObj.put("name", noti.getSupplyProductBySupplyProductId().getTitle());
+                    resObj.put("url", noti.getSupplyProductBySupplyProductId().getImgThumbnailUrl());
+                    resObj.put("type", MainConstants.STATUS_SUPPLY_POST);
+
+                } else if (noti.getType().startsWith(MainConstants.STATUS_ACCESSORY)
+                        || noti.getType().startsWith(MainConstants.STATUS_BIKE)) {
+                    // From Crawl data
+                    if (noti.getType().startsWith(MainConstants.STATUS_ACCESSORY)) {
+                        int accId = Integer.parseInt(noti.getType().split("-")[1]);
+                        AccessoryEntity accessoryEntity = accessoryRepository.findById(id);
+                        resObj.put("type", MainConstants.STATUS_ACCESSORY);
+                        resObj.put("name", accessoryEntity.getName());
+                        resObj.put("link", accessoryEntity.getUrl());
+                    }
+                    if (noti.getType().startsWith(MainConstants.STATUS_BIKE)) {
+                        int bikeId = Integer.parseInt(noti.getType().split("-")[1]);
+                        BikeEntity bikeEntity = bikeRepository.findById(id);
+                        resObj.put("type", MainConstants.STATUS_BIKE);
+                        resObj.put("name", bikeEntity.getName());
+                        resObj.put("link", bikeEntity.getUrl());
+                    }
                 }
+                resObj.put("point", noti.getDescription());
+                result.add(resObj);
             }
-        }).start();
 
-        return new ResponseEntity(HttpStatus.OK);
+            listNotis.forEach(i -> i.setStatus(MainConstants.NOTI_READ));
+
+            requestNotificationRepository.saveAll(listNotis);
+
+            return new ResponseEntity(result, HttpStatus.OK);
+        }
+        return new ResponseEntity(HttpStatus.NO_CONTENT);
     }
 
     @PutMapping("user/{userId}/request/{requestId}/status")
