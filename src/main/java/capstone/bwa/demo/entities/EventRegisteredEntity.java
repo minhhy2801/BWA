@@ -20,6 +20,8 @@ public class EventRegisteredEntity {
     private Integer purchasedTicket;
     private String status;
     @JsonView({View.IEventRegistered.class})
+    private String ticketCode;
+    @JsonView({View.IEventRegistered.class})
     private EventEntity eventByEventId;
     @JsonView({View.IEventRegistered.class, View.IFeedback.class})
     private AccountEntity accountByRegisteredId;
@@ -86,6 +88,17 @@ public class EventRegisteredEntity {
         this.status = status;
     }
 
+    @Basic
+    @Column(name = "ticketCode")
+    public String getTicketCode() {
+        return ticketCode;
+    }
+
+    public void setTicketCode(String ticketCode) {
+        this.ticketCode = ticketCode;
+    }
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -96,12 +109,13 @@ public class EventRegisteredEntity {
                 Objects.equals(registeredId, that.registeredId) &&
                 Objects.equals(registeredTime, that.registeredTime) &&
                 Objects.equals(purchasedTicket, that.purchasedTicket) &&
-                Objects.equals(status, that.status);
+                Objects.equals(status, that.status) &&
+                Objects.equals(ticketCode, that.ticketCode);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, eventId, registeredId, registeredTime, purchasedTicket, status);
+        return Objects.hash(id, eventId, registeredId, registeredTime, purchasedTicket, status, ticketCode);
     }
 
     @ManyToOne

@@ -53,6 +53,7 @@ public class DateTimeUtils {
             calendar.setTime(date);
             calendar.add(field, value);
             date = calendar.getTime();
+            System.out.println("Comp " + date.compareTo(today));
             return date.compareTo(today) <= 0;
         } catch (Exception e) {
 

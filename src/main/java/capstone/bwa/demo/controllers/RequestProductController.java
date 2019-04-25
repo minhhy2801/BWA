@@ -90,14 +90,14 @@ public class RequestProductController {
                     // From Crawl data
                     if (noti.getType().startsWith(MainConstants.STATUS_ACCESSORY)) {
                         int accId = Integer.parseInt(noti.getType().split("-")[1]);
-                        AccessoryEntity accessoryEntity = accessoryRepository.findById(id);
+                        AccessoryEntity accessoryEntity = accessoryRepository.findById(accId);
                         resObj.put("type", MainConstants.STATUS_ACCESSORY);
                         resObj.put("name", accessoryEntity.getName());
                         resObj.put("link", accessoryEntity.getUrl());
                     }
                     if (noti.getType().startsWith(MainConstants.STATUS_BIKE)) {
                         int bikeId = Integer.parseInt(noti.getType().split("-")[1]);
-                        BikeEntity bikeEntity = bikeRepository.findById(id);
+                        BikeEntity bikeEntity = bikeRepository.findById(bikeId);
                         resObj.put("type", MainConstants.STATUS_BIKE);
                         resObj.put("name", bikeEntity.getName());
                         resObj.put("link", bikeEntity.getUrl());

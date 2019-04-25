@@ -20,4 +20,6 @@ public interface EventRegisteredRepository extends JpaRepository<EventRegistered
     List<Integer> findAllIdByEventId(String status, int eventId);
 
     boolean existsDistinctByEventIdAndRegisteredId(int eventId, int userId);
+
+    boolean existsByTicketCode(String code);
 }

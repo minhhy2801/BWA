@@ -8,6 +8,7 @@ import capstone.bwa.demo.repositories.AccountRepository;
 import capstone.bwa.demo.repositories.EventRegisteredRepository;
 import capstone.bwa.demo.repositories.EventRepository;
 import capstone.bwa.demo.utils.DateTimeUtils;
+import capstone.bwa.demo.utils.RandomNumUtils;
 import capstone.bwa.demo.views.View;
 import com.fasterxml.jackson.annotation.JsonView;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,12 +59,30 @@ public class EventRegisteredController {
         int currentTickets = eventEntity.getMaxTicket() - eventEntity.getTotalSoldTicket();
 
         if ((currentTickets - purchasedTicket) >= 0) {
+
+            String code = RandomNumUtils.generateRandomDigits(6);
+            System.out.println("CODE " + code);
+            boolean checkCode;
+            boolean check = false;
+            while (!check) {
+                checkCode = eventRegisteredRepository.existsByTicketCode(code);
+                System.out.println("Check " + checkCode);
+                if (checkCode) {
+                    code = RandomNumUtils.generateRandomDigits(6);
+                    System.out.println("CODE 1 " + code);
+                    check = false;
+                } else {
+                    check = true;
+                }
+
+            }
             EventRegisteredEntity eventRegisteredEntity = new EventRegisteredEntity();
             eventRegisteredEntity.setRegisteredId(accountEntity.getId());
             eventRegisteredEntity.setEventId(eventEntity.getId());
             eventRegisteredEntity.setPurchasedTicket(purchasedTicket);
             eventRegisteredEntity.setRegisteredTime(DateTimeUtils.getCurrentTime());
             eventRegisteredEntity.setStatus(MainConstants.REGISTERED_PAID);
+            eventRegisteredEntity.setTicketCode(code);
             eventRegisteredRepository.save(eventRegisteredEntity);
 
             eventEntity.setTotalSoldTicket(eventEntity.getTotalSoldTicket() + purchasedTicket);

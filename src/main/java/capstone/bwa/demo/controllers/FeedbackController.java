@@ -70,8 +70,9 @@ public class FeedbackController {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
         //close after 7days
-        if (DateTimeUtils.compareWithRejectFeedbackEvent(eventEntity.getEndTime(), Calendar.DATE, MainConstants.NUM_OF_DATE_REJECT_FEEDBACK))
+        if (DateTimeUtils.compareWithRejectFeedbackEvent(eventEntity.getEndTime(), Calendar.DATE, MainConstants.NUM_OF_DATE_REJECT_FEEDBACK)) {
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
 
         FeedbackEntity feedbackEntity = paramFeedbackRequest(body, new FeedbackEntity());
         feedbackEntity.setOwnId(eventRegisteredEntity.getId());
@@ -170,18 +171,21 @@ public class FeedbackController {
         if (accountEntity == null || supplyProductEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
 
         if (DateTimeUtils.compareWithRejectFeedbackSupplyPost(supplyProductEntity.getClosedTime(), Calendar.DATE,
-                MainConstants.NUM_OF_DATE_REJECT_FEEDBACK))
+                MainConstants.NUM_OF_DATE_REJECT_FEEDBACK)){
+            System.out.println(" Check " + DateTimeUtils.compareWithRejectFeedbackSupplyPost(supplyProductEntity.getClosedTime(), Calendar.DATE,
+                    MainConstants.NUM_OF_DATE_REJECT_FEEDBACK));
             return new ResponseEntity(HttpStatus.BAD_REQUEST);
+        }
 
 
         if (supplyProductEntity.getStatus().equals(MainConstants.SUPPLY_POST_CLOSED) &&
                 accountEntity.getStatus().equals(MainConstants.ACCOUNT_ACTIVE)) {
-
+            System.out.println("1111111");
             TransactionDetailEntity transactionDetailEntity =
                     transactionDetailRepository.findBySupplyProductIdAndStatus(id, MainConstants.TRANSACTION_SUCCESS);
-
+            System.out.println("trans  " + transactionDetailEntity.getInteractiveId() + " id " + userId);
             if (transactionDetailEntity.getInteractiveId().equals(userId)) {
-
+                System.out.println("Exist " + feedbackRepository.existsByOwnIdAndStatus(transactionDetailEntity.getId(), MainConstants.STATUS_TRANS));
                 if (!feedbackRepository.existsByOwnIdAndStatus(transactionDetailEntity.getId(), MainConstants.STATUS_TRANS)) {
 
                     FeedbackEntity feedbackEntity = paramFeedbackRequest(body, new FeedbackEntity());
@@ -268,7 +272,7 @@ public class FeedbackController {
         return new ResponseEntity(feedbackEntities, HttpStatus.OK);
     }
 
-    private FeedbackEntity paramFeedbackRequest(Map<String, String> body, FeedbackEntity feedbackEntity){
+    private FeedbackEntity paramFeedbackRequest(Map<String, String> body, FeedbackEntity feedbackEntity) {
         String description = body.get("description");
         String rate = body.get("rate");
 
