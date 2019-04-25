@@ -71,7 +71,7 @@ public class FeedbackController {
 
         //close after 7days
         if (DateTimeUtils.compareWithRejectFeedbackEvent(eventEntity.getEndTime(), Calendar.DATE, MainConstants.NUM_OF_DATE_REJECT_FEEDBACK)) {
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            return new ResponseEntity(HttpStatus.LOCKED);
         }
 
         FeedbackEntity feedbackEntity = paramFeedbackRequest(body, new FeedbackEntity());
@@ -172,9 +172,7 @@ public class FeedbackController {
 
         if (DateTimeUtils.compareWithRejectFeedbackSupplyPost(supplyProductEntity.getClosedTime(), Calendar.DATE,
                 MainConstants.NUM_OF_DATE_REJECT_FEEDBACK)){
-            System.out.println(" Check " + DateTimeUtils.compareWithRejectFeedbackSupplyPost(supplyProductEntity.getClosedTime(), Calendar.DATE,
-                    MainConstants.NUM_OF_DATE_REJECT_FEEDBACK));
-            return new ResponseEntity(HttpStatus.BAD_REQUEST);
+            return new ResponseEntity(HttpStatus.LOCKED);
         }
 
 
