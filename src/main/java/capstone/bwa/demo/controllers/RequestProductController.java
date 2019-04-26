@@ -34,7 +34,8 @@ public class RequestProductController {
     private AccessoryRepository accessoryRepository;
     @Autowired
     private BikeRepository bikeRepository;
-
+    @Autowired
+    private SupplyProductRepository supplyProductRepository;
 
     @JsonView(View.INotification.class)
     @PostMapping("user/{id}/request")
@@ -79,10 +80,14 @@ public class RequestProductController {
                 resObj.put("id", noti.getId());
                 if (noti.getType().equals(MainConstants.STATUS_SUPPLY_POST)) {
                     //CREATE/UPDATE Request & Supply post
-                    resObj.put("supId", noti.getSupplyProductId());
-                    resObj.put("supStatus", noti.getSupplyProductBySupplyProductId().getStatus());
-                    resObj.put("name", noti.getSupplyProductBySupplyProductId().getTitle());
-                    resObj.put("url", noti.getSupplyProductBySupplyProductId().getImgThumbnailUrl());
+                    int supId = noti.getSupplyProductId();
+                    resObj.put("supId", supId);
+                    System.out.println("qaaaaaa " + noti.getSupplyProductId());
+                    SupplyProductEntity supplyProductEntity = supplyProductRepository.findById(supId);
+
+                    resObj.put("supStatus", supplyProductEntity.getStatus());
+                    resObj.put("name", supplyProductEntity.getTitle());
+                    resObj.put("url", supplyProductEntity.getImgThumbnailUrl());
                     resObj.put("type", MainConstants.STATUS_SUPPLY_POST);
 
                 } else if (noti.getType().startsWith(MainConstants.STATUS_ACCESSORY)
