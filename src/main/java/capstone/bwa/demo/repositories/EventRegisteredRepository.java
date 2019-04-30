@@ -4,13 +4,20 @@ import capstone.bwa.demo.entities.EventEntity;
 import capstone.bwa.demo.entities.EventRegisteredEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+
+@Transactional
+@Repository
 public interface EventRegisteredRepository extends JpaRepository<EventRegisteredEntity, Integer> {
     EventRegisteredEntity findById(int id);
 
     List<EventRegisteredEntity> findAllByEventByEventId(EventEntity eventEntity);
+
+    List<EventRegisteredEntity> findAllByEventId(int id);
 
     List<EventRegisteredEntity> findAllByAccountByRegisteredId_Id(int id);
 

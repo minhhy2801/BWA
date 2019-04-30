@@ -1,10 +1,12 @@
 package capstone.bwa.demo.services;
 
 import capstone.bwa.demo.constants.MainConstants;
+import capstone.bwa.demo.controllers.EventController;
 import capstone.bwa.demo.crawldata.AccessoryCrawler;
 import capstone.bwa.demo.crawldata.BikeCrawler;
 import capstone.bwa.demo.crawldata.NewsCrawler;
 import capstone.bwa.demo.entities.EventEntity;
+import capstone.bwa.demo.entities.EventRegisteredEntity;
 import capstone.bwa.demo.repositories.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,8 @@ import java.util.List;
 @Component
 public class ScheduledTasks {
     private static final Logger logger = LoggerFactory.getLogger(ScheduledTasks.class);
+    @Autowired
+    private EventRegisteredRepository eventRegisteredRepository;
     @Autowired
     private EventRepository eventRepository;
     @Autowired
@@ -104,6 +108,8 @@ public class ScheduledTasks {
                         if (eventEntity.getTotalSoldTicket() < eventEntity.getMinTicket()) {
                             System.out.println("Không đủ điều kiện mở event");
                             eventEntity.setStatus(MainConstants.HIDDEN);
+                            frozenAllRegistersByEventId(eventEntity.getId(), MainConstants.HIDDEN);
+
                         } else {
                             System.out.println("Đóng đăng ký rồi nha");
                             eventEntity.setStatus(MainConstants.EVENT_CLOSED);
@@ -123,7 +129,7 @@ public class ScheduledTasks {
         }
     }
 
-//    //Khoảng cách thời gian giữa các lần chạy method
+    //    //Khoảng cách thời gian giữa các lần chạy method
 //    public void scheduleTaskWithFixedRate() {
 //    }
 //
@@ -134,5 +140,11 @@ public class ScheduledTasks {
 //    //Thời gian delay cho lần đầu tiên chạy method
 //    public void scheduleTaskWithInitialDelay() {
 //    }
-
+    private void frozenAllRegistersByEventId(int eventId, String status) {
+        List<EventRegisteredEntity> eventRegisters = eventRegisteredRepository.findAllByEventId(eventId);
+        if (eventRegisters.size() > 0) {
+            eventRegisters.forEach(t -> t.setStatus(status));
+            eventRegisteredRepository.saveAll(eventRegisters);
+        }
+    }
 }

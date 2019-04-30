@@ -1,6 +1,13 @@
 package capstone.bwa.demo.utils;
 
 public class StringCompareUtils {
+//    public static void main(String[] args) {
+//        String s1 = "Honda";
+//        String s2 = "Hyundai";
+//        System.out.println("Point  " + calculateSimilarity(s1, s2) * 100);
+//    }
+
+
     public static double calculateSimilarity(String s1, String s2) {
         String longer = s1, shorter = s2;
         if (s1.length() < s2.length()) { // longer should always have greater length
@@ -11,6 +18,8 @@ public class StringCompareUtils {
         if (longerLength == 0) {
             return 1.0; /* both strings are zero length */
         }
+        System.out.println("1 " + (longerLength - editDistance(longer, shorter)));
+        System.out.println("2 " + longerLength);
         return (longerLength - editDistance(longer, shorter)) / (double) longerLength;
     }
 

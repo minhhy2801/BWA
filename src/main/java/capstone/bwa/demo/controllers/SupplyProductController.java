@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
+import sun.applet.Main;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -198,7 +199,7 @@ public class SupplyProductController {
 
             //make all transaction to be forzen when users update supply post
 
-            frozenAllTransactionBySupplyProductId(id);
+            frozenAllTransactionBySupplyProductId(id, MainConstants.TRANSACTION_FROZEN);
 
             return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
         }
@@ -233,7 +234,7 @@ public class SupplyProductController {
             supplyProductRepository.save(supplyProductEntity);
 
             //make all transaction to be forzen when users update supply post
-            frozenAllTransactionBySupplyProductId(id);
+            frozenAllTransactionBySupplyProductId(id, MainConstants.TRANSACTION_FROZEN);
 
             return new ResponseEntity(supplyProductEntity, HttpStatus.OK);
         }
@@ -253,10 +254,6 @@ public class SupplyProductController {
             return new ResponseEntity(HttpStatus.LOCKED);
 
         String status = body.get("status");
-        supplyProductEntity.setApprovedId(adminId);
-        supplyProductEntity.setApprovedTime(DateTimeUtils.getCurrentTime());
-        supplyProductEntity.setStatus(status);
-        supplyProductRepository.save(supplyProductEntity);
 
         //process for notification
         if (status.equalsIgnoreCase(MainConstants.SUPPLY_POST_PUBLIC)) {
@@ -264,9 +261,25 @@ public class SupplyProductController {
             startSearchingForNotification(supplyProductEntity);
 
             //send noti to FROZEN transaction when admin approve
-            if (transactionDetailRepository.existsDistinctBySupplyProductId(supplyProductEntity.getId()))
+            if (transactionDetailRepository.existsDistinctBySupplyProductId(id)) {
+                if (supplyProductEntity.getStatus().equalsIgnoreCase(MainConstants.HIDDEN)){
+                    frozenAllTransactionBySupplyProductId(id, MainConstants.TRANSACTION_FROZEN);
+
+                }
                 sendNotiToFrozenTransaction(supplyProductEntity.getId());
+            }
         }
+
+        //send noti to HIDDEN supply
+        if (status.equalsIgnoreCase(MainConstants.HIDDEN)) {
+            frozenAllTransactionBySupplyProductId(id, MainConstants.HIDDEN);
+            sendNotiToFrozenTransaction(id);
+        }
+
+        supplyProductEntity.setApprovedId(adminId);
+        supplyProductEntity.setApprovedTime(DateTimeUtils.getCurrentTime());
+        supplyProductEntity.setStatus(status);
+        supplyProductRepository.save(supplyProductEntity);
         return new ResponseEntity(HttpStatus.OK);
     }
 
@@ -578,12 +591,12 @@ public class SupplyProductController {
 
     //=========================
 
-    private void frozenAllTransactionBySupplyProductId(int supplyProductId) {
+    private void frozenAllTransactionBySupplyProductId(int supplyProductId, String status) {
 
         List<TransactionDetailEntity> transactions = transactionDetailRepository.
                 findAllBySupplyProductId((supplyProductId));
         if (transactions.size() > 0) {
-            transactions.forEach(t -> t.setStatus(MainConstants.TRANSACTION_FROZEN));
+            transactions.forEach(t -> t.setStatus(status));
             transactionDetailRepository.saveAll(transactions);
         }
     }
@@ -607,15 +620,17 @@ public class SupplyProductController {
                 List<TransactionDetailEntity> transactions = transactionDetailRepository.findAllBySupplyProductId(supplyPostId);
                 List<RequestNotificationEntity> notis = new ArrayList<>();
                 System.out.println("TRANS " + transactions.size());
+
                 for (TransactionDetailEntity item : transactions) {
                     RequestNotificationEntity noti = new RequestNotificationEntity();
                     noti.setStatus(MainConstants.NOTI_NEW);
                     noti.setSupplyProductId(item.getSupplyProductId());
                     noti.setTransactionId(item.getId());
-                    System.out.println("TRANSID " + item.getId());
+                    System.out.println("TRANS ID " + item.getId());
                     noti.setType(MainConstants.STATUS_TRANS);
                     notis.add(noti);
                 }
+
                 System.out.println("NOTI======== " + notis.size());
                 requestNotificationRepository.saveAll(notis);
                 Thread.currentThread().interrupted();

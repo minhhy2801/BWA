@@ -2,14 +2,8 @@ package capstone.bwa.demo.controllers;
 
 
 import capstone.bwa.demo.constants.MainConstants;
-import capstone.bwa.demo.entities.AccountEntity;
-import capstone.bwa.demo.entities.CategoryEntity;
-import capstone.bwa.demo.entities.EventEntity;
-import capstone.bwa.demo.entities.ImageEntity;
-import capstone.bwa.demo.repositories.AccountRepository;
-import capstone.bwa.demo.repositories.CategoryRepository;
-import capstone.bwa.demo.repositories.EventRepository;
-import capstone.bwa.demo.repositories.ImageRepository;
+import capstone.bwa.demo.entities.*;
+import capstone.bwa.demo.repositories.*;
 import capstone.bwa.demo.services.DistanceMatrixRequestService;
 import capstone.bwa.demo.utils.DateTimeUtils;
 import capstone.bwa.demo.views.View;
@@ -40,6 +34,9 @@ public class EventController {
     private ImageRepository imageRepository;
     @Autowired
     private CategoryRepository categoryRepository;
+    @Autowired
+    private EventRegisteredRepository eventRegisteredRepository;
+
 
     @JsonView(View.IEventDetail.class)
     @GetMapping("event/{id}")
@@ -156,7 +153,9 @@ public class EventController {
             eventEntity.setApprovedId(adminId);
             eventEntity.setApprovedTime(DateTimeUtils.getCurrentTime());
         }
-
+        if (status.equals(MainConstants.HIDDEN)) {
+            frozenAllRegistersByEventId(id, MainConstants.HIDDEN);
+        }
         eventEntity.setStatus(status);
         eventRepository.save(eventEntity);
         return new ResponseEntity(HttpStatus.OK);
@@ -451,6 +450,14 @@ public class EventController {
         eventEntity.setPublicTime(publicTime);
         eventEntity.setStatus(MainConstants.PENDING);
         return eventEntity;
+    }
+
+    private void frozenAllRegistersByEventId(int eventId, String status) {
+        List<EventRegisteredEntity> eventRegisters = eventRegisteredRepository.findAllByEventId(eventId);
+        if (eventRegisters.size() > 0) {
+            eventRegisters.forEach(t -> t.setStatus(status));
+            eventRegisteredRepository.saveAll(eventRegisters);
+        }
     }
 
 }

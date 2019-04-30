@@ -4,11 +4,15 @@ import capstone.bwa.demo.entities.RequestNotificationEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface RequestNotificationRepository extends JpaRepository<RequestNotificationEntity, Integer> {
 
+@Transactional
+@Repository
+public interface RequestNotificationRepository extends JpaRepository<RequestNotificationEntity, Integer> {
     @Query("select n from RequestNotificationEntity n join RequestProductEntity r on n.requestProductId = r.id where r.id = :requestProductId")
     List<RequestNotificationEntity> findAllByRequestProductId(@Param("requestProductId") int requestProductId);
 
