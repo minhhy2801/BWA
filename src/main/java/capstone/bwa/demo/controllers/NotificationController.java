@@ -88,6 +88,7 @@ public class NotificationController {
                     resObj.put("supId", noti.getSupplyProductId());
                     resObj.put("type", MainConstants.STATUS_TRANS);
                     resObj.put("name", noti.getSupplyProductBySupplyProductId().getTitle());
+                    resObj.put("supStatus", noti.getSupplyProductBySupplyProductId().getStatus());
                     resObj.put("url", noti.getSupplyProductBySupplyProductId().getImgThumbnailUrl());
                     listNoti.add(resObj);
                 }
