@@ -18,6 +18,7 @@ public class EventRegisteredEntity {
     private String registeredTime;
     @JsonView({View.IEventRegistered.class})
     private Integer purchasedTicket;
+    @JsonView({View.IEventRegistered.class})
     private String status;
     @JsonView({View.IEventRegistered.class})
     private String ticketCode;
