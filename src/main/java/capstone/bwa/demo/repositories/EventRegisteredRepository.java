@@ -15,7 +15,7 @@ import java.util.List;
 public interface EventRegisteredRepository extends JpaRepository<EventRegisteredEntity, Integer> {
     EventRegisteredEntity findById(int id);
 
-    List<EventRegisteredEntity> findAllByEventByEventId(EventEntity eventEntity);
+    List<EventRegisteredEntity> findAllByEventIdOrderByIdDesc(int id);
 
     List<EventRegisteredEntity> findAllByEventId(int id);
 

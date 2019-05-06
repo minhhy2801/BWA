@@ -38,7 +38,7 @@ public class EventRegisteredController {
         if (accountEntity == null || eventEntity == null) return new ResponseEntity(HttpStatus.NOT_FOUND);
         if (eventEntity.getAccountByCreatorId().getId() != userId) return new ResponseEntity(HttpStatus.BAD_REQUEST);
 
-        List<EventRegisteredEntity> list = eventRegisteredRepository.findAllByEventByEventId(eventEntity);
+        List<EventRegisteredEntity> list = eventRegisteredRepository.findAllByEventIdOrderByIdDesc(eventEntity.getId());
 
         if (list.size() < 1) return new ResponseEntity(HttpStatus.NO_CONTENT);
 
